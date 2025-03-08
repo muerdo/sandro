@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ArrowRight, Printer, Palette, Shirt, Scissors } from "lucide-react";
+import PortfolioGallery from "@/components/gallery/portfolio-gallery";
 export default function HomePage() {
   const services = [{
     title: "Plotagem",
@@ -91,25 +92,7 @@ export default function HomePage() {
       <section className="py-20 bg-primary/5">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12">Nossos Trabalhos</h2>
-          <div className="grid grid-cols-3 gap-8">
-            {[1, 2, 3, 4, 5, 6].map(item => <motion.div key={item} initial={{
-            opacity: 0,
-            y: 20
-          }} animate={{
-            opacity: 1,
-            y: 0
-          }} transition={{
-            duration: 0.5,
-            delay: item * 0.1
-          }} className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer">
-                <img src={`https://images.unsplash.com/photo-${item + 1}?q=80&w=1000&auto=format&fit=crop`} alt={`Portfolio ${item}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors flex items-center justify-center">
-                  <span className="text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                    Ver Projeto
-                  </span>
-                </div>
-              </motion.div>)}
-          </div>
+          <PortfolioGallery />
         </div>
       </section>
     </main>;
