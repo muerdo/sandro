@@ -1,13 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Printer3D, Palette, Shirt, Scissors } from "lucide-react";
+import { ArrowRight, Printer, Palette, Shirt, Scissors } from "lucide-react";
 
 export default function HomePage() {
   const services = [
     {
       title: "Plotagem",
-      icon: <Printer3D className="w-6 h-6" />,
+      icon: <Printer className="w-6 h-6" />,
       description: "Impressão em alta qualidade para grandes formatos"
     },
     {
