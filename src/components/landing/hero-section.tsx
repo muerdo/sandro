@@ -5,7 +5,13 @@ import { ArrowRight } from "lucide-react";
 
 export default function HeroSection() {
   return (
-    <section className="h-screen relative flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1588412079929-790b9f593d8e?q=80&w=2574&auto=format&fit=crop')] bg-cover bg-center">
+    <section 
+      className={`h-screen relative flex items-center justify-center ${
+        process.env.NEXT_PUBLIC_CLIENT_HERO_IMAGE 
+          ? `bg-[url('${process.env.NEXT_PUBLIC_CLIENT_HERO_IMAGE}')]`
+          : 'bg-[url("https://images.unsplash.com/photo-1588412079929-790b9f593d8e?q=80&w=2574&auto=format&fit=crop")]'
+      } bg-cover bg-center`}
+    >
       <div className="absolute inset-0 bg-black/50" />
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
