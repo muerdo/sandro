@@ -129,7 +129,7 @@ export default function CartSummary() {
                 </>
               )}
             </motion.div>
-          </AnimatePresence>
+          </motion.div>
         )}
       </AnimatePresence>
     </>
