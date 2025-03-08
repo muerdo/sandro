@@ -134,14 +134,21 @@ export default function ServicosPage() {
                     ))}
                   </div>
                   <div className="flex gap-3">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => window.location.href = `/orcamento?servico=${service.title}`}
-                      className="flex-1 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-                    >
-                      Solicitar Orçamento
-                    </motion.button>
+                    <div className="flex gap-3">
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => window.location.href = service.title === "DTF e Camisetas" 
+                          ? '/produtos/camisetas'
+                          : service.title === "Adesivos"
+                          ? '/produtos/adesivos'
+                          : `/orcamento?servico=${service.title}`}
+                        className="flex-1 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                      >
+                        {service.title === "DTF e Camisetas" || service.title === "Adesivos"
+                          ? "Ver Produto"
+                          : "Solicitar Orçamento"}
+                      </motion.button>
                     <motion.a
                       href={`https://wa.me/5599985068943?text=Olá! Gostaria de saber mais sobre o serviço de ${service.title}`}
                       target="_blank"
