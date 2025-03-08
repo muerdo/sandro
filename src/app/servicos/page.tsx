@@ -134,7 +134,6 @@ export default function ServicosPage() {
                     ))}
                   </div>
                   <div className="flex gap-3">
-                    <div className="flex gap-3">
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}

@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, ShoppingCart } from "lucide-react";
 import { useCart } from "@/contexts/cart-context";
+import { useState } from "react";
 
 const product = {
   id: "camiseta-personalizada",
