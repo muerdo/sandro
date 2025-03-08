@@ -7,7 +7,7 @@ import TransitionProvider from "@/components/providers/transition-provider";
 import Footer from "@/components/footer";
 
 export const metadata: Metadata = {
-  title: "VisualPrint - Comunicação Visual Profissional",
+  title: "Sandro Adesivos - Comunicação Visual Profissional",
   description: "Serviços profissionais de comunicação visual, impressão digital, plotagem, adesivos e personalização.",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };

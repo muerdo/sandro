@@ -9,7 +9,7 @@ export default function HeroSection() {
       className="h-screen relative flex items-center justify-center bg-cover bg-center"
       style={{
         backgroundImage: `url(${process.env.NEXT_PUBLIC_CLIENT_HERO_IMAGE || 
-          'https://images.unsplash.com/photo-1588412079929-790b9f593d8e?q=80&w=2574&auto=format&fit=crop'
+          '/img/das.png'
         })`
       }}
     >

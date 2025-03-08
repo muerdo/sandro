@@ -31,7 +31,7 @@ export default function Footer() {
             animate={{ opacity: 1 }}
             className="text-sm text-muted-foreground"
           >
-            © 2024 @dante
+            © 2024 @Sandro Adesivos
           </motion.p>
           <div className="flex items-center gap-4">
             {socialLinks.map((link) => (

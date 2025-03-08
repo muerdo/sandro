@@ -1,55 +1,76 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Printer, Palette, Shirt, Scissors } from "lucide-react";
+import { ArrowRight, Printer, Palette, Shirt, Scissors, MessageCircle } from "lucide-react";
 import PortfolioGallery from "@/components/gallery/portfolio-gallery";
+
 export default function HomePage() {
-  const services = [{
-    title: "Plotagem",
-    icon: <Printer className="w-6 h-6" />,
-    description: "Impressão em alta qualidade para grandes formatos",
-    image: "https://images.unsplash.com/photo-1588412079929-790b9f593d8e?q=80&w=2574&auto=format&fit=crop"
-  }, {
-    title: "Adesivos",
-    icon: <Palette className="w-6 h-6" />,
-    description: "Adesivos personalizados para qualquer superfície",
-    image: "https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=2671&auto=format&fit=crop"
-  }, {
-    title: "DTF e Camisetas",
-    icon: <Shirt className="w-6 h-6" />,
-    description: "Personalização profissional de vestuário",
-    image: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?q=80&w=2669&auto=format&fit=crop"
-  }, {
-    title: "Corte a Laser",
-    icon: <Scissors className="w-6 h-6" />,
-    description: "Precisão e qualidade em cada corte",
-    image: "https://picsum.photos/200"
-  }];
-  return <main className="min-h-screen bg-background">
+  const services = [
+    {
+      title: "Plotagem",
+      icon: <Printer className="w-6 h-6" />,
+      description: "Impressão em alta qualidade para grandes formatos",
+      image: "/img/plot.png",
+    },
+    {
+      title: "Adesivos",
+      icon: <Palette className="w-6 h-6" />,
+      description: "Adesivos personalizados para qualquer superfície",
+      image: "/img/adesivo.png",
+    },
+    {
+      title: "DTF e Camisetas",
+      icon: <Shirt className="w-6 h-6" />,
+      description: "Personalização profissional de vestuário",
+      image: "/img/tshirt.png",
+    },
+    {
+      title: "Corte a Laser",
+      icon: <Scissors className="w-6 h-6" />,
+      description: "Precisão e qualidade em cada corte",
+      image: "/img/laser.png",
+    },
+  ];
+
+  return (
+    <main className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="relative h-[80vh] flex items-center justify-center bg-gradient-to-r from-primary/5 to-primary/10">
-        <div className="container mx-auto px-4">
-          <motion.div initial={{
-          opacity: 0,
-          y: 20
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} transition={{
-          duration: 0.8
-        }} className="text-center">
-            <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-              Comunicação Visual Profissional
+      <section
+        className="relative h-[80vh] flex items-center justify-center bg-cover bg-center"
+        style={{
+          backgroundImage: `url(${
+            process.env.NEXT_PUBLIC_CLIENT_HERO_IMAGE || "/img/das.png"
+          })`,
+        }}
+      >
+        {/* Overlay escuro para destacar o texto */}
+        <div className="absolute inset-0 bg-black/50"></div>
+
+        <div className="container mx-auto px-4 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center"
+          >
+            {/* Título com cor branca */}
+            <h1 className="text-5xl font-bold mb-6 text-white">
+              Sandro Adesivos
             </h1>
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Transforme suas ideias em realidade com nossa expertise em impressão digital,
-              plotagem, adesivos e personalização.
+
+            {/* Descrição com texto branco e opacidade ajustada */}
+            <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+              Transforme suas ideias em realidade com nossa expertise em impressão
+              digital, plotagem, adesivos e personalização.
             </p>
-            <motion.button onClick={() => window.location.href = '/servicos'} whileHover={{
-            scale: 1.05
-          }} whileTap={{
-            scale: 0.95
-          }} className="bg-primary text-primary-foreground px-8 py-3 rounded-full font-medium hover:opacity-90 transition-opacity flex items-center gap-2 mx-auto">
+
+            {/* Botão com destaque */}
+            <motion.button
+              onClick={() => (window.location.href = "/servicos")}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-primary text-white px-8 py-3 rounded-full font-medium hover:opacity-90 transition-opacity flex items-center gap-2 mx-auto"
+            >
               Explorar Serviços
               <ArrowRight className="w-4 h-4" />
             </motion.button>
@@ -62,18 +83,20 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12">Nossos Serviços</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
-            {services.map((service, index) => <motion.div key={service.title} initial={{
-            opacity: 0,
-            y: 20
-          }} animate={{
-            opacity: 1,
-            y: 0
-          }} transition={{
-            duration: 0.5,
-            delay: index * 0.1
-          }} className="group relative bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+            {services.map((service, index) => (
+              <motion.div
+                key={service.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="group relative bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+              >
                 <div className="absolute inset-0">
-                  <img src={service.image} alt={service.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                  <img
+                    src={service.image}
+                    alt={service.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
                   <div className="absolute inset-0 bg-black/50 group-hover:bg-black/60 transition-colors" />
                 </div>
                 <div className="relative p-6 text-white">
@@ -82,8 +105,31 @@ export default function HomePage() {
                   </div>
                   <h3 className="text-xl font-semibold mb-2">{service.title}</h3>
                   <p className="text-white/80">{service.description}</p>
+
+                  {/* Botões de ação */}
+                  <div className="flex gap-2 mt-4">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => window.location.href = `/orcamento?servico=${service.title}`}
+                      className="flex-1 bg-primary text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity text-sm"
+                    >
+                      Solicitar Orçamento
+                    </motion.button>
+                    <motion.a
+                      href={`https://wa.me/5599985068943?text=Olá! Gostaria de saber mais sobre o serviço de ${service.title}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="bg-[#25D366] text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center justify-center"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                    </motion.a>
+                  </div>
                 </div>
-              </motion.div>)}
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
@@ -95,5 +141,6 @@ export default function HomePage() {
           <PortfolioGallery />
         </div>
       </section>
-    </main>;
+    </main>
+  );
 }
