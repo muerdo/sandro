@@ -2,14 +2,16 @@
 
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
-import { animateScroll } from "react-scroll";
+import { scroller } from "react-scroll";
 
 export default function ScrollIndicator() {
-  const scrollToPortfolio = () => {
-    animateScroll.scrollTo(window.innerHeight, {
-      duration: 500,
-      smooth: true
-    });
+  const scrollToHome = () => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({
+        top: window.innerHeight,
+        behavior: "smooth"
+      });
+    }
   };
 
   return (
@@ -18,7 +20,7 @@ export default function ScrollIndicator() {
       animate={{ opacity: 1 }}
       transition={{ duration: 1, delay: 1 }}
       className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white cursor-pointer"
-      onClick={scrollToPortfolio}
+      onClick={scrollToHome}
     >
       <ChevronDown className="w-8 h-8 animate-bounce" />
     </motion.div>
