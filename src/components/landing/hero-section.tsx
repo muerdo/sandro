@@ -25,7 +25,7 @@ export default function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-7xl font-bold mb-6 text-white"
+            className="text-4xl md:text-5xl lg:text-7xl font-bold mb-6 text-white"
           >
             Transforme Suas Ideias<br />em Realidade
           </motion.h1>
@@ -33,7 +33,7 @@ export default function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-2xl text-white/90 mb-12 max-w-2xl mx-auto"
+            className="text-lg md:text-xl lg:text-2xl text-white/90 mb-12 max-w-2xl mx-auto px-4"
           >
             Comunicação visual profissional para sua marca brilhar
           </motion.p>
@@ -44,7 +44,7 @@ export default function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6 }}
-            className="bg-white text-primary px-12 py-4 rounded-full font-medium hover:bg-white/90 transition-all flex items-center gap-2 mx-auto text-lg"
+            className="bg-white text-primary px-6 md:px-12 py-3 md:py-4 rounded-full font-medium hover:bg-white/90 transition-all flex items-center gap-2 mx-auto text-base md:text-lg"
           >
             Conheça Nosso Trabalho
             <ArrowRight className="w-5 h-5" />

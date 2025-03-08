@@ -72,7 +72,7 @@ export default function ServicosPage() {
           Nossos Serviços
         </motion.h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
           {services.map((service, index) => (
             <motion.div
               key={service.title}
@@ -81,7 +81,7 @@ export default function ServicosPage() {
               transition={{ delay: index * 0.1 }}
               className="bg-card p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
             >
-              <div className="flex items-start gap-6">
+              <div className="flex flex-col md:flex-row items-start gap-4 md:gap-6">
                 <div className="bg-primary/5 p-4 rounded-lg">
                   {service.icon}
                 </div>

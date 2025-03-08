@@ -69,7 +69,7 @@ export default function PortfolioGallery() {
     setSelectedCategory(category);
   }, []);
   return <div className="space-y-8">
-      <div className="flex justify-center gap-4">
+      <div className="flex flex-wrap justify-center gap-2 md:gap-4">
         <motion.button onClick={() => handleCategoryClick(null)} className={`px-6 py-2 rounded-full transition-colors ${selectedCategory === null ? "bg-primary text-primary-foreground" : "bg-secondary hover:bg-secondary/80"}`} whileHover={{
         scale: 1.05
       }} whileTap={{
@@ -86,7 +86,7 @@ export default function PortfolioGallery() {
           </motion.button>)}
       </div>
 
-      <div className="grid grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
         <AnimatePresence mode="wait">
           {filteredProjects.map(project => <motion.div key={project.id} layout initial={{
           opacity: 0,
