@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Printer, Palette, Shirt, Scissors } from "lucide-react";
+import { ArrowRight, Printer, Palette, Shirt, Scissors, MessageCircle } from "lucide-react";
 import PortfolioGallery from "@/components/gallery/portfolio-gallery";
 export default function HomePage() {
   const services = [{
@@ -81,7 +81,27 @@ export default function HomePage() {
                     {service.icon}
                   </div>
                   <h3 className="text-xl font-semibold mb-2">{service.title}</h3>
-                  <p className="text-white/80">{service.description}</p>
+                  <p className="text-white/80 mb-4">{service.description}</p>
+                  <div className="flex gap-2">
+                    <motion.button
+                      onClick={() => window.location.href = '/produtos'}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex-1 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                    >
+                      Ver Produtos
+                    </motion.button>
+                    <motion.a
+                      href={`https://wa.me/5599985068943?text=Olá! Gostaria de saber mais sobre o serviço de ${service.title}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="bg-[#25D366] text-white p-2 rounded-lg hover:bg-[#25D366]/90 transition-colors"
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                    </motion.a>
+                  </div>
                 </div>
               </motion.div>)}
           </div>
