@@ -45,10 +45,15 @@ export default function HomePage() {
               Transforme suas ideias em realidade com nossa expertise em impressão digital,
               plotagem, adesivos e personalização.
             </p>
-            <button className="bg-primary text-primary-foreground px-8 py-3 rounded-full font-medium hover:opacity-90 transition-opacity flex items-center gap-2 mx-auto">
+            <motion.button
+              onClick={() => window.location.href = '/servicos'}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-primary text-primary-foreground px-8 py-3 rounded-full font-medium hover:opacity-90 transition-opacity flex items-center gap-2 mx-auto"
+            >
               Explorar Serviços
               <ArrowRight className="w-4 h-4" />
-            </button>
+            </motion.button>
           </motion.div>
         </div>
       </section>
