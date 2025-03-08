@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
@@ -12,8 +12,12 @@ import {
   AlertCircle,
   X,
   Save,
-  Package
+  Package,
+  Image as ImageIcon,
+  Tag,
+  ListPlus
 } from "lucide-react";
+import { toast } from "sonner";
 
 type Product = {
   id: string;
@@ -25,6 +29,14 @@ type Product = {
   images: string[];
   features: string[];
   customization: any;
+  created_at: string;
+  updated_at: string;
+};
+
+type Category = {
+  id: string;
+  name: string;
+  description: string;
 };
 
 export default function ProductsManagement() {
@@ -32,9 +44,12 @@ export default function ProductsManagement() {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Product>>({});
   const [isCreating, setIsCreating] = useState(false);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategory, setNewCategory] = useState({ name: '', description: '' });
   const [newProduct, setNewProduct] = useState<Partial<Product>>({
     name: '',
     description: '',
@@ -45,12 +60,24 @@ export default function ProductsManagement() {
     features: [],
     customization: {}
   });
+  const [loading, setLoading] = useState({
+    products: true,
+    categories: true,
+    action: false
+  });
 
   useEffect(() => {
     checkAdminStatus();
     if (isAdmin) {
       fetchProducts();
-      subscribeToProducts();
+      fetchCategories();
+      const productsSubscription = subscribeToProducts();
+      const categoriesSubscription = subscribeToCategories();
+
+      return () => {
+        productsSubscription?.unsubscribe();
+        categoriesSubscription?.unsubscribe();
+      };
     }
   }, [user, isAdmin]);
 
@@ -75,7 +102,7 @@ export default function ProductsManagement() {
   };
 
   const subscribeToProducts = () => {
-    const subscription = supabase
+    return supabase
       .channel('products')
       .on('postgres_changes', { 
         event: '*', 
@@ -85,24 +112,80 @@ export default function ProductsManagement() {
         fetchProducts();
       })
       .subscribe();
+  };
 
-    return () => {
-      subscription.unsubscribe();
-    };
+  const subscribeToCategories = () => {
+    return supabase
+      .channel('categories')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'categories'
+      }, () => {
+        fetchCategories();
+      })
+      .subscribe();
+  };
+
+  const fetchCategories = async () => {
+    try {
+      setLoading(prev => ({ ...prev, categories: true }));
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      toast.error('Failed to load categories');
+    } finally {
+      setLoading(prev => ({ ...prev, categories: false }));
+    }
+  };
+
+  const handleAddCategory = async () => {
+    try {
+      setLoading(prev => ({ ...prev, action: true }));
+      const { error } = await supabase
+        .from('categories')
+        .insert([newCategory]);
+
+      if (error) throw error;
+
+      setIsAddingCategory(false);
+      setNewCategory({ name: '', description: '' });
+      toast.success('Category added successfully');
+    } catch (error) {
+      console.error('Error adding category:', error);
+      toast.error('Failed to add category');
+    } finally {
+      setLoading(prev => ({ ...prev, action: false }));
+    }
   };
 
   const fetchProducts = async () => {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      setLoading(prev => ({ ...prev, products: true }));
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          *,
+          categories (
+            name
+          )
+        `)
+        .order('created_at', { ascending: false });
 
-    if (error) {
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
       console.error('Error fetching products:', error);
-      return;
+      toast.error('Failed to load products');
+    } finally {
+      setLoading(prev => ({ ...prev, products: false }));
     }
-
-    setProducts(data);
   };
 
   const handleEdit = (product: Product) => {
