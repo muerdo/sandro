@@ -2,8 +2,16 @@
 
 import { motion } from "framer-motion";
 import { ArrowLeft, Printer, Palette, Shirt, Scissors } from "lucide-react";
+import SearchFilters, { FilterOptions } from "@/components/search/search-filters";
+import { useState, useMemo } from "react";
 
 export default function ServicosPage() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilters, setActiveFilters] = useState<FilterOptions>({
+    category: null,
+    priceRange: [0, 1000],
+    attributes: []
+  });
   const services = [
     {
       title: "Plotagem",
@@ -51,9 +59,26 @@ export default function ServicosPage() {
     }
   ];
 
+  const filteredServices = useMemo(() => {
+    return services.filter(service => {
+      const matchesSearch = service.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          service.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          service.details.some(detail => detail.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      const matchesCategory = !activeFilters.category || service.title === activeFilters.category;
+      
+      const hasAttributes = activeFilters.attributes.length === 0 ||
+                          activeFilters.attributes.some(attr => 
+                            service.details.some(detail => detail.toLowerCase().includes(attr.toLowerCase()))
+                          );
+
+      return matchesSearch && matchesCategory && hasAttributes;
+    });
+  }, [services, searchQuery, activeFilters]);
+
   return (
     <main className="min-h-screen bg-background py-12">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 space-y-8">
         <motion.button
           onClick={() => window.location.href = '/'}
           whileHover={{ scale: 1.05 }}
@@ -71,6 +96,11 @@ export default function ServicosPage() {
         >
           Nossos Serviços
         </motion.h1>
+
+        <SearchFilters 
+          onSearch={setSearchQuery}
+          onFilter={setActiveFilters}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
           {services.map((service, index) => (
