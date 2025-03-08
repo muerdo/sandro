@@ -1,9 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, User } from "lucide-react";
+import { useState } from "react";
+import { useAuth } from "@/contexts/auth-context";
+import AuthDialog from "@/components/auth/auth-dialog";
 
 export default function HeroSection() {
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const { user, signOut } = useAuth();
   return (
     <section 
       className="h-screen relative flex items-center justify-center bg-cover bg-center"
@@ -37,18 +42,33 @@ export default function HeroSection() {
           >
             Comunicação visual profissional para sua marca brilhar
           </motion.p>
-          <motion.button
-            onClick={() => window.location.href = '/home'}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-            className="bg-white text-primary px-6 md:px-12 py-3 md:py-4 rounded-full font-medium hover:bg-white/90 transition-all flex items-center gap-2 mx-auto text-base md:text-lg"
-          >
-            Conheça Nosso Trabalho
-            <ArrowRight className="w-5 h-5" />
-          </motion.button>
+          <div className="flex items-center gap-4 justify-center">
+            <motion.button
+              onClick={() => window.location.href = '/home'}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+              className="bg-white text-primary px-6 md:px-12 py-3 md:py-4 rounded-full font-medium hover:bg-white/90 transition-all flex items-center gap-2 text-base md:text-lg"
+            >
+              Conheça Nosso Trabalho
+              <ArrowRight className="w-5 h-5" />
+            </motion.button>
+            <motion.button
+              onClick={() => user ? signOut() : setIsAuthOpen(true)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.7 }}
+              className="bg-primary/10 backdrop-blur-sm text-white px-6 md:px-12 py-3 md:py-4 rounded-full font-medium hover:bg-primary/20 transition-all flex items-center gap-2 text-base md:text-lg"
+            >
+              {user ? 'Sign Out' : 'Sign In'}
+              <User className="w-5 h-5" />
+            </motion.button>
+          </div>
+          <AuthDialog isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
         </motion.div>
       </div>
     </section>

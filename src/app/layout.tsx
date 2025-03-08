@@ -6,6 +6,7 @@ import { type Metadata } from "next";
 import TransitionProvider from "@/components/providers/transition-provider";
 import Footer from "@/components/footer";
 import { CartProvider } from "@/contexts/cart-context";
+import { AuthProvider } from "@/contexts/auth-context";
 import CartSummary from "@/components/cart/cart-summary";
 
 export const metadata: Metadata = {
@@ -20,15 +21,17 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={`${GeistSans.variable}`}>
       <body className="min-h-screen bg-background antialiased flex flex-col">
-        <CartProvider>
-          <TransitionProvider>
-            <div className="flex-1">
-              {children}
-            </div>
-            <Footer />
-            <CartSummary />
-          </TransitionProvider>
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>
+            <TransitionProvider>
+              <div className="flex-1">
+                {children}
+              </div>
+              <Footer />
+              <CartSummary />
+            </TransitionProvider>
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );
