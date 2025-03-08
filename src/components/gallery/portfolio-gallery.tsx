@@ -9,7 +9,7 @@ import { MessageCircle } from "lucide-react"; // Importe o ícone do WhatsApp
 type Project = {
   id: number;
   title: string;
-  category: "plotagem" | "adesivos" | "dtf" | "laser";
+  category: "plotagem" | "adesivos" | "dtf" | "laser" |"escritorio" | "canecas" | "grafica rapida";
   image: string;
   description: string;
 };
@@ -57,6 +57,27 @@ const projects: Project[] = [
     image: "/img/adess.png",
     description: "Adesivos personalizados para decoração",
   },
+  {
+    id: 7,
+    title: "Escritório",
+    category: "escritorio",
+    image: "/img/bloco.png",
+    description: "blocos de notas, cartões de visita, etc",
+  },
+  {
+    id: 8,
+    title: "Canecas Personalizadas",
+    category: "canecas",
+    image: "/img/canecas.png",
+    description: "Canecas personalizadas com estampas",
+  },
+  {
+    id: 9,
+    title: "Grafica Rápida",
+    category: "grafica rapida",
+    image: "/img/grafica.png",
+    description: "Grafica rápida para pequenos projetos",
+  },
 ];
 
 export default function PortfolioGallery() {
@@ -72,6 +93,9 @@ export default function PortfolioGallery() {
     { id: "adesivos", label: "Adesivos" },
     { id: "dtf", label: "DTF e Camisetas" },
     { id: "laser", label: "Corte a Laser" },
+    { id: "escritorio", label: "Escritório" },
+    { id: "canecas", label: "Canecas" },
+    { id: "grafica rapida", label: "Grafica Rápida" },
   ];
 
   const handleCategoryClick = useCallback((category: string | null) => {

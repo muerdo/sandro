@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowLeft, Printer, Palette, Shirt, Scissors, MessageCircle } from "lucide-react";
+import { ArrowLeft, Printer, Palette, Shirt, Scissors, MessageCircle, Coffee } from "lucide-react";
 import SearchFilters, { FilterOptions } from "@/components/search/search-filters";
 import { useState, useMemo } from "react";
 
@@ -56,9 +56,38 @@ export default function ServicosPage() {
         "Sinalização personalizada",
         "Brindes corporativos"
       ]
-    }
-  ];
+    },
+    {
+      title: "Escritório",
+      icon: <Printer className="w-12 h-12" />,
+      description: "Impressão em alta qualidade para grandes formatos",
+      details: [
+        "Blocos de notas",
+        "Cartões de visita",
+        "Envelopes",
+        "Fichas de identificação",
+        "Certificados",
+        "Fotocópias coloridas",
+        "Fotocópias em preto e branco",
+        "Fotocópias em cores",
+      
 
+  ]},
+    {
+      title: "Canecas Personalizadas",
+      icon: <Coffee className="w-12 h-12" />,
+      description: "Personalização profissional de canecas",
+      details: [
+        "Canecas personalizadas",
+        "Canecas térmicas",
+        "Canecas de porcelana",
+        "Canecas de polímero"
+      ]
+    },
+  ]
+    
+   
+     
   const filteredServices = useMemo(() => {
     return services.filter(service => {
       const matchesSearch = service.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
