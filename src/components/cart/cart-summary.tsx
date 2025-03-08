@@ -119,6 +119,10 @@ export default function CartSummary() {
                       <span>R$ {total.toFixed(2)}</span>
                     </div>
                     <motion.button
+                      onClick={() => {
+                        setIsOpen(false);
+                        window.location.href = '/checkout';
+                      }}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium"
