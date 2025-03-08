@@ -5,15 +5,23 @@ import { ArrowRight } from "lucide-react";
 
 export default function HeroSection() {
   return (
-    <section 
-      className="h-screen relative flex items-center justify-center bg-cover bg-center"
-      style={{
-        backgroundImage: `url(${process.env.NEXT_PUBLIC_CLIENT_HERO_IMAGE || 
-          '/img/das.png'
-        })`
-      }}
+    <section
+      className="h-screen relative flex items-center justify-center bg-black" // Fundo preto
     >
-      <div className="absolute inset-0 bg-black/50" />
+      {/* Imagem de fundo sutil com overlay escuro */}
+      <div
+        className="absolute inset-0 bg-cover bg-center opacity-20" // Ajuste a opacidade aqui
+        style={{
+          backgroundImage: `url(${
+            process.env.NEXT_PUBLIC_CLIENT_HERO_IMAGE || "/img/logo.jpeg"
+          })`,
+          backgroundSize: "contain", // Ajusta o tamanho da imagem para caber dentro da seção
+          backgroundRepeat: "no-repeat", // Evita que a imagem se repita
+          backgroundPosition: "center", // Centraliza a imagem
+        }}
+      ></div>
+
+      {/* Conteúdo da Hero Section */}
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -21,15 +29,17 @@ export default function HeroSection() {
           transition={{ duration: 0.8 }}
           className="text-center"
         >
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
             className="text-4xl md:text-5xl lg:text-7xl font-bold mb-6 text-white"
           >
-            Transforme Suas Ideias<br />em Realidade
+            Transforme Suas Ideias
+            <br />
+            em Realidade
           </motion.h1>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
@@ -38,7 +48,7 @@ export default function HeroSection() {
             Comunicação visual profissional para sua marca brilhar
           </motion.p>
           <motion.button
-            onClick={() => window.location.href = '/home'}
+            onClick={() => (window.location.href = "/home")}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             initial={{ opacity: 0, y: 20 }}

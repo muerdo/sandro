@@ -36,16 +36,22 @@ export default function HomePage() {
     <main className="min-h-screen bg-background">
       {/* Hero Section */}
       <section
-        className="relative h-[80vh] flex items-center justify-center bg-cover bg-center"
-        style={{
-          backgroundImage: `url(${
-            process.env.NEXT_PUBLIC_CLIENT_HERO_IMAGE || "/img/das.png"
-          })`,
-        }}
+        className="h-screen relative flex items-center justify-center bg-black" // Fundo preto
       >
-        {/* Overlay escuro para destacar o texto */}
-        <div className="absolute inset-0 bg-black/50"></div>
+        {/* Imagem de fundo sutil com overlay escuro */}
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-20" // Ajuste a opacidade aqui
+          style={{
+            backgroundImage: `url(${
+              process.env.NEXT_PUBLIC_CLIENT_HERO_IMAGE || "/img/logo.jpeg"
+            })`,
+            backgroundSize: "contain", // Ajusta o tamanho da imagem para caber dentro da seção
+            backgroundRepeat: "no-repeat", // Evita que a imagem se repita
+            backgroundPosition: "center", // Centraliza a imagem
+          }}
+        ></div>
 
+        {/* Conteúdo da Hero Section */}
         <div className="container mx-auto px-4 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -55,13 +61,12 @@ export default function HomePage() {
           >
             {/* Título com cor branca */}
             <h1 className="text-5xl font-bold mb-6 text-white">
-              Sandro Adesivos
+              Transforme suas ideias em realidade
             </h1>
 
             {/* Descrição com texto branco e opacidade ajustada */}
             <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-              Transforme suas ideias em realidade com nossa expertise em impressão
-              digital, plotagem, adesivos e personalização.
+              No coração de Açailândia, Maranhão, o <strong>Sandro Adesivos</strong> traz soluções completas em comunicação visual. Com expertise em impressão digital, plotagem, adesivos personalizados e muito mais, nós damos vida às suas ideias.
             </p>
 
             {/* Botão com destaque */}
@@ -79,9 +84,22 @@ export default function HomePage() {
       </section>
 
       {/* Services Section */}
-      <section className="py-20 bg-background">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">Nossos Serviços</h2>
+      <section className="py-20 bg-white relative">
+        {/* Imagem de fundo sutil com overlay claro */}
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-10" // Ajuste a opacidade aqui
+          style={{
+            backgroundImage: `url(${
+              process.env.NEXT_PUBLIC_CLIENT_HERO_IMAGE || "/img/0988831c-88dd-4ea8-8f94-f1a94d862e40.png"
+            })`,
+          }}
+        ></div>
+
+        {/* Conteúdo da seção */}
+        <div className="container mx-auto px-4 relative z-10">
+          <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">
+            Nossos Serviços
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
             {services.map((service, index) => (
               <motion.div
@@ -89,7 +107,7 @@ export default function HomePage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="group relative bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+                className="group relative bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden"
               >
                 <div className="absolute inset-0">
                   <img
@@ -111,7 +129,9 @@ export default function HomePage() {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => window.location.href = `/orcamento?servico=${service.title}`}
+                      onClick={() =>
+                        (window.location.href = `/orcamento?servico=${service.title}`)
+                      }
                       className="flex-1 bg-primary text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity text-sm"
                     >
                       Solicitar Orçamento
@@ -135,9 +155,21 @@ export default function HomePage() {
       </section>
 
       {/* Portfolio Section */}
-      <section className="py-20 bg-primary/5">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">Nossos Trabalhos</h2>
+      <section
+        className="py-20 relative"
+        style={{
+          backgroundImage: `url(${process.env.NEXT_PUBLIC_CLIENT_HERO_IMAGE || "/img/das.png"})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        {/* Overlay escuro para o fundo */}
+        <div className="absolute inset-0 bg-black/70"></div>
+
+        <div className="container mx-auto px-4 relative z-10">
+          <h2 className="text-3xl font-bold text-center mb-12 text-white">
+            Nossos Trabalhos
+          </h2>
           <PortfolioGallery />
         </div>
       </section>
