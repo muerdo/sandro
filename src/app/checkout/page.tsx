@@ -5,7 +5,7 @@ import { ArrowLeft, CreditCard, QrCode, Receipt } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "@/contexts/cart-context";
 import { useRouter } from "next/navigation";
-import QRCodeCanvas from "qrcode.react";
+import { QRCodeCanvas } from "qrcode.react";
 
 type PaymentMethod = "credit" | "pix" | "boleto";
 
