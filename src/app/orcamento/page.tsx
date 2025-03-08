@@ -27,10 +27,17 @@ export default function OrcamentoPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Aqui você pode implementar o envio do formulário
-    console.log("Formulário enviado:", formData);
-    alert("Orçamento solicitado com sucesso! Entraremos em contato em breve.");
-    window.location.href = '/';
+    
+    const message = encodeURIComponent(
+      `*Novo Pedido de Orçamento*\n\n` +
+      `*Serviço:* ${servico}\n` +
+      `*Nome:* ${formData.nome}\n` +
+      `*Email:* ${formData.email}\n` +
+      `*Telefone:* ${formData.telefone}\n\n` +
+      `*Mensagem:*\n${formData.mensagem}`
+    );
+
+    window.location.href = `https://whatsa.me/5599985068943/?t=${message}`;
   };
 
   return (
