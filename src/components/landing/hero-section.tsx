@@ -13,7 +13,7 @@ export default function HeroSection() {
         className="absolute inset-0 bg-cover bg-center opacity-20" // Ajuste a opacidade aqui
         style={{
           backgroundImage: `url(${
-            process.env.NEXT_PUBLIC_CLIENT_HERO_IMAGE || "/img/logo.jpeg"
+            process.env.NEXT_PUBLIC_CLIENT_HERO_IMAGE || "/img/f2641af2-a4f1-4d08-9ac6-ac9f5de307c2.png"
           })`,
           backgroundSize: "contain", // Ajusta o tamanho da imagem para caber dentro da seção
           backgroundRepeat: "no-repeat", // Evita que a imagem se repita
