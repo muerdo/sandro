@@ -36,22 +36,16 @@ export default function HomePage() {
     <main className="min-h-screen bg-background">
       {/* Hero Section */}
       <section
-        className="h-screen relative flex items-center justify-center bg-black" // Fundo preto
+        className="relative h-[80vh] flex items-center justify-center bg-cover bg-center"
+        style={{
+          backgroundImage: `url(${
+            process.env.NEXT_PUBLIC_CLIENT_HERO_IMAGE || "/img/das.png"
+          })`,
+        }}
       >
-        {/* Imagem de fundo sutil com overlay escuro */}
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-20" // Ajuste a opacidade aqui
-          style={{
-            backgroundImage: `url(${
-              process.env.NEXT_PUBLIC_CLIENT_HERO_IMAGE || "/img/logo.jpeg"
-            })`,
-            backgroundSize: "contain", // Ajusta o tamanho da imagem para caber dentro da seção
-            backgroundRepeat: "no-repeat", // Evita que a imagem se repita
-            backgroundPosition: "center", // Centraliza a imagem
-          }}
-        ></div>
+        {/* Overlay escuro para destacar o texto */}
+        <div className="absolute inset-0 bg-black/50"></div>
 
-        {/* Conteúdo da Hero Section */}
         <div className="container mx-auto px-4 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -60,15 +54,14 @@ export default function HomePage() {
             className="text-center"
           >
             {/* Título com cor branca */}
-            <h1 className="text-5xl font-bold mb-6 text-white">
-              Transforme suas ideias em realidade
-            </h1>
+<h1 className="text-5xl font-bold mb-6 text-white">
+  Transforme suas ideias em realidade
+</h1>
 
-            {/* Descrição com texto branco e opacidade ajustada */}
-            <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-              No coração de Açailândia, Maranhão, o <strong>Sandro Adesivos</strong> traz soluções completas em comunicação visual. Com expertise em impressão digital, plotagem, adesivos personalizados e muito mais, nós damos vida às suas ideias.
-            </p>
-
+{/* Descrição com texto branco e opacidade ajustada */}
+<p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+  No coração de Açailândia, Maranhão, o <strong>Sandro Adesivos</strong> traz soluções completas em comunicação visual. Com expertise em impressão digital, plotagem, adesivos personalizados e muito mais, nós damos vida às suas ideias.
+</p>
             {/* Botão com destaque */}
             <motion.button
               onClick={() => (window.location.href = "/servicos")}
@@ -84,76 +77,75 @@ export default function HomePage() {
       </section>
 
       {/* Services Section */}
-      <section className="py-20 bg-white relative">
-        {/* Imagem de fundo sutil com overlay claro */}
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-10" // Ajuste a opacidade aqui
-          style={{
-            backgroundImage: `url(${
-              process.env.NEXT_PUBLIC_CLIENT_HERO_IMAGE || "/img/0988831c-88dd-4ea8-8f94-f1a94d862e40.png"
-            })`,
-          }}
-        ></div>
+<section className="py-20 bg-white relative">
+  {/* Imagem de fundo sutil com overlay claro */}
+  <div
+    className="absolute inset-0 bg-cover bg-center opacity-10" // Ajuste a opacidade aqui
+    style={{
+      backgroundImage: `url(${
+        process.env.NEXT_PUBLIC_CLIENT_HERO_IMAGE || "/img/0988831c-88dd-4ea8-8f94-f1a94d862e40.png"
+      })`,
+    }}
+  ></div>
 
-        {/* Conteúdo da seção */}
-        <div className="container mx-auto px-4 relative z-10">
-          <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">
-            Nossos Serviços
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
-            {services.map((service, index) => (
-              <motion.div
-                key={service.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="group relative bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden"
-              >
-                <div className="absolute inset-0">
-                  <img
-                    src={service.image}
-                    alt={service.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-black/50 group-hover:bg-black/60 transition-colors" />
-                </div>
-                <div className="relative p-6 text-white">
-                  <div className="bg-white/10 backdrop-blur-sm w-12 h-12 rounded-full flex items-center justify-center mb-4">
-                    {service.icon}
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">{service.title}</h3>
-                  <p className="text-white/80">{service.description}</p>
-
-                  {/* Botões de ação */}
-                  <div className="flex gap-2 mt-4">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() =>
-                        (window.location.href = `/orcamento?servico=${service.title}`)
-                      }
-                      className="flex-1 bg-primary text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity text-sm"
-                    >
-                      Solicitar Orçamento
-                    </motion.button>
-                    <motion.a
-                      href={`https://wa.me/5599985068943?text=Olá! Gostaria de saber mais sobre o serviço de ${service.title}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="bg-[#25D366] text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center justify-center"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                    </motion.a>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+  {/* Conteúdo da seção */}
+  <div className="container mx-auto px-4 relative z-10">
+    <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">
+      Nossos Serviços
+    </h2>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
+      {services.map((service, index) => (
+        <motion.div
+          key={service.title}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: index * 0.1 }}
+          className="group relative bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+        >
+          <div className="absolute inset-0">
+            <img
+              src={service.image}
+              alt={service.title}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            />
+            <div className="absolute inset-0 bg-black/50 group-hover:bg-black/60 transition-colors" />
           </div>
-        </div>
-      </section>
+          <div className="relative p-6 text-white">
+            <div className="bg-white/10 backdrop-blur-sm w-12 h-12 rounded-full flex items-center justify-center mb-4">
+              {service.icon}
+            </div>
+            <h3 className="text-xl font-semibold mb-2">{service.title}</h3>
+            <p className="text-white/80">{service.description}</p>
 
+            {/* Botões de ação */}
+            <div className="flex gap-2 mt-4">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() =>
+                  (window.location.href = `/orcamento?servico=${service.title}`)
+                }
+                className="flex-1 bg-primary text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity text-sm"
+              >
+                Solicitar Orçamento
+              </motion.button>
+              <motion.a
+                href={`https://wa.me/5599985068943?text=Olá! Gostaria de saber mais sobre o serviço de ${service.title}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-[#25D366] text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center justify-center"
+              >
+                <MessageCircle className="w-4 h-4" />
+              </motion.a>
+            </div>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  </div>
+</section>
       {/* Portfolio Section */}
       <section
         className="py-20 relative"
