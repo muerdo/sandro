@@ -2,17 +2,17 @@
 
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
-import { scroller } from "react-scroll";
+import { useCallback } from "react";
 
 export default function ScrollIndicator() {
-  const scrollToHome = () => {
+  const scrollToHome = useCallback(() => {
     if (typeof window !== "undefined") {
       window.scrollTo({
         top: window.innerHeight,
         behavior: "smooth"
       });
     }
-  };
+  }, []);
 
   return (
     <motion.div 
