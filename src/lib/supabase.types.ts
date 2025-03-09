@@ -35,11 +35,143 @@ export type Database = {
   }
   public: {
     Tables: {
+      orders: {
+        Row: {
+          created_at: string | null
+          id: string
+          items: Json
+          payment_method: string
+          payment_status: string
+          shipping_address: Json | null
+          status: string
+          total_amount: number
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          items?: Json
+          payment_method: string
+          payment_status: string
+          shipping_address?: Json | null
+          status: string
+          total_amount: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          items?: Json
+          payment_method?: string
+          payment_status?: string
+          shipping_address?: Json | null
+          status?: string
+          total_amount?: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_settings: {
+        Row: {
+          bank_account: string
+          bank_agency: string
+          bank_name: string
+          beneficiary_city: string | null
+          beneficiary_name: string
+          created_at: string | null
+          id: string
+          pix_key: string
+          psp_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bank_account: string
+          bank_agency: string
+          bank_name: string
+          beneficiary_city?: string | null
+          beneficiary_name: string
+          created_at?: string | null
+          id?: string
+          pix_key: string
+          psp_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bank_account?: string
+          bank_agency?: string
+          bank_name?: string
+          beneficiary_city?: string | null
+          beneficiary_name?: string
+          created_at?: string | null
+          id?: string
+          pix_key?: string
+          psp_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          customization: Json | null
+          description: string | null
+          features: string[] | null
+          id: string
+          images: string[] | null
+          name: string
+          price: number
+          status: string
+          stock: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          customization?: Json | null
+          description?: string | null
+          features?: string[] | null
+          id?: string
+          images?: string[] | null
+          name: string
+          price: number
+          status?: string
+          stock?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          customization?: Json | null
+          description?: string | null
+          features?: string[] | null
+          id?: string
+          images?: string[] | null
+          name?: string
+          price?: number
+          status?: string
+          stock?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string | null
           id: string
+          role: string | null
           updated_at: string | null
           username: string | null
         }
@@ -47,6 +179,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string | null
           id: string
+          role?: string | null
           updated_at?: string | null
           username?: string | null
         }
@@ -54,6 +187,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string | null
           id?: string
+          role?: string | null
           updated_at?: string | null
           username?: string | null
         }
