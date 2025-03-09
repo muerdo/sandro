@@ -15,6 +15,8 @@ export default function PaymentSettings() {
     bank_agency: "",
     bank_account: "",
     beneficiary_name: "",
+    beneficiary_city: "",
+    psp_url: "",
   });
   const [loading, setLoading] = useState(false);
 

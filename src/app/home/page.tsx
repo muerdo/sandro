@@ -57,7 +57,7 @@ export default function HomePage() {
 </p>
             {/* Botão com destaque */}
             <motion.button
-              onClick={() => (window.location.href = "/servicos")}
+              onClick={() => (window.location.href = "/produtos")}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="bg-primary text-white px-8 py-3 rounded-full font-medium hover:opacity-90 transition-opacity flex items-center gap-2 mx-auto"

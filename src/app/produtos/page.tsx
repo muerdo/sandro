@@ -18,7 +18,7 @@ const products = [
     id: "adesivo-personalizado",
     name: "Adesivo Personalizado",
     price: 29.90,
-    image: "/img/adesivos.png",
+    image: "/img/adesivo.png",
     category: "Adesivos",
     description: "Adesivos de alta qualidade em vinil"
   },
@@ -26,7 +26,7 @@ const products = [
     id: "banner-grande-formato",
     name: "Banner Grande Formato",
     price: 149.90,
-    image: "/img/plot.png",
+    image: "/img/plot.jpeg",
     category: "Impressão",
     description: "Banners em lona com acabamento profissional"
   },
