@@ -12,7 +12,11 @@ const products = [
     price: 49.90,
     image: "/img/camisas.png",
     category: "Vestuário",
-    description: "Camisetas 100% algodão com impressão DTF"
+    description: "Camisetas 100% algodão com impressão DTF",
+    options: [
+      { id: "tamanho", label: "Tamanho", values: ["P", "M", "G", "GG"] },
+      { id: "cor", label: "Cor", values: ["Branco", "Preto", "Azul", "Vermelho"] },
+    ],
   },
   {
     id: "adesivo-personalizado",
@@ -36,8 +40,18 @@ const products = [
     price: 39.90,
     image: "/img/canecas.png",
     category: "Presentes",
-    description: "Canecas de cerâmica com impressão sublimática"
-  }
+    description: "Canecas de cerâmica com impressão sublimática",
+    options: ["Cerâmica", "Porcelana", "Acrilica"],
+  },
+  {
+    id: "laser",
+    name: "Laser",
+    price: 30,
+    image: "/img/laser.png",
+    category: "Laser",
+    description: "Laser de alta qualidade",
+    options: ["A4", "A3", "A2", "A1"],
+  },
 ];
 
 export default function CatalogoPage() {

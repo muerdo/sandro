@@ -1,82 +1,92 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, m } from "framer-motion";
 import { useState, useCallback } from "react";
 import { Lightbox } from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import { MessageCircle } from "lucide-react"; // Importe o ícone do WhatsApp
 
 type Project = {
-  id: number;
+  id: string;
   title: string;
   category: "plotagem" | "adesivos" | "dtf" | "laser" |"escritorio" | "canecas" | "grafica rapida";
   image: string;
   description: string;
+  valorUnitario: number;
 };
 
 const projects: Project[] = [
   {
-    id: 1,
+    id: "banners",
     title: "Plotagem Arquitetônica",
     category: "plotagem",
     image: "/img/plot.png",
     description: "Impressão de alta precisão para projetos arquitetônicos",
+    valorUnitario: 150,
   },
   {
-    id: 2,
+    id: "adesivos",
     title: "Adesivagem Veicular",
     category: "adesivos",
     image: "/img/adesivo.png",
     description: "Personalização completa de veículos",
+    valorUnitario: 20,
   },
   {
-    id: 3,
+    id: "camisetas",
     title: "Camisetas Personalizadas",
     category: "dtf",
     image: "/img/tshirt.png",
     description: "Estampas DTF de alta qualidade",
+    valorUnitario: 10,
   },
   {
-    id: 4,
+    id: "laser",
     title: "Corte em Acrílico",
     category: "laser",
     image: "/img/corte.png",
     description: "Precisão em cortes a laser",
+    valorUnitario: 10,
   },
   {
-    id: 5,
+    id: "banners",
     title: "Banner Promocional",
     category: "plotagem",
     image: "/img/468e1f83-8fd1-44c4-a0f2-c887b6d73434.png",
     description: "Banners de alta qualidade para eventos",
+    valorUnitario: 10,
   },
   {
-    id: 6,
-    title: "Adesivos Decorativos",
+    id: "adesivos",
+    title: "Adesivos",
     category: "adesivos",
     image: "/img/adess.png",
     description: "Adesivos personalizados para decoração",
+    valorUnitario: 10,
   },
   {
-    id: 7,
+    id: "escritorio",
     title: "Escritório",
     category: "escritorio",
     image: "/img/bloco.png",
     description: "blocos de notas, cartões de visita, etc",
+    valorUnitario: 10,
   },
   {
-    id: 8,
+    id: "canecas",
     title: "Canecas Personalizadas",
     category: "canecas",
     image: "/img/canecas.png",
     description: "Canecas personalizadas com estampas",
+    valorUnitario: 10,
   },
   {
-    id: 9,
+    id: "grafica rapida",
     title: "Grafica Rápida",
     category: "grafica rapida",
     image: "/img/grafica.png",
     description: "Grafica rápida para pequenos projetos",
+    valorUnitario: 10,
   },
 ];
 
@@ -175,7 +185,7 @@ export default function PortfolioGallery() {
     whileTap={{ scale: 0.95 }}
     onClick={(e) => {
       e.stopPropagation(); // Evita que o clique abra o lightbox
-      window.location.href = `/checkout?produto=${project.id}`; // Ajuste conforme necessário
+      window.location.href = `/produtos/${project.id}`; // Ajuste conforme necessário
     }}
     className="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity text-sm"
   >
