@@ -10,7 +10,7 @@ import { AuthProvider } from "@/contexts/auth-context";
 import CartSummary from "@/components/cart/cart-summary";
 
 export const metadata: Metadata = {
-  title: "Sandro adesivos - Comunicação Visual Profissional",
+  title: "Sandro Adesivos - Comunicação Visual Profissional",
   description: "Serviços profissionais de comunicação visual, impressão digital, plotagem, adesivos e personalização.",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };

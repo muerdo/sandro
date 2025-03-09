@@ -70,9 +70,10 @@ export default function ServicosPage() {
         "Fotocópias coloridas",
         "Fotocópias em preto e branco",
         "Fotocópias em cores",
-      
 
-  ]},
+
+      ]
+    },
     {
       title: "Canecas Personalizadas",
       icon: <Coffee className="w-12 h-12" />,
@@ -85,21 +86,21 @@ export default function ServicosPage() {
       ]
     },
   ]
-    
-   
-     
+
+
+
   const filteredServices = useMemo(() => {
     return services.filter(service => {
       const matchesSearch = service.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          service.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          service.details.some(detail => detail.toLowerCase().includes(searchQuery.toLowerCase()));
-      
+        service.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        service.details.some(detail => detail.toLowerCase().includes(searchQuery.toLowerCase()));
+
       const matchesCategory = !activeFilters.category || service.title === activeFilters.category;
-      
+
       const hasAttributes = activeFilters.attributes.length === 0 ||
-                          activeFilters.attributes.some(attr => 
-                            service.details.some(detail => detail.toLowerCase().includes(attr.toLowerCase()))
-                          );
+        activeFilters.attributes.some(attr =>
+          service.details.some(detail => detail.toLowerCase().includes(attr.toLowerCase()))
+        );
 
       return matchesSearch && matchesCategory && hasAttributes;
     });
@@ -126,7 +127,7 @@ export default function ServicosPage() {
           Nossos Serviços
         </motion.h1>
 
-        <SearchFilters 
+        <SearchFilters
           onSearch={setSearchQuery}
           onFilter={setActiveFilters}
         />
@@ -163,14 +164,14 @@ export default function ServicosPage() {
                     ))}
                   </div>
                   <div className="flex gap-3">
-                    <motion.button
+                    <motion.a
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => window.location.href = `/orcamento?servico=${service.title}`}
+                      href={`/produtos/${service.title.toLowerCase().replace(/\s+/g, "-")}`}
                       className="flex-1 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                     >
-                      Solicitar Orçamento
-                    </motion.button>
+                      Comprar Agora
+                    </motion.a>
                     <motion.a
                       href={`https://wa.me/5599985068943?text=Olá! Gostaria de saber mais sobre o serviço de ${service.title}`}
                       target="_blank"

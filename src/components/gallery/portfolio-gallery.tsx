@@ -169,30 +169,31 @@ export default function PortfolioGallery() {
                 </span>
 
                 {/* Botões de Ação */}
-                <div className="flex gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={(e) => {
-                      e.stopPropagation(); // Evita que o clique abra o lightbox
-                      window.location.href = `/orcamento?servico=${project.title}`;
-                    }}
-                    className="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity text-sm"
-                  >
-                    Solicitar Orçamento
-                  </motion.button>
-                  <motion.a
-                    href={`https://wa.me/5599985068943?text=Olá! Gostaria de saber mais sobre o projeto de ${project.title}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={(e) => e.stopPropagation()} // Evita que o clique abra o lightbox
-                    className="bg-[#25D366] text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center justify-center"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                  </motion.a>
-                </div>
+<div className="flex gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
+  <motion.button
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    onClick={(e) => {
+      e.stopPropagation(); // Evita que o clique abra o lightbox
+      window.location.href = `/checkout?produto=${project.id}`; // Ajuste conforme necessário
+    }}
+    className="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity text-sm"
+  >
+    Comprar
+  </motion.button>
+  
+  <motion.a
+    href={`https://wa.me/5599985068943?text=Olá! Gostaria de saber mais sobre o produto: ${project.title}`}
+    target="_blank"
+    rel="noopener noreferrer"
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    onClick={(e) => e.stopPropagation()} // Evita que o clique abra o lightbox
+    className="bg-[#25D366] text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center justify-center"
+  >
+    <MessageCircle className="w-4 h-4" />
+  </motion.a>
+</div>
               </div>
             </motion.div>
           ))}
