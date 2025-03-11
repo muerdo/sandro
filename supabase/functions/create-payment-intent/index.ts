@@ -1,7 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
-import Stripe from 'stripe'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import Stripe from 'https://esm.sh/stripe@14.14.0'
 
-// Deno runtime type declarations
+// Type declarations for Deno
 declare global {
   const Deno: {
     env: {
@@ -10,9 +10,6 @@ declare global {
     serve(handler: (req: Request) => Promise<Response>): void;
   };
 }
-
-import { createClient } from 'jsr:@supabase/supabase-js@2'
-import Stripe from 'jsr:stripe@14'
 
 // Type definitions
 interface RequestPayload {

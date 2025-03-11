@@ -1,4 +1,14 @@
-import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+
+// Type declarations for Deno
+declare global {
+  const Deno: {
+    env: {
+      get(key: string): string | undefined;
+    };
+    serve(handler: (req: Request) => Promise<Response>): void;
+  };
+}
 import { UpdateOrderRequest, Profile, ErrorResponse, SuccessResponse } from './types'
 
 const corsHeaders = {
