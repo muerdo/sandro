@@ -6,20 +6,28 @@ import { Play } from "lucide-react";
 import type { ProductMedia } from "@/types/product";
 
 interface ProductImagesProps {
-  media: ProductMedia[];
-  selectedMedia: ProductMedia;
-  onMediaSelect: (media: ProductMedia) => void;
+  media?: ProductMedia[];
+  selectedMedia?: ProductMedia | null;
+  onMediaSelect?: (media: ProductMedia) => void;
+  images?: string[];
+  selectedImage?: string;
+  onImageSelect?: (image: string) => void;
   productName: string;
   className?: string;
 }
 
 const ProductImages = memo(function ProductImages({ 
-  media, 
-  selectedMedia, 
+  media,
+  selectedMedia,
   onMediaSelect,
+  images,
+  selectedImage,
+  onImageSelect,
   productName,
   className = ""
 }: ProductImagesProps) {
+  // Handle both old and new interfaces
+  const isUsingMedia = media && selectedMedia;
   return (
     <div className={`space-y-4 ${className}`}>
       {selectedMedia.type === 'video' ? (

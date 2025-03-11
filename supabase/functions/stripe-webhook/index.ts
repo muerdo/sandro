@@ -1,10 +1,9 @@
-import { createClient } from 'npm:@supabase/supabase-js@2.39.7'
-import Stripe from 'npm:stripe@14.14.0'
-import { corsHeaders } from '../_shared/cors.ts'
+import { createClient } from '@supabase/supabase-js'
+import Stripe from 'stripe'
+import { corsHeaders } from '../_shared/cors'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-  apiVersion: '2023-10-16',
-  httpClient: Stripe.createFetchHttpClient()
+  apiVersion: '2023-10-16'
 })
 
 const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')
@@ -13,7 +12,7 @@ const supabaseClient = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 )
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -38,8 +37,8 @@ Deno.serve(async (req) => {
 
     // Handle the event
     switch (event.type) {
-      case 'payment_intent.succeeded':
-        const paymentIntent = event.data.object
+      case 'payment_intent.succeeded': {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent
         // Update order status to paid
         await supabaseClient
           .from('orders')
@@ -50,8 +49,8 @@ Deno.serve(async (req) => {
           .eq('payment_intent_id', paymentIntent.id)
         break
 
-      case 'payment_intent.payment_failed':
-        const failedPayment = event.data.object
+      case 'payment_intent.payment_failed': {
+        const failedPayment = event.data.object as Stripe.PaymentIntent
         // Update order status to failed
         await supabaseClient
           .from('orders')
@@ -68,10 +67,11 @@ Deno.serve(async (req) => {
       status: 200
     })
 
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('Error processing webhook:', err)
+    const error = err as Error
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: error.message }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400
