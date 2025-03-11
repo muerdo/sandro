@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2023-10-16',
+  httpClient: Stripe.createFetchHttpClient(),
 });
 
 const corsHeaders = {
@@ -35,6 +36,24 @@ Deno.serve(async (req: Request) => {
 
     const { items, total } = await req.json();
 
+    // Validate items against Stripe prices
+    const lineItems = await Promise.all(items.map(async (item: any) => {
+      const { data: product } = await supabaseClient
+        .from('products')
+        .select('stripe_price_id')
+        .eq('id', item.id)
+        .single();
+
+      if (!product?.stripe_price_id) {
+        throw new Error(`Product ${item.id} not found in Stripe`);
+      }
+
+      return {
+        price: product.stripe_price_id,
+        quantity: item.quantity
+      };
+    }));
+
     // Create or retrieve Stripe customer
     const { data: profiles } = await supabaseClient
       .from('profiles')
@@ -59,9 +78,9 @@ Deno.serve(async (req: Request) => {
         .eq('id', user.id);
     }
 
-    // Create payment intent
+    // Create payment intent with line items
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(total * 100), // Convert to cents
+      amount: Math.round(total * 100),
       currency: 'brl',
       customer: customerId,
       automatic_payment_methods: {
@@ -70,6 +89,7 @@ Deno.serve(async (req: Request) => {
       metadata: {
         user_id: user.id,
       },
+      payment_method_types: ['card'],
     });
 
     // Create order record
@@ -81,26 +101,13 @@ Deno.serve(async (req: Request) => {
         total_amount: total,
         items: items,
         payment_method: 'credit_card',
-        payment_status: 'pending'
+        payment_status: 'pending',
+        stripe_payment_intent_id: paymentIntent.id
       })
       .select()
       .single();
 
     if (orderError) throw orderError;
-
-    // Create payment record
-    const { error: paymentError } = await supabaseClient
-      .from('payments')
-      .insert({
-        order_id: order.id,
-        amount: total,
-        payment_method: 'credit_card',
-        status: 'pending',
-        stripe_payment_intent_id: paymentIntent.id,
-        stripe_customer_id: customerId
-      });
-
-    if (paymentError) throw paymentError;
 
     return new Response(
       JSON.stringify({
@@ -112,8 +119,12 @@ Deno.serve(async (req: Request) => {
       }
     );
   } catch (error) {
+    console.error('Payment intent creation error:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'An unexpected error occurred' }),
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : 'An unexpected error occurred',
+        details: error instanceof Error ? error.stack : undefined
+      }),
       {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
