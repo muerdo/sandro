@@ -1,17 +1,22 @@
-import { createClient } from '@supabase/supabase-js'
-import { corsHeaders } from '../_shared/cors'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7'
+import { corsHeaders } from '../_shared/cors.js'
 
-declare const Deno: {
-  env: {
-    get(key: string): string | undefined;
+interface OrderUpdate {
+  orderId: string;
+  status: string;
+  estimatedDelivery?: string;
+  trackingInfo?: {
+    location?: string;
+    status?: string;
+    timestamp?: string;
+    last_updated?: string;
   };
-  serve(handler: (req: Request) => Promise<Response>): void;
-};
+}
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-)
+const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -19,15 +24,20 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { orderId, status, estimatedDelivery, trackingInfo } = await req.json()
+    const { orderId, status, estimatedDelivery, trackingInfo } = await req.json() as OrderUpdate;
 
     // Validate admin authorization
-    const authHeader = req.headers.get('authorization')
-    if (!authHeader) throw new Error('Missing authorization header')
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      throw new Error('Missing authorization header');
+    }
     
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-    if (authError || !user) throw new Error('Failed to get user information')
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      throw new Error('Failed to get user information');
+    }
 
     // Verify admin role
     const { data: profile } = await supabase
@@ -84,15 +94,15 @@ Deno.serve(async (req: Request) => {
     )
 
   } catch (error) {
-    console.error('Error updating order status:', error)
+    console.error('Error updating order status:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+    
     return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'An unexpected error occurred'
-      }),
+      JSON.stringify({ error: errorMessage }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400 
       }
-    )
+    );
   }
 })
