@@ -59,6 +59,78 @@ export type Database = {
         }
         Relationships: []
       }
+      contacts: {
+        Row: {
+          created_at: string
+          id: number
+          name: string | null
+          phone: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          name?: string | null
+          phone?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          name?: string | null
+          phone?: string | null
+        }
+        Relationships: []
+      }
+      data: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: number
+          sender: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: number
+          sender?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: number
+          sender?: string | null
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string | null
+          direction: string | null
+          id: number
+          recipient: string | null
+          sender: string | null
+          status: string | null
+          timestamp: string
+        }
+        Insert: {
+          content?: string | null
+          direction?: string | null
+          id?: number
+          recipient?: string | null
+          sender?: string | null
+          status?: string | null
+          timestamp: string
+        }
+        Update: {
+          content?: string | null
+          direction?: string | null
+          id?: number
+          recipient?: string | null
+          sender?: string | null
+          status?: string | null
+          timestamp?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           created_at: string | null
