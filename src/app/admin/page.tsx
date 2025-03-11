@@ -50,33 +50,52 @@ export default function AdminDashboard() {
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
 
   useEffect(() => {
-    checkAdminStatus();
-    if (isAdmin) {
-      subscribeToOrders();
-      fetchStats();
-      fetchSalesData();
-      fetchRecentOrders();
-    }
-  }, [user, isAdmin]);
+    const initializeAdmin = async () => {
+      try {
+        await checkAdminStatus();
+        if (isAdmin) {
+          subscribeToOrders();
+          await Promise.all([
+            fetchStats(),
+            fetchSalesData(),
+            fetchRecentOrders()
+          ]);
+        }
+      } catch (error) {
+        console.error('Error initializing admin dashboard:', error);
+        toast.error('Failed to load dashboard');
+      } finally {
+        setLoading(prev => ({ ...prev, auth: false }));
+      }
+    };
+
+    initializeAdmin();
+  }, [user]);
 
   const checkAdminStatus = async () => {
-    if (!user) {
+    try {
+      if (!user) {
+        throw new Error('No user found');
+      }
+
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+
+      if (profile?.role !== 'admin') {
+        throw new Error('Not an admin user');
+      }
+
+      setIsAdmin(true);
+    } catch (error) {
+      console.error('Admin check error:', error);
       router.push('/');
-      return;
+      throw error;
     }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (profile?.role !== 'admin') {
-      router.push('/');
-      return;
-    }
-
-    setIsAdmin(true);
   };
 
   const subscribeToOrders = () => {
