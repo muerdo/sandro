@@ -4,8 +4,11 @@ import { motion } from "framer-motion";
 import { ArrowLeft, ShoppingCart } from "lucide-react";
 import { useCart } from "@/contexts/cart-context";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
-const products = [
+const [products, setProducts] = useState([
   {
     id: "camiseta-personalizada",
     name: "Camiseta Personalizada",
@@ -38,10 +41,36 @@ const products = [
     category: "Presentes",
     description: "Canecas de cerâmica com impressão sublimática"
   }
-];
+]);
 
 export default function CatalogoPage() {
   const { addItem } = useCart();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStripeProducts = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-stripe-products');
+        if (error) throw error;
+        
+        // Merge Stripe products with existing products
+        setProducts(prevProducts => {
+          const stripeProducts = data.map((product: any) => ({
+            ...product,
+            id: `stripe-${product.id}`
+          }));
+          return [...prevProducts, ...stripeProducts];
+        });
+      } catch (error) {
+        console.error('Error fetching Stripe products:', error);
+        toast.error('Failed to load some products');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStripeProducts();
+  }, []);
 
   const handleQuickAdd = (product: typeof products[0]) => {
     addItem({
@@ -68,6 +97,11 @@ export default function CatalogoPage() {
         <h1 className="text-4xl font-bold mb-8">Nossos Produtos</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {loading && (
+            <div className="col-span-full flex justify-center py-12">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-r-transparent" />
+            </div>
+          )}
           {products.map((product) => (
             <motion.div
               key={product.id}
