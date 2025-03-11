@@ -182,7 +182,7 @@ export type Database = {
           images?: string[] | null
           name: string
           price: number
-          status?: string
+          status: string
           stock?: number | null
           updated_at?: string | null
         }
@@ -228,6 +228,59 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
+      }
+      shipping_addresses: {
+        Row: {
+          address: string
+          city: string
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          is_default: boolean | null
+          phone: string
+          postal_code: string
+          state: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          address: string
+          city: string
+          created_at?: string | null
+          email: string
+          full_name: string
+          id?: string
+          is_default?: boolean | null
+          phone: string
+          postal_code: string
+          state: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string
+          city?: string
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          is_default?: boolean | null
+          phone?: string
+          postal_code?: string
+          state?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipping_addresses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
