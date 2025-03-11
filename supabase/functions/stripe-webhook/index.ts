@@ -1,21 +1,15 @@
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
-import Stripe from "https://esm.sh/stripe@13.10.0?target=deno";
+import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
+import { createClient } from "@supabase/supabase-js";
+import Stripe from "stripe";
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-  apiVersion: '2025-02-24.acacia',
-  httpClient: Stripe.createFetchHttpClient()
+  apiVersion: '2025-02-24',
+  httpClient: Stripe.createFetchHttpClient(),
+  typescript: true
 });
 
-interface StripeEvent {
-  data: {
-    object: {
-      id: string;
-      status: string;
-    };
-  };
-  type: string;
-}
+type StripeEvent = Stripe.Event;
+type PaymentIntent = Stripe.PaymentIntent;
 
 const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
 
@@ -41,7 +35,7 @@ serve(async (req: Request) => {
       body,
       signature,
       webhookSecret
-    );
+    ) as StripeEvent;
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -50,7 +44,7 @@ serve(async (req: Request) => {
 
     switch (event.type) {
       case 'payment_intent.succeeded': {
-        const paymentIntent = event.data.object;
+        const paymentIntent = event.data.object as PaymentIntent;
         
         const { error: updateError } = await supabaseClient
           .from('orders')
@@ -69,7 +63,7 @@ serve(async (req: Request) => {
       }
 
       case 'payment_intent.payment_failed': {
-        const paymentIntent = event.data.object;
+        const paymentIntent = event.data.object as PaymentIntent;
         
         const { error: updateError } = await supabaseClient
           .from('orders')
