@@ -324,16 +324,14 @@ export default function StripeProductPage() {
                     whileTap={{ scale: 0.98 }}
                     onClick={async () => {
                       try {
-                        const { error } = await supabase
-                          .from('inventory_history')
-                          .insert({
-                            product_id: selectedProduct.id,
-                            previous_stock: selectedProduct.stock,
-                            new_stock: selectedProduct.stock,
-                            change_amount: 0,
-                            change_type: 'manual',
-                            created_by: user?.id
-                          });
+                        const { error } = await supabase.functions.invoke('update-inventory', {
+                          body: {
+                            productId: selectedProduct.id,
+                            previousStock: selectedProduct.stock,
+                            newStock: selectedProduct.stock,
+                            changeType: 'manual'
+                          }
+                        });
 
                         if (error) throw error;
                         toast.success('Inventory updated successfully');
