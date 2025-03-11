@@ -49,6 +49,8 @@ export default function ProductsManagement() {
   });
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showProductModal, setShowProductModal] = useState(false);
+  const [productImages, setProductImages] = useState<string[]>([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
 
@@ -418,7 +420,60 @@ export default function ProductsManagement() {
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-6">
+                {/* Product Images */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Product Images</label>
+                  <div className="grid grid-cols-4 gap-4 mb-4">
+                    {productImages.map((image, index) => (
+                      <div key={index} className="relative aspect-square">
+                        <img
+                          src={image}
+                          alt={`Product image ${index + 1}`}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                        <button
+                          onClick={() => {
+                            setProductImages(images => images.filter((_, i) => i !== index));
+                          }}
+                          className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="url"
+                      placeholder="Enter image URL"
+                      className="flex-1 bg-background px-3 py-2 rounded-lg border"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const input = e.currentTarget;
+                          if (input.value) {
+                            setProductImages(images => [...images, input.value]);
+                            input.value = '';
+                          }
+                        }
+                      }}
+                    />
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg font-medium"
+                      onClick={() => {
+                        const input = document.querySelector('input[type="url"]') as HTMLInputElement;
+                        if (input.value) {
+                          setProductImages(images => [...images, input.value]);
+                          input.value = '';
+                        }
+                      }}
+                    >
+                      Add Image
+                    </motion.button>
+                  </div>
+                </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Name</label>
                   <input

@@ -44,7 +44,9 @@ export default function AdminDashboard() {
     total_orders: 0,
     pending_orders: 0,
     completed_orders: 0,
-    total_revenue: 0
+    total_revenue: 0,
+    total_customers: 0,
+    average_order_value: 0
   });
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
@@ -99,23 +101,60 @@ export default function AdminDashboard() {
   };
 
   const fetchStats = async () => {
-    const { data, error } = await supabase
-      .from('orders')
-      .select('status, total_amount');
+    try {
+      // Fetch orders with customer info
+      const { data: orders, error: ordersError } = await supabase
+        .from('orders')
+        .select(`
+          status,
+          total_amount,
+          user_id,
+          created_at
+        `);
 
-    if (error) {
+      if (ordersError) throw ordersError;
+
+      // Get unique customer count
+      const uniqueCustomers = new Set(orders.map(order => order.user_id));
+
+      // Calculate average order value
+      const totalRevenue = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+      const averageOrderValue = orders.length > 0 ? totalRevenue / orders.length : 0;
+
+      const stats = {
+        total_orders: orders.length,
+        pending_orders: orders.filter(order => order.status === 'pending').length,
+        completed_orders: orders.filter(order => order.status === 'completed').length,
+        total_revenue: totalRevenue,
+        total_customers: uniqueCustomers.size,
+        average_order_value: averageOrderValue
+      };
+
+      setStats(stats);
+
+      // Update sales data for chart
+      const last7Days = Array.from({ length: 7 }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        return format(date, 'MMM dd');
+      }).reverse();
+
+      const salesData = last7Days.map(date => {
+        const dayOrders = orders.filter(order => 
+          format(new Date(order.created_at), 'MMM dd') === date
+        );
+        return {
+          date,
+          revenue: dayOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0),
+          orders: dayOrders.length
+        };
+      });
+
+      setSalesData(salesData);
+    } catch (error) {
       console.error('Error fetching stats:', error);
-      return;
+      toast.error('Failed to load dashboard statistics');
     }
-
-    const stats = {
-      total_orders: data.length,
-      pending_orders: data.filter(order => order.status === 'pending').length,
-      completed_orders: data.filter(order => order.status === 'completed').length,
-      total_revenue: data.reduce((sum, order) => sum + (order.total_amount || 0), 0)
-    };
-
-    setStats(stats);
   };
 
   const fetchSalesData = async () => {
@@ -177,7 +216,7 @@ export default function AdminDashboard() {
         <h1 className="text-4xl font-bold mb-8">Admin Dashboard</h1>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-6 gap-6 mb-8">
           <motion.div
             whileHover={{ scale: 1.02 }}
             className="bg-card p-6 rounded-xl shadow-lg"
@@ -235,6 +274,38 @@ export default function AdminDashboard() {
                 <p className="text-sm text-muted-foreground">Total Revenue</p>
                 <p className="text-2xl font-bold">
                   R$ {stats.total_revenue.toFixed(2)}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className="bg-card p-6 rounded-xl shadow-lg"
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-purple-500/10 rounded-lg">
+                <Users className="w-6 h-6 text-purple-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Customers</p>
+                <p className="text-2xl font-bold">{stats.total_customers}</p>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className="bg-card p-6 rounded-xl shadow-lg"
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-yellow-500/10 rounded-lg">
+                <CreditCard className="w-6 h-6 text-yellow-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Average Order Value</p>
+                <p className="text-2xl font-bold">
+                  R$ {stats.average_order_value.toFixed(2)}
                 </p>
               </div>
             </div>
