@@ -65,7 +65,7 @@ export default function AdminDashboard() {
           subscribeToOrders();
           await Promise.all([
             fetchStats(),
-            fetchSalesData(),
+            fetchAnalyticsData(),
             fetchRecentOrders()
           ]);
         }
@@ -78,9 +78,6 @@ export default function AdminDashboard() {
     initializeAdmin();
   }, [isAdmin, fetchStats]);
 
-
-
-
   useEffect(() => {
     const initializeAdmin = async () => {
       try {
@@ -89,7 +86,7 @@ export default function AdminDashboard() {
           subscribeToOrders();
           await Promise.all([
             fetchStats(),
-            fetchSalesData(),
+            fetchAnalyticsData(),
             fetchRecentOrders()
           ]);
         }
