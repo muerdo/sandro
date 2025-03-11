@@ -72,7 +72,7 @@ export default function CamisetasPage() {
       id: `${product.id}-${selectedSize}-${selectedColor}`,
       name: `${product.name} - ${selectedColor} ${selectedSize}`,
       price: product.price,
-      image: product.images[0]
+      image: product.media[0].url
     });
   };
 

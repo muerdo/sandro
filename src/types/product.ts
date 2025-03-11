@@ -27,3 +27,16 @@ export interface ProductCustomizationState extends ProductCustomization {
   setSelectedType: (type: string) => void;
   setSelectedMedia: (media: ProductMedia) => void;
 }
+
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  media: ProductMedia[];
+  features: string[];
+  customization?: ProductCustomizationOptions;
+  stock: number;
+  status: 'active' | 'draft' | 'archived';
+}
