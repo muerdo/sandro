@@ -1,6 +1,5 @@
-import { createClient } from 'npm:@supabase/supabase-js@2.39.3'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { UpdateOrderRequest, Profile, ErrorResponse, SuccessResponse } from '../_shared/types'
-import { UpdateOrderRequest, Profile, ErrorResponse, SuccessResponse } from './types'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

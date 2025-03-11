@@ -22,14 +22,4 @@ export interface SuccessResponse {
   success: boolean;
 }
 
-// Deno runtime type declarations
-export interface DenoRuntime {
-  env: {
-    get(key: string): string | undefined;
-  };
-  serve(handler: (req: Request) => Promise<Response>): void;
-}
-
-declare global {
-  const Deno: DenoRuntime;
-}
+// Deno is already declared in the global scope
