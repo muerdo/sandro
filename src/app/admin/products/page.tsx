@@ -204,13 +204,13 @@ export default function ProductsManagement() {
       if (error) throw error;
       setProducts((data || []).map(product => ({
         ...product,
-        low_stock_threshold: product.low_stock_threshold ?? 10,
         features: product.features ?? [],
         media: product.images?.map(url => ({
           type: 'image' as const,
           url,
           alt: product.name
-        })) ?? []
+        })) ?? [],
+        low_stock_threshold: 10
       })));
     } catch (error) {
       console.error('Error fetching products:', error);
