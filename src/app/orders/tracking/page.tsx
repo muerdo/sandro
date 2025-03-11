@@ -85,7 +85,11 @@ export default function OrderTrackingPage() {
         created_at: order.created_at,
         updated_at: order.updated_at,
         estimated_delivery: order.estimated_delivery,
-        tracking_info: order.tracking_info || {}
+        tracking_info: {
+          location: order.tracking_info?.location as string | undefined,
+          status: order.tracking_info?.status as string | undefined,
+          timestamp: order.tracking_info?.timestamp as string | undefined
+        }
       })) || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
