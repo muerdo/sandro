@@ -7,8 +7,20 @@ import { ReactNode } from "react";
 const stripePromise = loadStripe('pk_test_51OvCwbHVHYGBPxXPPXJKgGZBXxhVxZXDGBBBvyXmEFBBBvyXmEFBBBvyXmE');
 
 export function StripeProvider({ children }: { children: ReactNode }) {
+  if (!stripePromise) {
+    return null;
+  }
+
   return (
-    <Elements stripe={stripePromise}>
+    <Elements stripe={stripePromise} options={{
+      locale: 'pt-BR',
+      appearance: {
+        theme: 'stripe',
+        variables: {
+          colorPrimary: '#18181B',
+        },
+      },
+    }}>
       {children}
     </Elements>
   );
