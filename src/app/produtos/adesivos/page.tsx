@@ -31,7 +31,6 @@ const product = {
 };
 
 export default function AdesivosPage() {
-  const { addItem } = useCart();
   const [selectedImage, setSelectedImage] = useState(product.images[0]);
   const [selectedSize, setSelectedSize] = useState(product.customization.sizes[1]);
   const [selectedType, setSelectedType] = useState(product.customization.types[0]);

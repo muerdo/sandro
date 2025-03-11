@@ -10,7 +10,6 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 export default function CatalogoPage() {
-  const { addItem } = useCart();
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([
   {

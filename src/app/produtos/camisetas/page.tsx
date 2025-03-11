@@ -31,7 +31,6 @@ const product = {
 };
 
 export default function CamisetasPage() {
-  const { addItem } = useCart();
   const [selectedImage, setSelectedImage] = useState(product.images[0]);
   const [selectedSize, setSelectedSize] = useState(product.customization.sizes[1]);
   const [selectedColor, setSelectedColor] = useState(product.customization.colors[0]);
