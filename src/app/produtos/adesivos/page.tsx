@@ -14,21 +14,21 @@ const product = {
   description: "Adesivos de alta qualidade com impressão digital em vinil. Ideal para personalização de veículos, decoração ou identidade visual.",
   media: [
     {
-      type: 'image' as const,
+      type: 'image',
       url: "https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=2671&auto=format&fit=crop",
       alt: "Adesivo personalizado - Vista frontal"
     },
     {
-      type: 'image' as const,
+      type: 'image',
       url: "https://images.unsplash.com/photo-1600725935160-f67ee4f6084a?q=80&w=2670&auto=format&fit=crop",
       alt: "Adesivo personalizado - Aplicação"
     },
     {
-      type: 'image' as const,
+      type: 'image',
       url: "https://images.unsplash.com/photo-1612538498456-e861df91d4d0?q=80&w=2574&auto=format&fit=crop",
       alt: "Adesivo personalizado - Detalhes"
     }
-  ] as const,
+  ],
   features: [
     "Vinil de alta durabilidade",
     "Impressão digital HD",

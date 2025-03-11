@@ -19,7 +19,7 @@ export default function ProductCard({ product, onQuickAdd }: ProductCardProps) {
     >
       <div className="relative aspect-square">
         <img
-          src={product.media[0]?.url || product.image}
+          src={product.media?.[0]?.url || product.image || ''}
           alt={product.name}
           className="w-full h-full object-cover"
         />

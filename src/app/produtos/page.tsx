@@ -203,7 +203,7 @@ export default function CatalogoPage() {
                         id: product.id,
                         name: product.name,
                         price: product.price,
-                        image: product.media?.[0]?.url || product.image
+                        image: product.media?.[0]?.url || ''
                       });
                     }}
                     whileHover={{ scale: 1.02 }}

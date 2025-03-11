@@ -49,4 +49,5 @@ export interface Product {
     id: string;
     unit_amount: number;
   }>;
+  image?: string; // Backwards compatibility
 }
