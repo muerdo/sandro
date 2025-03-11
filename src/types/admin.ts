@@ -9,6 +9,42 @@ export interface OrderStats {
   average_order_value: number;
   total_products: number;
   active_products: number;
+  low_stock_products: number;
+  out_of_stock_products: number;
+}
+
+export interface DashboardState {
+  loading: {
+    stats: boolean;
+    auth: boolean;
+    inventory: boolean;
+  };
+  stats: OrderStats;
+  inventory: {
+    alerts: InventoryAlert[];
+    recentUpdates: InventoryUpdate[];
+  };
+  isAdmin: boolean;
+}
+
+export interface InventoryAlert {
+  id: string;
+  product_id: string;
+  alert_type: 'low_stock' | 'out_of_stock';
+  created_at: string;
+  product: {
+    name: string;
+  };
+}
+
+export interface InventoryUpdate {
+  id: string;
+  product_id: string;
+  previous_stock: number;
+  new_stock: number;
+  change_amount: number;
+  change_type: 'manual' | 'order' | 'restock';
+  created_at: string;
 }
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 export type PaymentMethod = 'credit_card' | 'pix' | 'boleto';

@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowLeft, ShoppingCart } from "lucide-react";
+import { ArrowLeft, ShoppingCart, X } from "lucide-react";
+import { format } from "date-fns";
 import { useCart } from "@/contexts/cart-context";
 import { useAuth } from "@/contexts/auth-context";
 import { useProductCustomization } from "@/hooks/useProductCustomization";
@@ -18,6 +19,8 @@ export default function StripeProductPage() {
   const { addItem, setShowAuthDialog } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [stockHistory, setStockHistory] = useState<InventoryUpdate[]>([]);
 
   const {
     selectedSize,

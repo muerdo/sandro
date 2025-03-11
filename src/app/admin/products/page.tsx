@@ -13,6 +13,7 @@ import {
   X,
   Save,
   Package,
+  Package2,
   Image as ImageIcon,
   Tag,
   ListPlus
