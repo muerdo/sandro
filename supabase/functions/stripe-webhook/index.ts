@@ -1,15 +1,6 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
-import Stripe from 'https://esm.sh/stripe@14.14.0'
-
-// Type declarations for Deno
-declare global {
-  const Deno: {
-    env: {
-      get(key: string): string | undefined;
-    };
-    serve(handler: (req: Request) => Promise<Response>): void;
-  };
-}
+import { createClient } from 'npm:@supabase/supabase-js@2.39.3'
+import Stripe from 'npm:stripe@14.14.0'
+import '../_shared/types'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2025-02-24.acacia',
