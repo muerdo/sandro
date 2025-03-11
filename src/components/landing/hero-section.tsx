@@ -67,6 +67,21 @@ export default function HeroSection() {
               {user ? 'Sign Out' : 'Sign In'}
               <User className="w-5 h-5" />
             </motion.button>
+            {isAdmin && (
+              <Link href="/admin">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.8 }}
+                  className="bg-primary/10 backdrop-blur-sm text-white px-6 md:px-12 py-3 md:py-4 rounded-full font-medium hover:bg-primary/20 transition-all flex items-center gap-2 text-base md:text-lg"
+                >
+                  Dashboard Admin
+                  <Package2 className="w-5 h-5" />
+                </motion.button>
+              </Link>
+            )}
           </div>
           <AuthDialog isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
         </motion.div>

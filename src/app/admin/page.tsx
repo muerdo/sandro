@@ -41,7 +41,9 @@ export default function AdminDashboard() {
     completed_orders: 0,
     total_revenue: 0,
     total_customers: 0,
-    average_order_value: 0
+    average_order_value: 0,
+    total_products: 0,
+    active_products: 0
   });
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
@@ -98,6 +100,7 @@ export default function AdminDashboard() {
   const fetchStats = async () => {
     try {
       // Fetch orders with customer info
+      // Fetch orders
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
         .select(`
@@ -106,6 +109,13 @@ export default function AdminDashboard() {
           user_id,
           created_at
         `);
+
+      // Fetch products
+      const { data: products, error: productsError } = await supabase
+        .from('products')
+        .select('*');
+
+      if (productsError) throw productsError;
 
       if (ordersError) throw ordersError;
 
@@ -122,7 +132,9 @@ export default function AdminDashboard() {
         completed_orders: orders.filter(order => order.status === 'completed').length,
         total_revenue: totalRevenue,
         total_customers: uniqueCustomers.size,
-        average_order_value: averageOrderValue
+        average_order_value: averageOrderValue,
+        total_products: products?.length || 0,
+        active_products: products?.filter(p => p.status === 'active').length || 0
       };
 
       setStats(stats);
@@ -211,7 +223,7 @@ export default function AdminDashboard() {
         <h1 className="text-4xl font-bold mb-8">Admin Dashboard</h1>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-6 gap-6 mb-8">
+        <div className="grid grid-cols-4 gap-6 mb-8">
           <motion.div
             whileHover={{ scale: 1.02 }}
             className="bg-card p-6 rounded-xl shadow-lg"
@@ -274,37 +286,41 @@ export default function AdminDashboard() {
             </div>
           </motion.div>
 
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="bg-card p-6 rounded-xl shadow-lg"
-          >
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-purple-500/10 rounded-lg">
-                <Users className="w-6 h-6 text-purple-500" />
+          <Link href="/admin/customers" className="block">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className="bg-card p-6 rounded-xl shadow-lg"
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-purple-500/10 rounded-lg">
+                  <Users className="w-6 h-6 text-purple-500" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Customers</p>
+                  <p className="text-2xl font-bold">{stats.total_customers}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Customers</p>
-                <p className="text-2xl font-bold">{stats.total_customers}</p>
-              </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </Link>
 
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="bg-card p-6 rounded-xl shadow-lg"
-          >
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-yellow-500/10 rounded-lg">
-                <CreditCard className="w-6 h-6 text-yellow-500" />
+          <Link href="/admin/products" className="block">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className="bg-card p-6 rounded-xl shadow-lg"
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-yellow-500/10 rounded-lg">
+                  <Package2 className="w-6 h-6 text-yellow-500" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Active Products</p>
+                  <p className="text-2xl font-bold">
+                    {stats.active_products} / {stats.total_products}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Average Order Value</p>
-                <p className="text-2xl font-bold">
-                  R$ {stats.average_order_value.toFixed(2)}
-                </p>
-              </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </Link>
         </div>
 
         {/* Sales Chart */}

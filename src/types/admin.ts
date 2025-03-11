@@ -7,6 +7,8 @@ export interface OrderStats {
   total_revenue: number;
   total_customers: number;
   average_order_value: number;
+  total_products: number;
+  active_products: number;
 }
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 export type PaymentMethod = 'credit_card' | 'pix' | 'boleto';
