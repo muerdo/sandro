@@ -1,8 +1,6 @@
 import React from "react";
 import "@/styles/globals.css";
-import { motion } from "framer-motion";
 import { Package2 } from "lucide-react";
-
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
 import TransitionProvider from "@/components/providers/transition-provider";
@@ -11,6 +9,7 @@ import { CartProvider } from "@/contexts/cart-context";
 import { AuthProvider } from "@/contexts/auth-context";
 import CartSummary from "@/components/cart/cart-summary";
 import { StripeProvider } from "@/components/providers/stripe-provider";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "VisualPrint - Comunicação Visual Profissional",
@@ -32,14 +31,11 @@ export default function RootLayout({
                   {children}
                 </div>
                 <nav className="fixed bottom-24 right-8 z-40">
-                  <motion.button
-                    onClick={() => window.location.href = '/orders/tracking'}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="bg-primary text-primary-foreground p-4 rounded-full shadow-lg flex items-center gap-2"
-                  >
-                    <Package2 className="w-6 h-6" />
-                  </motion.button>
+                  <Link href="/orders/tracking">
+                    <div className="bg-primary text-primary-foreground p-4 rounded-full shadow-lg flex items-center gap-2 hover:opacity-90 transition-opacity">
+                      <Package2 className="w-6 h-6" />
+                    </div>
+                  </Link>
                 </nav>
                 <Footer />
                 <CartSummary />
