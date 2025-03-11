@@ -18,6 +18,71 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const { items, total, clearCart } = useCart();
   const router = useRouter();
+  const { user } = useAuth();
+  const [shippingAddress, setShippingAddress] = useState({
+    full_name: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    postal_code: ""
+  });
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
+  const [showNewAddressForm, setShowNewAddressForm] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      loadSavedAddresses();
+    }
+  }, [user]);
+
+  const loadSavedAddresses = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('shipping_addresses')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setSavedAddresses(data || []);
+      if (data?.[0]) {
+        setSelectedAddress(data[0].id);
+        setShippingAddress(data[0]);
+      }
+    } catch (error) {
+      console.error('Error loading addresses:', error);
+      toast.error('Failed to load saved addresses');
+    }
+  };
+
+  const saveAddress = async () => {
+    try {
+      if (!user) {
+        toast.error('Please sign in to save your address');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('shipping_addresses')
+        .insert({
+          ...shippingAddress,
+          user_id: user.id
+        });
+
+      if (error) throw error;
+      toast.success('Address saved successfully');
+      loadSavedAddresses();
+    } catch (error) {
+      console.error('Error saving address:', error);
+      toast.error('Failed to save address');
+    }
+  };
+
+  const isFreeShipping = shippingAddress.city.toLowerCase() === 'açailândia' && 
+                        shippingAddress.state.toLowerCase() === 'maranhão';
 
   const [creditCardData, setCreditCardData] = useState({
     number: "",
@@ -64,6 +129,17 @@ export default function CheckoutPage() {
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      toast.error('Please sign in to complete your purchase');
+      return;
+    }
+
+    if (!selectedAddress && !showNewAddressForm) {
+      toast.error('Please select or add a shipping address');
+      return;
+    }
+
     setLoading(true);
     setStripeError("");
 
@@ -119,10 +195,166 @@ export default function CheckoutPage() {
           Voltar para o Carrinho
         </motion.button>
 
-        <div className="grid grid-cols-3 gap-8">
-          <div className="col-span-2 space-y-8">
-            <div className="bg-card p-6 rounded-xl shadow-lg">
-              <h2 className="text-2xl font-semibold mb-6">Método de Pagamento</h2>
+        {!user ? (
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-semibold mb-4">Please Sign In to Continue</h2>
+            <p className="text-muted-foreground mb-6">You need to be signed in to complete your purchase</p>
+            <motion.button
+              onClick={() => router.push('/')}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="bg-primary text-primary-foreground px-6 py-3 rounded-lg"
+            >
+              Sign In
+            </motion.button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-8">
+            <div className="col-span-2 space-y-8">
+              {/* Shipping Information */}
+              <div className="bg-card p-6 rounded-xl shadow-lg">
+                <h2 className="text-2xl font-semibold mb-6">Shipping Information</h2>
+                
+                {savedAddresses.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-medium mb-3">Saved Addresses</h3>
+                    <div className="space-y-3">
+                      {savedAddresses.map((address) => (
+                        <div
+                          key={address.id}
+                          className={`p-4 rounded-lg border-2 cursor-pointer ${
+                            selectedAddress === address.id
+                              ? 'border-primary bg-primary/5'
+                              : 'border-input hover:border-primary'
+                          }`}
+                          onClick={() => {
+                            setSelectedAddress(address.id);
+                            setShippingAddress(address);
+                            setShowNewAddressForm(false);
+                          }}
+                        >
+                          <p className="font-medium">{address.full_name}</p>
+                          <p className="text-sm text-muted-foreground">{address.address}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {address.city}, {address.state} {address.postal_code}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <motion.button
+                  onClick={() => setShowNewAddressForm(!showNewAddressForm)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full bg-secondary text-secondary-foreground py-3 rounded-lg font-medium mb-6"
+                >
+                  {showNewAddressForm ? 'Cancel New Address' : 'Add New Address'}
+                </motion.button>
+
+                {showNewAddressForm && (
+                  <form className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Full Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={shippingAddress.full_name}
+                          onChange={(e) => setShippingAddress({ ...shippingAddress, full_name: e.target.value })}
+                          className="w-full p-2 rounded-lg border bg-background"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Email</label>
+                        <input
+                          type="email"
+                          required
+                          value={shippingAddress.email}
+                          onChange={(e) => setShippingAddress({ ...shippingAddress, email: e.target.value })}
+                          className="w-full p-2 rounded-lg border bg-background"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Phone</label>
+                      <input
+                        type="tel"
+                        required
+                        value={shippingAddress.phone}
+                        onChange={(e) => setShippingAddress({ ...shippingAddress, phone: e.target.value })}
+                        className="w-full p-2 rounded-lg border bg-background"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Address</label>
+                      <input
+                        type="text"
+                        required
+                        value={shippingAddress.address}
+                        onChange={(e) => setShippingAddress({ ...shippingAddress, address: e.target.value })}
+                        className="w-full p-2 rounded-lg border bg-background"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">City</label>
+                        <input
+                          type="text"
+                          required
+                          value={shippingAddress.city}
+                          onChange={(e) => setShippingAddress({ ...shippingAddress, city: e.target.value })}
+                          className="w-full p-2 rounded-lg border bg-background"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">State</label>
+                        <input
+                          type="text"
+                          required
+                          value={shippingAddress.state}
+                          onChange={(e) => setShippingAddress({ ...shippingAddress, state: e.target.value })}
+                          className="w-full p-2 rounded-lg border bg-background"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Postal Code</label>
+                      <input
+                        type="text"
+                        required
+                        value={shippingAddress.postal_code}
+                        onChange={(e) => setShippingAddress({ ...shippingAddress, postal_code: e.target.value })}
+                        className="w-full p-2 rounded-lg border bg-background"
+                      />
+                    </div>
+                    <motion.button
+                      type="button"
+                      onClick={saveAddress}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium"
+                    >
+                      Save Address
+                    </motion.button>
+                  </form>
+                )}
+
+                {isFreeShipping && (
+                  <div className="mt-4 p-4 bg-green-500/10 text-green-500 rounded-lg">
+                    Free shipping available for Açailândia, Maranhão!
+                  </div>
+                )}
+
+                <p className="mt-4 text-sm text-muted-foreground">
+                  Order confirmation and shipping updates will be sent to your email address.
+                </p>
+              </div>
+
+              {/* Payment Method Section */}
+              <div className="bg-card p-6 rounded-xl shadow-lg">
+                <h2 className="text-2xl font-semibold mb-6">Payment Method</h2>
               
               <div className="flex gap-4 mb-8">
                 <motion.button
