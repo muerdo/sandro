@@ -184,7 +184,18 @@ export default function CheckoutPage() {
         return;
       }
 
-      if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+      if (result.error) {
+        if (result.error.type === "card_error" || result.error.type === "validation_error") {
+          toast.error(result.error.message || "Erro ao processar pagamento");
+        } else {
+          toast.error("Ocorreu um erro inesperado");
+        }
+        return;
+      }
+
+      toast.success("Pagamento realizado com sucesso!");
+      clearCart();
+      router.push('/checkout/success');
         toast.success("Pagamento realizado com sucesso!");
         clearCart();
         router.push('/checkout/success');

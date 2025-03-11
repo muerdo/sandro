@@ -50,7 +50,8 @@ export default function CatalogoPage() {
       }],
       features: [],
       stock: 100,
-      status: 'active'
+      status: 'active',
+      low_stock_threshold: 10
     },
     {
       id: "banner-grande-formato",
@@ -66,7 +67,8 @@ export default function CatalogoPage() {
       }],
       features: [],
       stock: 100,
-      status: 'active'
+      status: 'active',
+      low_stock_threshold: 10
     },
     {
       id: "caneca-personalizada",
@@ -82,7 +84,8 @@ export default function CatalogoPage() {
       }],
       features: [],
       stock: 100,
-      status: 'active'
+      status: 'active',
+      low_stock_threshold: 10
     }
   ];
 
