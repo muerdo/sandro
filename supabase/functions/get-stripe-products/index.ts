@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
-import Stripe from 'stripe'
+import { createClient } from 'jsr:@supabase/supabase-js@2'
+import Stripe from 'npm:stripe@14.14.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,7 +7,7 @@ const corsHeaders = {
 }
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-  apiVersion: '2023-10-16',
+  apiVersion: '2025-02-24',
   httpClient: Stripe.createFetchHttpClient(),
 })
 
@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'An unknown error occurred' }),
       {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
