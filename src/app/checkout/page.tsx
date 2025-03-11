@@ -184,22 +184,9 @@ export default function CheckoutPage() {
         return;
       }
 
-      if (result.error) {
-        if (result.error.type === "card_error" || result.error.type === "validation_error") {
-          toast.error(result.error.message || "Erro ao processar pagamento");
-        } else {
-          toast.error("Ocorreu um erro inesperado");
-        }
-        return;
-      }
-
       toast.success("Pagamento realizado com sucesso!");
       clearCart();
       router.push('/checkout/success');
-        toast.success("Pagamento realizado com sucesso!");
-        clearCart();
-        router.push('/checkout/success');
-      }
     } catch (error) {
       console.error("Payment error:", error);
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
@@ -207,6 +194,7 @@ export default function CheckoutPage() {
       toast.error("Payment failed: " + errorMessage);
     } finally {
       setLoading(false);
+      setIsProcessing(false);
     }
   };
 
