@@ -18,20 +18,6 @@ export default function CatalogoPage() {
   const { user } = useAuth();
   const { addItem, setShowAuthDialog } = useCart();
 
-  const handleQuickAdd = (product: Product) => {
-    if (!user) {
-      setShowAuthDialog(true);
-      return;
-    }
-
-    addItem({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.media[0]?.url || product.image
-    });
-  };
-
   const defaultProducts = [
     {
       id: "camiseta-personalizada",
@@ -143,19 +129,6 @@ export default function CatalogoPage() {
     fetchStripeProducts();
   }, []);
 
-  const handleQuickAdd = (product: typeof products[0]) => {
-    if (!user) {
-      setShowAuthDialog(true);
-      return;
-    }
-
-    addItem({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image
-    });
-  };
 
   return (
     <main className="min-h-screen bg-background py-12">

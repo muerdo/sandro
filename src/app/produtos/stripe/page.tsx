@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-export default function StripePage() {
+export default function StripePage(): JSX.Element | null {
   const router = useRouter();
   
   useEffect(() => {

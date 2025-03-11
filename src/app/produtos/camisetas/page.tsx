@@ -14,18 +14,18 @@ const product = {
   description: "Camiseta 100% algodão com impressão DTF de alta qualidade. Personalize com suas próprias artes ou escolha entre nossos designs exclusivos.",
   media: [
     {
-      type: 'image',
+      type: "image" as const,
       url: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?q=80&w=2669&auto=format&fit=crop",
       alt: "Camiseta branca básica"
     },
     {
-      type: 'video',
+      type: "video" as const,
       url: "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
       thumbnail: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=2680&auto=format&fit=crop",
       alt: "Vídeo demonstrativo da camiseta"
     },
     {
-      type: 'image',
+      type: "image" as const,
       url: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?q=80&w=2680&auto=format&fit=crop",
       alt: "Detalhes da camiseta"
     }

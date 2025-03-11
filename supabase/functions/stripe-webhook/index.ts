@@ -3,7 +3,7 @@ import Stripe from 'stripe'
 import { corsHeaders } from '../_shared/cors'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-  apiVersion: '2023-10-16'
+  apiVersion: '2025-02-24.acacia'
 })
 
 const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')
