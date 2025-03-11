@@ -1,11 +1,11 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
-import Stripe from 'https://esm.sh/stripe@13.10.0'
+/// <reference lib="deno.ns" />
+import { createClient } from '@supabase/supabase-js'
+import Stripe from 'stripe'
 
-// deno-lint-ignore no-explicit-any
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2023-10-16',
   httpClient: Stripe.createFetchHttpClient()
-}) as any;
+});
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
