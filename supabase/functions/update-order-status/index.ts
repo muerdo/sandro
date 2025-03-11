@@ -1,5 +1,15 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7'
+import { createClient } from '@supabase/supabase-js'
 import { corsHeaders } from '../_shared/cors.js'
+
+// Deno runtime type declarations
+declare global {
+  const Deno: {
+    env: {
+      get(key: string): string | undefined;
+    };
+    serve(handler: (req: Request) => Promise<Response>): void;
+  };
+}
 
 interface OrderUpdate {
   orderId: string;
@@ -13,10 +23,10 @@ interface OrderUpdate {
   };
 }
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+);
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
