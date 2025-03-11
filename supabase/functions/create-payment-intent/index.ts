@@ -1,5 +1,15 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
-import Stripe from 'https://esm.sh/stripe@14.14.0'
+import { createClient } from '@supabase/supabase-js'
+import Stripe from 'stripe'
+
+// Deno runtime type declarations
+declare global {
+  const Deno: {
+    env: {
+      get(key: string): string | undefined;
+    };
+    serve(handler: (req: Request) => Promise<Response>): void;
+  };
+}
 
 // Type definitions
 interface RequestPayload {
@@ -38,7 +48,7 @@ const corsHeaders = {
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2025-02-24.acacia',
   httpClient: Stripe.createFetchHttpClient(),
-}) as Stripe
+}) as unknown as Stripe
 
 const supabaseClient = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
@@ -50,21 +60,6 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  interface RequestPayload {
-    items: Array<{
-      id: string;
-      quantity: number;
-      price: number;
-    }>;
-    total: number;
-    shippingDetails: {
-      name: string;
-      address: string;
-      city: string;
-      state: string;
-      zipCode: string;
-    };
-  }
 
   try {
     const payload = await req.json() as RequestPayload
