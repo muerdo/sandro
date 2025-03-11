@@ -45,6 +45,7 @@
     ".next",
     "out",
     "build",
-    "dist"
+    "dist",
+    "supabase/functions/**/*"
   ]
 }
