@@ -194,7 +194,18 @@ export default function CatalogoPage() {
                   </Link>
                   
                   <motion.button
-                    onClick={() => handleQuickAdd(product)}
+                    onClick={() => {
+                      if (!user) {
+                        setShowAuthDialog(true);
+                        return;
+                      }
+                      addItem({
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        image: product.media?.[0]?.url || product.image
+                      });
+                    }}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     className="bg-primary text-primary-foreground p-2 rounded-lg"
