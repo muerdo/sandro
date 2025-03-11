@@ -29,6 +29,16 @@ export default function RootLayout({
                 <div className="flex-1">
                   {children}
                 </div>
+                <nav className="fixed bottom-24 right-8 z-40">
+                  <motion.button
+                    onClick={() => window.location.href = '/orders/tracking'}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="bg-primary text-primary-foreground p-4 rounded-full shadow-lg flex items-center gap-2"
+                  >
+                    <Package2 className="w-6 h-6" />
+                  </motion.button>
+                </nav>
                 <Footer />
                 <CartSummary />
               </TransitionProvider>
