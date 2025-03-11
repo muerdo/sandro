@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
-import Stripe from 'stripe'
+import { Stripe } from 'npm:stripe@14.18.0'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-  apiVersion: '2025-02-24',
+  apiVersion: '2023-10-16',
   httpClient: Stripe.createFetchHttpClient(),
 })
 
@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
     console.log('Processing webhook event:', event.type)
 
     switch (event.type) {
-      case 'payment_intent.succeeded':
+      case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent
         
         // Update order status
@@ -47,8 +47,9 @@ Deno.serve(async (req) => {
 
         console.log('Successfully processed payment success for order:', paymentIntent.id)
         break
+      }
 
-      case 'payment_intent.payment_failed':
+      case 'payment_intent.payment_failed': {
         const failedPayment = event.data.object as Stripe.PaymentIntent
         
         // Update order status to failed
@@ -69,8 +70,9 @@ Deno.serve(async (req) => {
 
         console.log('Processed payment failure for order:', failedPayment.id)
         break
+      }
 
-      case 'payment_intent.requires_action':
+      case 'payment_intent.requires_action': {
         const pendingPayment = event.data.object as Stripe.PaymentIntent
         
         // Update order status to pending additional action
@@ -90,10 +92,11 @@ Deno.serve(async (req) => {
 
         console.log('Updated order status to pending action:', pendingPayment.id)
         break
+      }
 
-      case 'charge.refunded':
-        const refund = event.data.object as Stripe.Refund
-        const paymentIntentId = refund.payment_intent as string
+      case 'charge.refunded': {
+        const charge = event.data.object as Stripe.Charge
+        const paymentIntentId = charge.payment_intent as string
         
         // Update order status to refunded
         const { error: refundError } = await supabaseClient
@@ -113,6 +116,7 @@ Deno.serve(async (req) => {
 
         console.log('Processed refund for order:', paymentIntentId)
         break
+      }
 
       default:
         console.log('Unhandled event type:', event.type)
