@@ -1,5 +1,7 @@
 import React from "react";
 import "@/styles/globals.css";
+import { motion } from "framer-motion";
+import { Package2 } from "lucide-react";
 
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";

@@ -79,7 +79,14 @@ export default function OrderTrackingPage() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setOrders(data || []);
+      setOrders(data?.map(order => ({
+        id: order.id,
+        status: order.status as OrderStatus['status'],
+        created_at: order.created_at,
+        updated_at: order.updated_at,
+        estimated_delivery: order.estimated_delivery,
+        tracking_info: order.tracking_info || {}
+      })) || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast.error('Failed to load orders');
