@@ -12,10 +12,22 @@ const product = {
   name: "Adesivo Personalizado",
   price: 29.90,
   description: "Adesivos de alta qualidade com impressão digital em vinil. Ideal para personalização de veículos, decoração ou identidade visual.",
-  images: [
-    "https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=2671&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1600725935160-f67ee4f6084a?q=80&w=2670&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1612538498456-e861df91d4d0?q=80&w=2574&auto=format&fit=crop"
+  media: [
+    {
+      type: 'image',
+      url: "https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=2671&auto=format&fit=crop",
+      alt: "Adesivo personalizado - Vista frontal"
+    },
+    {
+      type: 'image',
+      url: "https://images.unsplash.com/photo-1600725935160-f67ee4f6084a?q=80&w=2670&auto=format&fit=crop",
+      alt: "Adesivo personalizado - Aplicação"
+    },
+    {
+      type: 'image',
+      url: "https://images.unsplash.com/photo-1612538498456-e861df91d4d0?q=80&w=2574&auto=format&fit=crop",
+      alt: "Adesivo personalizado - Detalhes"
+    }
   ],
   features: [
     "Vinil de alta durabilidade",
@@ -78,9 +90,9 @@ export default function AdesivosPage() {
 
         <div className="grid grid-cols-2 gap-12">
           <ProductImages
-            images={product.images}
-            selectedImage={selectedImage || product.images[0]}
-            onImageSelect={setSelectedImage}
+            media={product.media}
+            selectedMedia={selectedMedia || product.media[0]}
+            onMediaSelect={setSelectedMedia}
             productName={product.name}
           />
 
