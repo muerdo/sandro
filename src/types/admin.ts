@@ -50,26 +50,6 @@ export interface DashboardState {
   };
   isAdmin: boolean;
 }
-
-export interface InventoryAlert {
-  id: string;
-  product_id: string;
-  alert_type: 'low_stock' | 'out_of_stock';
-  created_at: string;
-  product: {
-    name: string;
-  };
-}
-
-export interface InventoryUpdate {
-  id: string;
-  product_id: string;
-  previous_stock: number;
-  new_stock: number;
-  change_amount: number;
-  change_type: 'manual' | 'order' | 'restock';
-  created_at: string;
-}
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 export type PaymentMethod = 'credit_card' | 'pix' | 'boleto';
 
@@ -128,4 +108,5 @@ export interface Product {
   updated_at: string;
   status?: string;
   low_stock_threshold?: number;
+  inventory_history?: InventoryUpdate[];
 }
