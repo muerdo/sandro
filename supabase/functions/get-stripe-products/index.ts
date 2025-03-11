@@ -1,5 +1,26 @@
-import { createClient } from 'jsr:@supabase/supabase-js@2'
-import Stripe from 'npm:stripe@14.14.0'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import Stripe from 'https://esm.sh/stripe@14.14.0'
+
+// @ts-ignore
+declare const Deno: {
+  env: {
+    get(key: string): string | undefined;
+  };
+  serve(handler: (req: Request) => Promise<Response>): void;
+};
+
+interface StripeProduct {
+  id: string;
+  name: string;
+  description: string | null;
+  images: string[];
+  metadata: {
+    category?: string;
+    features?: string;
+    customization?: string;
+  };
+  default_price: Stripe.Price;
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,7 +49,7 @@ Deno.serve(async (req) => {
     });
 
     // Transform Stripe products into our app's format
-    const formattedProducts = products.data.map(product => ({
+    const formattedProducts = products.data.map((product: StripeProduct) => ({
       id: product.id,
       name: product.name,
       description: product.description,
