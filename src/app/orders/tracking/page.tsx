@@ -86,9 +86,12 @@ export default function OrderTrackingPage() {
         updated_at: order.updated_at,
         estimated_delivery: order.estimated_delivery,
         tracking_info: {
-          location: order.tracking_info?.location as string | undefined,
-          status: order.tracking_info?.status as string | undefined,
-          timestamp: order.tracking_info?.timestamp as string | undefined
+          location: typeof order.tracking_info === 'object' && order.tracking_info !== null ? 
+            (order.tracking_info as Record<string, unknown>).location as string | undefined : undefined,
+          status: typeof order.tracking_info === 'object' && order.tracking_info !== null ? 
+            (order.tracking_info as Record<string, unknown>).status as string | undefined : undefined,
+          timestamp: typeof order.tracking_info === 'object' && order.tracking_info !== null ? 
+            (order.tracking_info as Record<string, unknown>).timestamp as string | undefined : undefined
         }
       })) || []);
     } catch (error) {
