@@ -541,8 +541,6 @@ export default function CheckoutPage() {
                   <span>R$ {total.toFixed(2)}</span>
                 </div>
               </div>
-                </div>
-              </div>
             </div>
           </div>
         )}
