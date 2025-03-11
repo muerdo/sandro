@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, CreditCard, QrCode, Receipt } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/auth-context";
+import OrderSummary from "@/components/checkout/order-summary";
 import { useCart } from "@/contexts/cart-context";
 import { useRouter } from "next/navigation";
 import { QRCodeCanvas } from "qrcode.react";

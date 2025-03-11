@@ -10,12 +10,13 @@ export interface OrderItem {
 }
 
 export interface ShippingAddress {
-  street: string;
-  number: string;
-  complement?: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  address: string;
   city: string;
   state: string;
-  zip: string;
+  postal_code: string;
 }
 
 export interface Order {
