@@ -7,12 +7,20 @@ import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { format } from 'date-fns';
+import { toast } from "sonner";
 import { 
   Package2, 
   ShoppingCart, 
   CreditCard, 
   TrendingUp,
-  AlertCircle 
+  AlertCircle,
+  Users,
+  MessageCircle,
+  Mail,
+  Check,
+  Pencil,
+  Trash2,
+  Plus
 } from "lucide-react";
 
 type OrderStats = {
