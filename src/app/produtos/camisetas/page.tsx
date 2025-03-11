@@ -52,15 +52,16 @@ export default function CamisetasPage() {
     selectedSize,
     setSelectedSize,
     selectedColor,
-    setSelectedColor
+    setSelectedColor,
+    selectedMedia,
+    setSelectedMedia
   } = useProductCustomization({
     initialSize: product.customization.sizes[1],
     initialColor: product.customization.colors[0],
     sizes: product.customization.sizes,
-    colors: product.customization.colors
+    colors: product.customization.colors,
+    initialMedia: product.media[0]
   });
-
-  const { selectedMedia, setSelectedMedia } = useProductMedia(product.media);
 
   const handleAddToCart = () => {
     if (!user) {
