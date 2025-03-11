@@ -52,15 +52,15 @@ export default function CamisetasPage() {
     selectedSize,
     setSelectedSize,
     selectedColor,
-    setSelectedColor,
-    selectedMedia,
-    setSelectedMedia
+    setSelectedColor
   } = useProductCustomization({
     initialSize: product.customization.sizes[1],
     initialColor: product.customization.colors[0],
     sizes: product.customization.sizes,
     colors: product.customization.colors
   });
+
+  const { selectedMedia, setSelectedMedia } = useProductMedia(product.media);
 
   const handleAddToCart = () => {
     if (!user) {
@@ -72,7 +72,7 @@ export default function CamisetasPage() {
       id: `${product.id}-${selectedSize}-${selectedColor}`,
       name: `${product.name} - ${selectedColor} ${selectedSize}`,
       price: product.price,
-      image: product.media[0].url
+      image: selectedMedia?.url || product.media[0].url
     });
   };
 

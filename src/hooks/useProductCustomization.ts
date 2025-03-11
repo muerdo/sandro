@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import type { ProductCustomizationOptions, ProductCustomizationState, ProductMedia } from "@/types/product";
+import type { ProductCustomizationOptions, ProductCustomizationState } from "@/types/product";
 
 export function useProductCustomization({
   initialSize,
@@ -10,11 +10,10 @@ export function useProductCustomization({
   sizes = [],
   colors = [],
   types = []
-}: ProductCustomizationOptions): ProductCustomizationState {
+}: ProductCustomizationOptions): Omit<ProductCustomizationState, 'selectedMedia' | 'setSelectedMedia'> {
   const [selectedSize, setSelectedSize] = useState<string | null>(initialSize || sizes[0] || null);
   const [selectedColor, setSelectedColor] = useState<string | null>(initialColor || colors[0] || null);
   const [selectedType, setSelectedType] = useState<string | null>(initialType || types[0] || null);
-  const [selectedMedia, setSelectedMedia] = useState<ProductMedia | null>(null);
 
   const handleSetSize = useCallback((size: string) => {
     setSelectedSize(size);
@@ -32,10 +31,8 @@ export function useProductCustomization({
     selectedSize,
     selectedColor,
     selectedType,
-    selectedMedia,
     setSelectedSize: handleSetSize,
     setSelectedColor: handleSetColor,
-    setSelectedType: handleSetType,
-    setSelectedMedia
+    setSelectedType: handleSetType
   };
 }
