@@ -1,12 +1,19 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
-import Stripe from 'https://esm.sh/stripe@14.14.0'
+import { createClient } from 'jsr:@supabase/supabase-js@2'
+import Stripe from 'npm:stripe@14.14.0'
 
-// @ts-ignore
-declare const Deno: {
-  env: {
-    get(key: string): string | undefined;
+import type { Stripe as StripeType } from 'npm:stripe@14.14.0'
+
+declare global {
+  const Deno: {
+    env: {
+      get(key: string): string | undefined;
+    };
+    serve(handler: (req: Request) => Promise<Response>): void;
   };
-  serve(handler: (req: Request) => Promise<Response>): void;
+}
+
+type StripeProduct = StripeType.Product & {
+  default_price: StripeType.Price;
 };
 
 interface StripeProduct {
