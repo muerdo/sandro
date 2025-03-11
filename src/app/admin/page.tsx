@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
+import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import Link from "next/link";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { format } from 'date-fns';
@@ -33,7 +32,6 @@ type SalesData = {
 };
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
   const router = useRouter();
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
