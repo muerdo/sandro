@@ -201,6 +201,25 @@ export default function CheckoutPage() {
     );
   }
 
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center py-12">
+          <h2 className="text-2xl font-semibold mb-4">Please Sign In to Continue</h2>
+          <p className="text-muted-foreground mb-6">You need to be signed in to complete your purchase</p>
+          <motion.button
+            onClick={() => router.push('/')}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="bg-primary text-primary-foreground px-6 py-3 rounded-lg"
+          >
+            Sign In
+          </motion.button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background py-12">
       <div className="container mx-auto px-4">
@@ -211,23 +230,8 @@ export default function CheckoutPage() {
           className="mb-8 flex items-center gap-2 text-primary hover:opacity-80 transition-opacity"
         >
           <ArrowLeft className="w-4 h-4" />
-          Voltar para o Carrinho
+          Back to Cart
         </motion.button>
-
-        {!user ? (
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-semibold mb-4">Please Sign In to Continue</h2>
-            <p className="text-muted-foreground mb-6">You need to be signed in to complete your purchase</p>
-            <motion.button
-              onClick={() => router.push('/')}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="bg-primary text-primary-foreground px-6 py-3 rounded-lg"
-            >
-              Sign In
-            </motion.button>
-          </div>
-        ) : (
           <div className="grid grid-cols-3 gap-8">
             <div className="col-span-2 space-y-8">
               {/* Shipping Information */}
@@ -515,35 +519,10 @@ export default function CheckoutPage() {
           <div className="space-y-6">
             <div className="bg-card p-6 rounded-xl shadow-lg">
               <h3 className="text-lg font-semibold mb-4">Resumo do Pedido</h3>
-              <div className="space-y-4">
-                {items.map((item) => (
-                  <div key={item.id} className="flex gap-4">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-16 h-16 object-cover rounded-lg"
-                    />
-                    <div className="flex-1">
-                      <p className="font-medium">{item.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Quantidade: {item.quantity}
-                      </p>
-                      <p className="text-sm">
-                        R$ {(item.price * item.quantity).toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="border-t mt-4 pt-4">
-                <div className="flex justify-between font-semibold">
-                  <span>Total</span>
-                  <span>R$ {total.toFixed(2)}</span>
-                </div>
-              </div>
+              <OrderSummary items={items} total={total} />
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
