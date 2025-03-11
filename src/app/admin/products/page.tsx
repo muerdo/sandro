@@ -207,7 +207,13 @@ export default function ProductsManagement() {
   const handleCreate = async () => {
     const { error } = await supabase
       .from('products')
-      .insert([newProduct]);
+      .insert({
+        ...newProduct,
+        id: crypto.randomUUID(),
+        name: newProduct.name || '',
+        price: newProduct.price || 0,
+        status: 'active'
+      });
 
     if (error) {
       console.error('Error creating product:', error);

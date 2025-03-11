@@ -1,4 +1,6 @@
 export type OrderStatus = 'pending' | 'processing' | 'completed' | 'cancelled';
+export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
+export type PaymentMethod = 'credit_card' | 'pix' | 'boleto';
 
 export interface Order {
   id: string;

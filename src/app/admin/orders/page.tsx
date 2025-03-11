@@ -83,7 +83,12 @@ export default function OrdersManagement() {
       return;
     }
 
-    setOrders(data);
+    setOrders(data.map(order => ({
+      ...order,
+      status: order.status as OrderStatus,
+      payment_status: order.payment_status as PaymentStatus,
+      payment_method: order.payment_method as PaymentMethod
+    })));
   };
 
   const updateOrderStatus = async (orderId: string, status: string) => {
