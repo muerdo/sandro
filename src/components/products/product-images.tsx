@@ -1,19 +1,22 @@
 "use client";
 
 import { motion } from "framer-motion";
+import type { ProductImage } from "@/types/product";
 
 interface ProductImagesProps {
   images: string[];
   selectedImage: string;
   onImageSelect: (image: string) => void;
   productName: string;
+  className?: string;
 }
 
 export default function ProductImages({ 
   images, 
   selectedImage, 
   onImageSelect,
-  productName 
+  productName,
+  className = ""
 }: ProductImagesProps) {
   return (
     <div className="space-y-4">
