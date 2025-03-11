@@ -2,16 +2,6 @@ import { createClient } from 'npm:@supabase/supabase-js@2.39.7'
 import Stripe from 'npm:stripe@14.14.0'
 import { corsHeaders } from '../_shared/cors.ts'
 
-// Deno runtime type declarations
-interface DenoRuntime {
-  env: {
-    get(key: string): string | undefined;
-  };
-  serve(handler: (req: Request) => Promise<Response>): void;
-}
-
-declare const Deno: DenoRuntime;
-
 interface PaymentRequestBody {
   items: Array<{
     id: string;
@@ -30,14 +20,9 @@ interface PaymentRequestBody {
   };
 }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2023-10-16',
-  httpClient: Stripe.createFetchHttpClient(),
+  httpClient: Stripe.createFetchHttpClient()
 })
 
 Deno.serve(async (req) => {
