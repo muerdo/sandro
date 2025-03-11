@@ -11,6 +11,30 @@ export interface OrderStats {
   active_products: number;
   low_stock_products: number;
   out_of_stock_products: number;
+  inventory?: {
+    alerts: InventoryAlert[];
+    recentUpdates: InventoryUpdate[];
+  };
+}
+
+export interface InventoryAlert {
+  id: string;
+  product_id: string;
+  alert_type: 'low_stock' | 'out_of_stock';
+  created_at: string;
+  product: {
+    name: string;
+  };
+}
+
+export interface InventoryUpdate {
+  id: string;
+  product_id: string;
+  previous_stock: number;
+  new_stock: number;
+  change_amount: number;
+  change_type: 'manual' | 'order' | 'restock';
+  created_at: string;
 }
 
 export interface DashboardState {
@@ -103,4 +127,5 @@ export interface Product {
   created_at: string;
   updated_at: string;
   status?: string;
+  low_stock_threshold?: number;
 }

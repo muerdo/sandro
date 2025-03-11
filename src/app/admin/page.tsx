@@ -343,7 +343,7 @@ export default function AdminDashboard() {
           >
             <h2 className="text-xl font-semibold mb-6">Inventory Alerts</h2>
             <div className="space-y-4">
-              {stats.inventory?.alerts?.map((alert: InventoryAlert) => (
+              {stats.inventory?.alerts?.map((alert) => (
                 <div 
                   key={alert.id}
                   className="flex items-center justify-between p-4 bg-background rounded-lg"

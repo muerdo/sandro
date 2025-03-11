@@ -20,7 +20,15 @@ export default function StripeProductPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [stockHistory, setStockHistory] = useState<InventoryUpdate[]>([]);
+  const [stockHistory, setStockHistory] = useState<Array<{
+    id: string;
+    product_id: string;
+    previous_stock: number;
+    new_stock: number;
+    change_amount: number;
+    change_type: 'manual' | 'order' | 'restock';
+    created_at: string;
+  }>>([]);
 
   const {
     selectedSize,
