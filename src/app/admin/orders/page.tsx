@@ -14,7 +14,7 @@ import {
   Search
 } from "lucide-react";
 
-import { Order } from '@/types/admin';
+import { Order, OrderStatus, PaymentStatus, PaymentMethod } from '@/types/admin';
 
 export default function OrdersManagement() {
   const { user } = useAuth();
