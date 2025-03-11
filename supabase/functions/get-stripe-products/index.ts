@@ -1,5 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
-import Stripe from 'https://esm.sh/stripe@14.14.0'
+import { createClient } from 'jsr:@supabase/supabase-js@2'
+import Stripe from 'jsr:stripe@14'
 
 interface StripeProduct {
   id: string;

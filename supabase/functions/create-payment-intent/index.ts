@@ -11,6 +11,9 @@ declare global {
   };
 }
 
+import { createClient } from 'jsr:@supabase/supabase-js@2'
+import Stripe from 'jsr:stripe@14'
+
 // Type definitions
 interface RequestPayload {
   items: Array<{
@@ -39,6 +42,16 @@ interface AuthResponse {
   };
   error: Error | null;
 }
+
+// Deno runtime type declarations
+interface DenoRuntime {
+  env: {
+    get(key: string): string | undefined;
+  };
+  serve(handler: (req: Request) => Promise<Response>): void;
+}
+
+declare const Deno: DenoRuntime;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
