@@ -1,100 +1,134 @@
-import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
-import { createClient } from "@supabase/supabase-js";
-import Stripe from "stripe";
+import { createClient } from '@supabase/supabase-js'
+import Stripe from 'stripe'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2025-02-24',
   httpClient: Stripe.createFetchHttpClient(),
-  typescript: true
-});
+})
 
-type StripeEvent = Stripe.Event;
-type PaymentIntent = Stripe.PaymentIntent;
+const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')
+const supabaseClient = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+)
 
-const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+Deno.serve(async (req) => {
+  const signature = req.headers.get('stripe-signature')
+  
+  if (!signature || !webhookSecret) {
+    return new Response('Missing signature or webhook secret', { status: 400 })
   }
 
   try {
-    const signature = req.headers.get('stripe-signature');
-    
-    if (!signature || !webhookSecret) {
-      throw new Error('Missing signature or webhook secret');
-    }
+    const body = await req.text()
+    const event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
 
-    const body = await req.text();
-    const event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      webhookSecret
-    ) as StripeEvent;
-
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    console.log('Processing webhook event:', event.type)
 
     switch (event.type) {
-      case 'payment_intent.succeeded': {
-        const paymentIntent = event.data.object as PaymentIntent;
+      case 'payment_intent.succeeded':
+        const paymentIntent = event.data.object as Stripe.PaymentIntent
         
+        // Update order status
         const { error: updateError } = await supabaseClient
           .from('orders')
           .update({
             payment_status: 'paid',
             status: 'processing',
-            stripe_payment_status: paymentIntent.status
+            stripe_payment_status: paymentIntent.status,
+            updated_at: new Date().toISOString()
           })
-          .eq('stripe_payment_intent_id', paymentIntent.id);
+          .eq('stripe_payment_intent_id', paymentIntent.id)
 
         if (updateError) {
-          console.error('Error updating order:', updateError);
-          throw updateError;
+          console.error('Error updating order:', updateError)
+          return new Response('Error updating order', { status: 500 })
         }
-        break;
-      }
 
-      case 'payment_intent.payment_failed': {
-        const paymentIntent = event.data.object as PaymentIntent;
+        console.log('Successfully processed payment success for order:', paymentIntent.id)
+        break
+
+      case 'payment_intent.payment_failed':
+        const failedPayment = event.data.object as Stripe.PaymentIntent
         
-        const { error: updateError } = await supabaseClient
+        // Update order status to failed
+        const { error: failureError } = await supabaseClient
           .from('orders')
           .update({
             payment_status: 'failed',
-            stripe_payment_status: paymentIntent.status
+            status: 'cancelled',
+            stripe_payment_status: failedPayment.status,
+            updated_at: new Date().toISOString()
           })
-          .eq('stripe_payment_intent_id', paymentIntent.id);
+          .eq('stripe_payment_intent_id', failedPayment.id)
 
-        if (updateError) {
-          console.error('Error updating failed order:', updateError);
-          throw updateError;
+        if (failureError) {
+          console.error('Error updating failed order:', failureError)
+          return new Response('Error updating order', { status: 500 })
         }
-        break;
-      }
+
+        console.log('Processed payment failure for order:', failedPayment.id)
+        break
+
+      case 'payment_intent.requires_action':
+        const pendingPayment = event.data.object as Stripe.PaymentIntent
+        
+        // Update order status to pending additional action
+        const { error: pendingError } = await supabaseClient
+          .from('orders')
+          .update({
+            payment_status: 'pending',
+            stripe_payment_status: pendingPayment.status,
+            updated_at: new Date().toISOString()
+          })
+          .eq('stripe_payment_intent_id', pendingPayment.id)
+
+        if (pendingError) {
+          console.error('Error updating pending order:', pendingError)
+          return new Response('Error updating order', { status: 500 })
+        }
+
+        console.log('Updated order status to pending action:', pendingPayment.id)
+        break
+
+      case 'charge.refunded':
+        const refund = event.data.object as Stripe.Refund
+        const paymentIntentId = refund.payment_intent as string
+        
+        // Update order status to refunded
+        const { error: refundError } = await supabaseClient
+          .from('orders')
+          .update({
+            payment_status: 'refunded',
+            status: 'cancelled',
+            stripe_payment_status: 'refunded',
+            updated_at: new Date().toISOString()
+          })
+          .eq('stripe_payment_intent_id', paymentIntentId)
+
+        if (refundError) {
+          console.error('Error updating refunded order:', refundError)
+          return new Response('Error updating order', { status: 500 })
+        }
+
+        console.log('Processed refund for order:', paymentIntentId)
+        break
+
+      default:
+        console.log('Unhandled event type:', event.type)
     }
 
-    return new Response(JSON.stringify({ received: true }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(JSON.stringify({ 
+      received: true,
+      type: event.type
+    }), {
+      headers: { 'Content-Type': 'application/json' }
+    })
   } catch (err) {
-    console.error('Webhook error:', err);
+    console.error('Webhook error:', err)
     return new Response(
-      JSON.stringify({
-        error: err instanceof Error ? err.message : 'Unknown Error',
-        details: err instanceof Error ? err.stack : undefined
-      }),
-      {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+      `Webhook Error: ${err instanceof Error ? err.message : 'Unknown Error'}`,
+      { status: 400 }
+    )
   }
-});
+})
