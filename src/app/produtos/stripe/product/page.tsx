@@ -237,6 +237,110 @@ export default function StripeProductPage() {
             </motion.button>
           </div>
         </div>
+
+        {/* Inventory Management Modal */}
+        {selectedProduct && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50">
+            <div className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">Inventory Management</h2>
+                <button
+                  onClick={() => setSelectedProduct(null)}
+                  className="p-2 hover:bg-secondary rounded-lg transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div className="space-y-6">
+                <div>
+                  <h3 className="font-medium mb-2">{selectedProduct.name}</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Current Stock</label>
+                      <input
+                        type="number"
+                        value={selectedProduct.stock}
+                        onChange={(e) => setSelectedProduct({
+                          ...selectedProduct,
+                          stock: parseInt(e.target.value)
+                        })}
+                        className="w-full bg-background px-3 py-2 rounded-lg border"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Low Stock Alert</label>
+                      <input
+                        type="number"
+                        value={selectedProduct.low_stock_threshold}
+                        onChange={(e) => setSelectedProduct({
+                          ...selectedProduct,
+                          low_stock_threshold: parseInt(e.target.value)
+                        })}
+                        className="w-full bg-background px-3 py-2 rounded-lg border"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-medium mb-2">Stock History</h3>
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                    {stockHistory.map((entry) => (
+                      <div 
+                        key={entry.id}
+                        className="flex items-center justify-between p-3 bg-secondary rounded-lg text-sm"
+                      >
+                        <div>
+                          <p className="font-medium">
+                            {entry.change_amount > 0 ? '+' : ''}{entry.change_amount} units
+                          </p>
+                          <p className="text-muted-foreground">
+                            {format(new Date(entry.created_at), 'MMM dd, yyyy')}
+                          </p>
+                        </div>
+                        <span className="capitalize px-2 py-1 rounded-full text-xs bg-primary/10">
+                          {entry.change_type}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={async () => {
+                      try {
+                        const { error } = await supabase
+                          .from('inventory_history')
+                          .insert({
+                            product_id: selectedProduct.id,
+                            previous_stock: selectedProduct.stock,
+                            new_stock: selectedProduct.stock,
+                            change_amount: 0,
+                            change_type: 'manual',
+                            created_by: user?.id
+                          });
+
+                        if (error) throw error;
+                        toast.success('Inventory updated successfully');
+                        setSelectedProduct(null);
+                      } catch (error) {
+                        console.error('Error updating inventory:', error);
+                        toast.error('Failed to update inventory');
+                      }
+                    }}
+                    className="flex-1 bg-primary text-primary-foreground py-2 rounded-lg font-medium"
+                  >
+                    Save Changes
+                  </motion.button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );

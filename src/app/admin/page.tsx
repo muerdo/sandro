@@ -322,10 +322,63 @@ export default function AdminDashboard() {
                   <p className="text-2xl font-bold">
                     {stats.active_products} / {stats.total_products}
                   </p>
+                  <div className="mt-2 flex gap-2 text-sm">
+                    <span className="text-orange-500">
+                      {stats.low_stock_products} Low Stock
+                    </span>
+                    <span className="text-destructive">
+                      {stats.out_of_stock_products} Out of Stock
+                    </span>
+                  </div>
                 </div>
               </div>
             </motion.div>
           </Link>
+
+          {/* Inventory Alerts */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card p-6 rounded-xl shadow-lg col-span-2"
+          >
+            <h2 className="text-xl font-semibold mb-6">Inventory Alerts</h2>
+            <div className="space-y-4">
+              {state.inventory.alerts.map((alert) => (
+                <div 
+                  key={alert.id}
+                  className="flex items-center justify-between p-4 bg-background rounded-lg"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`p-2 rounded-full ${
+                      alert.alert_type === 'out_of_stock' 
+                        ? 'bg-destructive/10 text-destructive' 
+                        : 'bg-orange-500/10 text-orange-500'
+                    }`}>
+                      <AlertCircle className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{alert.product.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {alert.alert_type === 'out_of_stock' 
+                          ? 'Out of Stock' 
+                          : 'Low Stock Alert'}
+                      </p>
+                    </div>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      // Handle restock action
+                    }}
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm"
+                  >
+                    Restock
+                  </motion.button>
+                </div>
+              ))}
+            </div>
+          </motion.div>
         </div>
 
         {/* Analytics Grid */}

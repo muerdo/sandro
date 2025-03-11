@@ -387,6 +387,14 @@ export default function ProductsManagement() {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
+                      onClick={() => setSelectedProduct(product)}
+                      className="p-2 bg-secondary text-secondary-foreground rounded-lg"
+                    >
+                      <Package2 className="w-4 h-4" />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       onClick={() => handleEdit(product)}
                       className="p-2 bg-primary/10 text-primary rounded-lg"
                     >

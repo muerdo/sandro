@@ -20,7 +20,8 @@ export function useAdminDashboard() {
   const [state, setState] = useState<DashboardState>({
     loading: {
       stats: true,
-      auth: true
+      auth: true,
+      inventory: true
     },
     stats: {
       total_orders: 0,
@@ -30,7 +31,13 @@ export function useAdminDashboard() {
       total_customers: 0,
       average_order_value: 0,
       total_products: 0,
-      active_products: 0
+      active_products: 0,
+      low_stock_products: 0,
+      out_of_stock_products: 0
+    },
+    inventory: {
+      alerts: [],
+      recentUpdates: []
     },
     isAdmin: false
   });
