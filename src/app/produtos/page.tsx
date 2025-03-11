@@ -8,16 +8,6 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
-"use client";
-
-import { motion } from "framer-motion";
-import { ArrowLeft, ShoppingCart } from "lucide-react";
-import { useCart } from "@/contexts/cart-context";
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { toast } from "sonner";
-
 export default function CatalogoPage() {
   const { addItem } = useCart();
   const [loading, setLoading] = useState(true);
@@ -55,15 +45,6 @@ export default function CatalogoPage() {
     description: "Canecas de cerâmica com impressão sublimática"
   }
 ]);
-
-  const handleQuickAdd = (product: typeof products[0]) => {
-    addItem({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image
-    });
-  };
 
   useEffect(() => {
     const fetchStripeProducts = async () => {
