@@ -52,8 +52,8 @@ export default function AdesivosPage() {
     setSelectedSize,
     selectedType,
     setSelectedType,
-    selectedImage,
-    setSelectedImage
+    selectedMedia,
+    setSelectedMedia
   } = useProductCustomization({
     initialSize: product.customization.sizes[1],
     initialType: product.customization.types[0],
