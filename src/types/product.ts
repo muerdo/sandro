@@ -57,4 +57,5 @@ export interface Product {
     name: string;
   };
   images?: string[];
+  notes?: string;
 }

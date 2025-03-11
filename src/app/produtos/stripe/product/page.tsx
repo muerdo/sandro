@@ -20,6 +20,7 @@ export default function StripeProductPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [stockHistory, setStockHistory] = useState<Array<{
     id: string;
     product_id: string;

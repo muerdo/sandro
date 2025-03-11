@@ -84,7 +84,20 @@ export function useAdminDashboard() {
 
       const { data: products, error: productsError } = await supabase
         .from('products')
-        .select('*, inventory_history(*)');
+        .select(`
+          *,
+          inventory_history (
+            id,
+            product_id,
+            previous_stock,
+            new_stock,
+            change_amount,
+            change_type,
+            created_at,
+            notes,
+            profiles (username)
+          )
+        `);
 
       if (ordersError) throw ordersError;
       if (productsError) throw productsError;

@@ -35,6 +35,10 @@ export interface InventoryUpdate {
   change_amount: number;
   change_type: 'manual' | 'order' | 'restock';
   created_at: string;
+  notes?: string;
+  profiles?: {
+    username: string;
+  };
 }
 
 export interface DashboardState {
