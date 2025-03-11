@@ -1,17 +1,29 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7'
+import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import Stripe from 'https://esm.sh/stripe@12.18.0?dts'
+import Stripe from 'npm:stripe@12.18.0'
+
+// Add Deno types
+declare global {
+  interface Window {
+    Deno: {
+      env: {
+        get(key: string): string | undefined;
+      };
+      serve(handler: (req: Request) => Promise<Response>): void;
+    }
+  }
+}
 
 // Initialize Stripe
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2023-10-16',
   httpClient: Stripe.createFetchHttpClient()
 })
 
 // Initialize Supabase client
 const supabaseClient = createClient(
-  Deno.env.get('SUPABASE_URL') || '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   {
     auth: {
       persistSession: false,
