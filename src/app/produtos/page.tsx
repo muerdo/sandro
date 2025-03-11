@@ -110,11 +110,6 @@ export default function CatalogoPage() {
           }
         ];
 
-        const stripeProducts = data?.map((product: any) => ({
-          ...product,
-          id: `stripe-${product.id}`
-        })) || [];
-
         setProducts([...defaultProducts, ...stripeProducts]);
       } catch (error) {
         console.error('Error fetching Stripe products:', error);

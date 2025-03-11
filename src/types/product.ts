@@ -45,4 +45,8 @@ export interface Product {
     features?: string;
     customization?: string;
   };
+  prices?: Array<{
+    id: string;
+    unit_amount: number;
+  }>;
 }
