@@ -1,72 +1,71 @@
-/// <reference path="../types.d.ts" />
-
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import Stripe from "https://esm.sh/stripe@13.10.0?target=deno";
-
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-  apiVersion: '2025-02-24.acacia',
-  httpClient: Stripe.createFetchHttpClient()
-});
+import { createClient } from 'jsr:@supabase/supabase-js@2'
+import Stripe from 'npm:stripe@14.14.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
 
-serve(async (req: Request) => {
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
+  apiVersion: '2025-02-24',
+  httpClient: Stripe.createFetchHttpClient(),
+})
+
+const supabaseClient = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+)
+
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // deno-lint-ignore no-explicit-any
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          persistSession: false
-        }
-      }
-    );
+    const { items, total, shippingDetails } = await req.json()
 
     // Get user ID from auth header
-    const authHeader = req.headers.get('authorization');
+    const authHeader = req.headers.get('authorization')
     if (!authHeader) {
-      throw new Error('No authorization header');
+      throw new Error('No authorization header')
     }
-    const token = authHeader.replace('Bearer ', '');
+    const token = authHeader.replace('Bearer ', '')
     
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    // Get user ID from JWT
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token)
     if (authError || !user) {
-      throw new Error('Failed to get user information');
+      throw new Error('Failed to get user information')
     }
-
-    const { items, total } = await req.json();
 
     // Get or create Stripe customer
     const { data: profiles } = await supabaseClient
       .from('profiles')
       .select('stripe_customer_id')
       .eq('id', user.id)
-      .single();
+      .single()
 
-    let customerId = profiles?.stripe_customer_id;
+    let customerId = profiles?.stripe_customer_id
 
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email,
+        name: shippingDetails.name,
+        address: {
+          line1: shippingDetails.address,
+          city: shippingDetails.city,
+          state: shippingDetails.state,
+          postal_code: shippingDetails.zipCode,
+        },
         metadata: {
           supabase_uid: user.id,
         },
-      });
-      customerId = customer.id;
+      })
+      customerId = customer.id
 
       await supabaseClient
         .from('profiles')
         .update({ stripe_customer_id: customerId })
-        .eq('id', user.id);
+        .eq('id', user.id)
     }
 
     // Create payment intent
@@ -79,47 +78,59 @@ serve(async (req: Request) => {
       },
       metadata: {
         user_id: user.id,
+        shipping_name: shippingDetails.name,
+        shipping_address: shippingDetails.address,
+        shipping_city: shippingDetails.city,
+        shipping_state: shippingDetails.state,
+        shipping_zip: shippingDetails.zipCode,
       },
-      payment_method_types: ['card'],
-    });
+      shipping: {
+        name: shippingDetails.name,
+        address: {
+          line1: shippingDetails.address,
+          city: shippingDetails.city,
+          state: shippingDetails.state,
+          postal_code: shippingDetails.zipCode,
+        },
+      }
+    })
 
     // Create order record
-    const { data: order, error: orderError } = await supabaseClient
+    const { error: orderError } = await supabaseClient
       .from('orders')
       .insert({
         user_id: user.id,
         status: 'pending',
         total_amount: total,
         items: items,
+        shipping_address: shippingDetails,
         payment_method: 'credit_card',
         payment_status: 'pending',
         stripe_payment_intent_id: paymentIntent.id
       })
-      .select()
-      .single();
 
-    if (orderError) throw orderError;
+    if (orderError) {
+      console.error('Error creating order:', orderError)
+      throw new Error('Failed to create order')
+    }
 
     return new Response(
-      JSON.stringify({
+      JSON.stringify({ 
         clientSecret: paymentIntent.client_secret,
-        orderId: order.id,
+        customerId: customerId
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
-    );
+    )
   } catch (error) {
-    console.error('Payment intent creation error:', error);
+    console.error('Error:', error)
     return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'An unexpected error occurred',
-        details: error instanceof Error ? error.stack : undefined
-      }),
+      JSON.stringify({ error: error.message }),
       {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
-    );
+    )
   }
-});
+})
