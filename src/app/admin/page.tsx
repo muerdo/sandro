@@ -35,17 +35,7 @@ type SalesData = {
 export default function AdminDashboard() {
   const { user } = useAuth();
   const router = useRouter();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [stats, setStats] = useState<OrderStats>({
-    total_orders: 0,
-    pending_orders: 0,
-    completed_orders: 0,
-    total_revenue: 0,
-    total_customers: 0,
-    average_order_value: 0,
-    total_products: 0,
-    active_products: 0
-  });
+  const { loading, stats, isAdmin } = useAdminDashboard();
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
 
