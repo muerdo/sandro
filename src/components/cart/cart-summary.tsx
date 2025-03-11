@@ -40,7 +40,7 @@ export default function CartSummary() {
               initial={{ opacity: 0, x: 100 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 100 }}
-              className="fixed right-0 top-0 h-full w-full max-w-md bg-card shadow-xl z-50 p-6"
+              className="fixed right-0 top-0 h-full w-full sm:max-w-md bg-card shadow-xl z-50 p-4 sm:p-6"
             >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-semibold">Carrinho</h2>

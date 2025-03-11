@@ -157,7 +157,7 @@ export default function CatalogoPage() {
 
         <h1 className="text-4xl font-bold mb-8">Nossos Produtos</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {loading && (
             <div className="col-span-full flex justify-center py-12">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-r-transparent" />

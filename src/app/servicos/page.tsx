@@ -102,7 +102,7 @@ export default function ServicosPage() {
           onFilter={setActiveFilters}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-8">
           {services.map((service, index) => (
             <motion.div
               key={service.title}

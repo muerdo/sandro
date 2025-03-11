@@ -22,7 +22,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt-BR" className={`${GeistSans.variable}`}>
-      <body className="min-h-screen bg-background antialiased flex flex-col">
+      <body className="min-h-screen bg-background antialiased flex flex-col overflow-x-hidden">
         <AuthProvider>
           <CartProvider>
             <TransitionProvider>

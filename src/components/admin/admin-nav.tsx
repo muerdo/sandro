@@ -43,7 +43,7 @@ export default function AdminNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="bg-card border-r min-h-screen w-64 p-6 space-y-2">
+    <nav className="bg-card border-r min-h-screen w-full sm:w-64 p-4 sm:p-6 space-y-2">
       {navItems.map((item) => {
         const Icon = item.icon;
         const isActive = pathname === item.href;
