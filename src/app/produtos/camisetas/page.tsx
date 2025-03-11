@@ -53,8 +53,8 @@ export default function CamisetasPage() {
     setSelectedSize,
     selectedColor,
     setSelectedColor,
-    selectedImage,
-    setSelectedImage
+    selectedMedia,
+    setSelectedMedia
   } = useProductCustomization({
     initialSize: product.customization.sizes[1],
     initialColor: product.customization.colors[0],

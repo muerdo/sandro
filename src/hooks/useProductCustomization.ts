@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import type { ProductCustomizationOptions, ProductCustomizationState } from "@/types/product";
+import type { ProductCustomizationOptions, ProductCustomizationState, ProductMedia } from "@/types/product";
 
 export function useProductCustomization({
   initialSize,
@@ -28,10 +28,6 @@ export function useProductCustomization({
     setSelectedType(type);
   }, []);
 
-  const handleSetImage = useCallback((image: string) => {
-    setSelectedImage(image);
-  }, []);
-
   return {
     selectedSize,
     selectedColor,
@@ -40,6 +36,6 @@ export function useProductCustomization({
     setSelectedSize: handleSetSize,
     setSelectedColor: handleSetColor,
     setSelectedType: handleSetType,
-    setSelectedMedia: setSelectedMedia
+    setSelectedMedia
   };
 }
