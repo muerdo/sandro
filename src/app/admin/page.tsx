@@ -65,7 +65,7 @@ export default function AdminDashboard() {
         console.error('Error initializing admin dashboard:', error);
         toast.error('Failed to load dashboard');
       } finally {
-        setLoading(prev => ({ ...prev, auth: false }));
+        setLoading(prev => ({ ...prev, auth: false } as const));
       }
     };
 
