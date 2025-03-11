@@ -6,9 +6,12 @@ import { useState, useEffect } from "react";
 import { useCart } from "@/contexts/cart-context";
 import { useRouter } from "next/navigation";
 import { QRCodeCanvas } from "qrcode.react";
-import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '');
 
 
 type PaymentMethod = "credit" | "pix" | "boleto";
@@ -171,27 +174,25 @@ export default function CheckoutPage() {
               {paymentMethod === "credit" && (
                 <div className="space-y-4">
                   {clientSecret ? (
-                    <Elements stripe={stripePromise} options={{ clientSecret }}>
-                      <form onSubmit={handlePayment} className="space-y-4">
-                        <PaymentElement />
-                        {stripeError && (
-                          <p className="text-sm text-destructive">{stripeError}</p>
+                    <form onSubmit={handlePayment} className="space-y-4">
+                      <PaymentElement />
+                      {stripeError && (
+                        <p className="text-sm text-destructive">{stripeError}</p>
+                      )}
+                      <motion.button
+                        type="submit"
+                        disabled={loading || !stripe || !elements}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium mt-6 disabled:opacity-50"
+                      >
+                        {loading ? (
+                          <div className="h-5 w-5 animate-spin rounded-full border-2 border-background border-r-transparent mx-auto" />
+                        ) : (
+                          `Pagar R$ ${total.toFixed(2)}`
                         )}
-                        <motion.button
-                          type="submit"
-                          disabled={loading || !stripe || !elements}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium mt-6 disabled:opacity-50"
-                        >
-                          {loading ? (
-                            <div className="h-5 w-5 animate-spin rounded-full border-2 border-background border-r-transparent mx-auto" />
-                          ) : (
-                            `Pagar R$ ${total.toFixed(2)}`
-                          )}
-                        </motion.button>
-                      </form>
-                    </Elements>
+                      </motion.button>
+                    </form>
                   ) : (
                     <div className="flex items-center justify-center py-8">
                       <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-r-transparent" />
