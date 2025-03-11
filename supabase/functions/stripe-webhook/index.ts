@@ -1,19 +1,21 @@
-import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
-import { createClient } from "@supabase/supabase-js";
-import Stripe from "stripe";
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
+import Stripe from "https://esm.sh/stripe@13.10.0?target=deno";
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-  apiVersion: '2025-02-24',
-  httpClient: Stripe.createFetchHttpClient(),
-  typescript: true
+  apiVersion: '2025-02-24.acacia',
+  httpClient: Stripe.createFetchHttpClient()
 });
 
-type StripeEvent = {
+interface StripeEvent {
   data: {
-    object: Stripe.PaymentIntent;
+    object: {
+      id: string;
+      status: string;
+    };
   };
   type: string;
-};
+}
 
 const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
 
@@ -43,12 +45,7 @@ serve(async (req: Request) => {
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          persistSession: false
-        }
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     switch (event.type) {
