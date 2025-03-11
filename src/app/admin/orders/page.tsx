@@ -24,6 +24,12 @@ export default function OrdersManagement() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sortField, setSortField] = useState<SortField>('created_at');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [dateRange, setDateRange] = useState<{ start: Date | null; end: Date | null }>({
+    start: null,
+    end: null
+  });
 
   useEffect(() => {
     checkAdminStatus();
@@ -71,36 +77,72 @@ export default function OrdersManagement() {
   };
 
   const fetchOrders = async () => {
-    const { data, error } = await supabase
-      .from('orders')
-      .select(`
-        *,
-        profiles (username)
-      `)
-      .order('created_at', { ascending: false });
+    try {
+      let query = supabase
+        .from('orders')
+        .select(`
+          *,
+          profiles (username)
+        `);
 
-    if (error) {
+      // Apply date range filter
+      if (dateRange.start) {
+        query = query.gte('created_at', dateRange.start.toISOString());
+      }
+      if (dateRange.end) {
+        query = query.lte('created_at', dateRange.end.toISOString());
+      }
+
+      // Apply sorting
+      query = query.order(sortField, { ascending: sortDirection === 'asc' });
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      setOrders(data.map(order => ({
+        ...order,
+        status: order.status as OrderStatus,
+        payment_status: order.payment_status as PaymentStatus,
+        payment_method: order.payment_method as PaymentMethod
+      })));
+
+      toast.success('Orders loaded successfully');
+    } catch (error) {
       console.error('Error fetching orders:', error);
-      return;
+      toast.error('Failed to load orders');
     }
-
-    setOrders(data.map(order => ({
-      ...order,
-      status: order.status as OrderStatus,
-      payment_status: order.payment_status as PaymentStatus,
-      payment_method: order.payment_method as PaymentMethod
-    })));
   };
 
   const updateOrderStatus = async (orderId: string, status: string) => {
-    const { error } = await supabase
-      .from('orders')
-      .update({ status })
-      .eq('id', orderId);
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ 
+          status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId);
 
-    if (error) {
+      if (error) throw error;
+
+      toast.success(`Order status updated to ${status}`);
+      
+      // Send notification to customer
+      const order = orders.find(o => o.id === orderId);
+      if (order?.profiles?.username) {
+        await supabase.functions.invoke('admin-operations', {
+          body: {
+            action: 'sendNotification',
+            userId: order.user_id,
+            message: `Your order status has been updated to ${status}`,
+            type: 'order_update'
+          }
+        });
+      }
+    } catch (error) {
       console.error('Error updating order status:', error);
-      return;
+      toast.error('Failed to update order status');
     }
   };
 
@@ -147,29 +189,98 @@ export default function OrdersManagement() {
       <div className="container mx-auto px-4">
         <h1 className="text-4xl font-bold mb-8">Orders Management</h1>
 
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-4 mb-8">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Search orders..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-lg border bg-background"
-            />
+        {/* Filters and Sorting */}
+        <div className="space-y-4 mb-8">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search orders by ID or customer..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 rounded-lg border bg-background"
+              />
+            </div>
+            
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground"
+            >
+              <Filter className="w-4 h-4" />
+              Filters
+            </motion.button>
+
+            <div className="flex items-center gap-2">
+              <select
+                value={sortField}
+                onChange={(e) => setSortField(e.target.value as SortField)}
+                className="px-4 py-2 rounded-lg border bg-background"
+              >
+                <option value="created_at">Date</option>
+                <option value="total_amount">Amount</option>
+                <option value="status">Status</option>
+              </select>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+                className="p-2 rounded-lg bg-secondary text-secondary-foreground"
+              >
+                <ArrowUpDown className="w-4 h-4" />
+              </motion.button>
+            </div>
           </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 rounded-lg border bg-background"
-          >
-            <option value="all">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="processing">Processing</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
+
+          {isFiltersOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 bg-card rounded-lg border space-y-4"
+            >
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Status</label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="w-full px-4 py-2 rounded-lg border bg-background"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="processing">Processing</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Date Range</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      value={dateRange.start?.toISOString().split('T')[0] ?? ''}
+                      onChange={(e) => setDateRange(prev => ({
+                        ...prev,
+                        start: e.target.value ? new Date(e.target.value) : null
+                      }))}
+                      className="flex-1 px-4 py-2 rounded-lg border bg-background"
+                    />
+                    <input
+                      type="date"
+                      value={dateRange.end?.toISOString().split('T')[0] ?? ''}
+                      onChange={(e) => setDateRange(prev => ({
+                        ...prev,
+                        end: e.target.value ? new Date(e.target.value) : null
+                      }))}
+                      className="flex-1 px-4 py-2 rounded-lg border bg-background"
+                    />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </div>
 
         {/* Orders Table */}
@@ -178,12 +289,18 @@ export default function OrdersManagement() {
             <table className="w-full">
               <thead>
                 <tr className="bg-primary/5">
-                  <th className="text-left py-4 px-6">Order ID</th>
+                  <th className="text-left py-4 px-6 cursor-pointer hover:text-primary transition-colors" onClick={() => setSortField('created_at')}>
+                    Order ID {sortField === 'created_at' && <ArrowUpDown className="inline w-4 h-4" />}
+                  </th>
                   <th className="text-left py-4 px-6">Customer</th>
                   <th className="text-left py-4 px-6">Date</th>
-                  <th className="text-left py-4 px-6">Amount</th>
+                  <th className="text-left py-4 px-6 cursor-pointer hover:text-primary transition-colors" onClick={() => setSortField('total_amount')}>
+                    Amount {sortField === 'total_amount' && <ArrowUpDown className="inline w-4 h-4" />}
+                  </th>
                   <th className="text-left py-4 px-6">Payment</th>
-                  <th className="text-left py-4 px-6">Status</th>
+                  <th className="text-left py-4 px-6 cursor-pointer hover:text-primary transition-colors" onClick={() => setSortField('status')}>
+                    Status {sortField === 'status' && <ArrowUpDown className="inline w-4 h-4" />}
+                  </th>
                   <th className="text-left py-4 px-6">Actions</th>
                 </tr>
               </thead>
@@ -231,7 +348,7 @@ export default function OrdersManagement() {
                         {order.status !== 'completed' && (
                           <OrderActionButton
                             onClick={() => updateOrderStatus(order.id, 'completed')}
-                            icon={CheckCircle}
+                            icon={CheckCircle2}
                             className="p-2 bg-green-500/10 text-green-500 rounded-lg"
                           />
                         )}
@@ -249,6 +366,16 @@ export default function OrdersManagement() {
                             className="p-2 bg-destructive/10 text-destructive rounded-lg"
                           />
                         )}
+                        <motion.a
+                          href={`https://wa.me/${order.shipping_address?.phone}?text=Hello! Regarding your order ${order.id.slice(0, 8)}...`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="p-2 bg-[#25D366]/10 text-[#25D366] rounded-lg"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                        </motion.a>
                       </div>
                     </td>
                   </tr>
