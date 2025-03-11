@@ -49,9 +49,13 @@ export interface Product {
     id: string;
     unit_amount: number;
   }>;
-  image?: string; // Backwards compatibility
-  low_stock_threshold: number; // Make required
+  image?: string;
+  low_stock_threshold?: number; // Make optional with default
   created_at?: string;
   updated_at?: string;
-  categories?: any; // Add support for categories relation
+  categories?: {
+    name: string;
+  };
+  images?: string[];
+  customization?: Json;
 }
