@@ -28,7 +28,11 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+
+    /* TypeScript Parser Options */
+    "rootDir": ".",
+    "outDir": "dist"
   },
   "include": [
     ".eslintrc.cjs",

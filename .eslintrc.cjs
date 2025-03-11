@@ -1,53 +1,43 @@
 /** @type {import("eslint").Linter.Config} */
 const config = {
-  "parser": "@typescript-eslint/parser",
-  "parserOptions": {
-    // "project": true,
-    "project": "./tsconfig.json",
+  parser: "@typescript-eslint/parser",
+  parserOptions: {
+    project: "./tsconfig.json",
+    tsconfigRootDir: __dirname,
+    sourceType: "module",
   },
-  // "ignorePatterns": ["*.css", "*.scss"],
-  "plugins": [
-    "@typescript-eslint",
-    "react",
-    "react-hooks"
-  ],
-  "globals": {
-    "React": "readonly"
+  plugins: ["@typescript-eslint", "react", "react-hooks"],
+  globals: {
+    React: "readonly"
   },
-  "settings": {
-    "react": {
-      "version": "detect",
+  settings: {
+    react: {
+      version: "detect",
     },
     "import/resolver": {
-      "typescript": {
-        "alwaysTryTypes": true,
-        "project": "./tsconfig.json",
-        "moduleDirectory": ["node_modules", "src"]
+      typescript: {
+        alwaysTryTypes: true,
+        project: "./tsconfig.json"
       },
-      "node": {
-        "extensions": [".js", ".jsx", ".ts", ".tsx"]
+      node: {
+        extensions: [".js", ".jsx", ".ts", ".tsx"]
       }
     }
   },
-  "extends": [
+  extends: [
     "eslint:recommended",
     "plugin:react/recommended",
-    "plugin:@typescript-eslint/eslint-recommended",
     "plugin:@typescript-eslint/recommended",
-    "plugin:import/errors",
-    "plugin:import/warnings",
-    "plugin:import/typescript",
+    "plugin:import/recommended",
+    "plugin:import/typescript"
   ],
-  "rules": {
+  rules: {
     "react/react-in-jsx-scope": "off",
     "no-duplicate-imports": "off",
     "import/no-duplicates": "off",
     "no-undef": "error",
     "no-unused-vars": "off",
-    "import/no-unresolved": [
-      "error",
-      { "ignore": ["^geist/"] }  // Add specific packages to ignore
-    ],
+    "import/no-unresolved": ["error", { "ignore": ["^geist/"] }],
     "react/prop-types": "off",
     "@next/next/no-img-element": "off",
     "import/named": "error",
@@ -58,11 +48,22 @@ const config = {
     "import/no-named-as-default-member": "error",
     "react/no-unknown-property": "off",
     "@typescript-eslint/ban-ts-comment": "off",
-    "@typescript-eslint/no-empty-object-type": "off",
+    "@typescript-eslint/no-empty-object-type": "off"
   },
-  "env": {
-    "browser": true,
-    "node": true
+  ignorePatterns: [
+    "node_modules/",
+    ".next/",
+    "out/",
+    "public/",
+    "supabase/functions/**/*",
+    "*.css",
+    "*.scss"
+  ],
+  env: {
+    browser: true,
+    node: true,
+    es6: true
   }
-}
+};
+
 module.exports = config;
