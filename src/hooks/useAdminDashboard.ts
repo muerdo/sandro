@@ -84,21 +84,7 @@ export function useAdminDashboard() {
 
       const { data: products, error: productsError } = await supabase
         .from('products')
-        .select(`
-          id,
-          name,
-          description,
-          price,
-          category,
-          features,
-          images,
-          status,
-          stock,
-          low_stock_threshold,
-          created_at,
-          updated_at,
-          customization
-        `);
+        .select('*');
 
       if (ordersError) throw ordersError;
       if (productsError) throw productsError;
@@ -106,6 +92,18 @@ export function useAdminDashboard() {
       const uniqueCustomers = new Set(orders?.map(order => order.user_id) || []);
       const totalRevenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
       const averageOrderValue = orders?.length ? totalRevenue / orders.length : 0;
+
+      // Process products data with type safety
+      const processedProducts = products || [];
+      const activeProducts = processedProducts.filter(p => p.status === 'active');
+      const lowStockProducts = processedProducts.filter(p => 
+        typeof p.stock === 'number' && 
+        typeof p.low_stock_threshold === 'number' && 
+        p.stock <= p.low_stock_threshold
+      );
+      const outOfStockProducts = processedProducts.filter(p => 
+        typeof p.stock === 'number' && p.stock === 0
+      );
 
       setState(prev => ({
         ...prev,
@@ -116,10 +114,10 @@ export function useAdminDashboard() {
           total_revenue: totalRevenue,
           total_customers: uniqueCustomers.size,
           average_order_value: averageOrderValue,
-          total_products: products?.length || 0,
-          active_products: products?.filter(p => p.status === 'active').length || 0,
-          low_stock_products: products?.filter(p => p.stock <= p.low_stock_threshold).length || 0,
-          out_of_stock_products: products?.filter(p => p.stock === 0).length || 0,
+          total_products: processedProducts.length,
+          active_products: activeProducts.length,
+          low_stock_products: lowStockProducts.length,
+          out_of_stock_products: outOfStockProducts.length,
           inventory: {
             alerts: [],
             recentUpdates: []
