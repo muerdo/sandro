@@ -1,22 +1,24 @@
-import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { createClient } from '@supabase/supabase-js'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-)
+import { UpdateOrderRequest, Profile, ErrorResponse, SuccessResponse } from './types'
 
-Deno.serve(async (req) => {
+const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { orderId, status, estimatedDelivery, trackingInfo } = await req.json()
+    const { orderId, status, estimatedDelivery, trackingInfo } = await req.json() as UpdateOrderRequest
 
     // Validate admin authorization
     const authHeader = req.headers.get('authorization')
@@ -57,8 +59,12 @@ Deno.serve(async (req) => {
     )
 
   } catch (error) {
+    const errorResponse: ErrorResponse = {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }
+    
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      JSON.stringify(errorResponse),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400 
