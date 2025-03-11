@@ -275,13 +275,13 @@ export default function StripeProductPage() {
                         value={selectedProduct.stock}
                         onChange={(e) => setSelectedProduct({
                           ...selectedProduct,
-                          stock: parseInt(e.target.value)
+                          stock: parseInt(e.target.value) || 0
                         })}
                         className="w-full bg-background px-3 py-2 rounded-lg border"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Low Stock Alert</label>
+                      <label className="block text-sm font-medium mb-1">Low Stock Threshold</label>
                       <input
                         type="number"
                         value={selectedProduct.low_stock_threshold || 0}
@@ -300,6 +300,19 @@ export default function StripeProductPage() {
                 </div>
 
                 <div>
+                  <label className="block text-sm font-medium mb-1">Notes</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Add notes about this stock update..."
+                    className="w-full bg-background px-3 py-2 rounded-lg border resize-none"
+                    onChange={(e) => setSelectedProduct({
+                      ...selectedProduct,
+                      notes: e.target.value
+                    })}
+                  />
+                </div>
+
+                <div>
                   <h3 className="font-medium mb-2">Stock History</h3>
                   <div className="space-y-2 max-h-[200px] overflow-y-auto">
                     {stockHistory.map((entry) => (
@@ -314,10 +327,22 @@ export default function StripeProductPage() {
                           <p className="text-muted-foreground">
                             {format(new Date(entry.created_at), 'MMM dd, yyyy')}
                           </p>
+                          {entry.notes && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {entry.notes}
+                            </p>
+                          )}
                         </div>
-                        <span className="capitalize px-2 py-1 rounded-full text-xs bg-primary/10">
-                          {entry.change_type}
-                        </span>
+                        <div className="text-right">
+                          <span className="capitalize px-2 py-1 rounded-full text-xs bg-primary/10">
+                            {entry.change_type}
+                          </span>
+                          {entry.profiles?.username && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              by {entry.profiles.username}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -327,28 +352,50 @@ export default function StripeProductPage() {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
+                    disabled={isUpdating}
                     onClick={async () => {
                       try {
-                        const { error } = await supabase.functions.invoke('update-inventory', {
+                        setIsUpdating(true);
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (!session) {
+                          toast.error('Authentication required');
+                          return;
+                        }
+
+                        const { error } = await supabase.functions.invoke('inventory-management', {
                           body: {
+                            action: 'update_stock',
                             productId: selectedProduct.id,
-                            previousStock: selectedProduct.stock,
                             newStock: selectedProduct.stock,
-                            changeType: 'manual'
+                            lowStockThreshold: selectedProduct.low_stock_threshold,
+                            notes: selectedProduct.notes
+                          },
+                          headers: {
+                            Authorization: `Bearer ${session.access_token}`
                           }
                         });
 
                         if (error) throw error;
+                          
                         toast.success('Inventory updated successfully');
                         setSelectedProduct(null);
                       } catch (error) {
                         console.error('Error updating inventory:', error);
                         toast.error('Failed to update inventory');
+                      } finally {
+                        setIsUpdating(false);
                       }
                     }}
-                    className="flex-1 bg-primary text-primary-foreground py-2 rounded-lg font-medium"
+                    className="flex-1 bg-primary text-primary-foreground py-2 rounded-lg font-medium disabled:opacity-50"
                   >
-                    Save Changes
+                    {isUpdating ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-background border-r-transparent" />
+                        <span>Updating...</span>
+                      </div>
+                    ) : (
+                      'Save Changes'
+                    )}
                   </motion.button>
                 </div>
               </div>

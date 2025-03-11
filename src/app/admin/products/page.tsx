@@ -49,6 +49,8 @@ export default function ProductsManagement() {
     action: false
   });
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [stockHistory, setStockHistory] = useState<any[]>([]);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
   const [productImages, setProductImages] = useState<string[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -225,6 +227,32 @@ export default function ProductsManagement() {
     setEditForm(product);
   };
 
+  const fetchStockHistory = async (productId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Authentication required');
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('inventory-management', {
+        body: {
+          action: 'get_history',
+          productId
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) throw error;
+      setStockHistory(data.history || []);
+    } catch (error) {
+      console.error('Error fetching stock history:', error);
+      toast.error('Failed to load stock history');
+    }
+  };
+
   const handleSave = async () => {
     if (!isEditing) return;
 
@@ -397,7 +425,10 @@ export default function ProductsManagement() {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => setSelectedProduct(product)}
+                      onClick={() => {
+                        setSelectedProduct(product);
+                        fetchStockHistory(product.id);
+                      }}
                       className="p-2 bg-secondary text-secondary-foreground rounded-lg"
                     >
                       <Package2 className="w-4 h-4" />
