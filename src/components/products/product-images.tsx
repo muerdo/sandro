@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { motion } from "framer-motion";
 import type { ProductImage } from "@/types/product";
 
@@ -9,9 +10,11 @@ interface ProductImagesProps {
   onImageSelect: (image: string) => void;
   productName: string;
   className?: string;
-}
+});
 
-export default function ProductImages({ 
+export default ProductImages;
+
+const ProductImages = memo(function ProductImages({ 
   images, 
   selectedImage, 
   onImageSelect,
@@ -19,7 +22,7 @@ export default function ProductImages({
   className = ""
 }: ProductImagesProps) {
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 ${className}`}>
       <motion.img
         key={selectedImage}
         src={selectedImage}

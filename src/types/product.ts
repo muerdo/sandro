@@ -18,3 +18,10 @@ export interface ProductCustomization {
   selectedType: string | null;
   selectedImage: string | null;
 }
+
+export interface ProductCustomizationState extends ProductCustomization {
+  setSelectedSize: (size: string) => void;
+  setSelectedColor: (color: string) => void;
+  setSelectedType: (type: string) => void;
+  setSelectedImage: (image: string) => void;
+}

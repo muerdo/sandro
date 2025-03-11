@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import type { ProductCustomizationOptions, ProductCustomization } from "@/types/product";
+import { useState, useCallback } from "react";
+import type { ProductCustomizationOptions, ProductCustomizationState } from "@/types/product";
 
 export function useProductCustomization({
   initialSize,
@@ -10,25 +10,36 @@ export function useProductCustomization({
   sizes = [],
   colors = [],
   types = []
-}: ProductCustomizationOptions): ProductCustomization & {
-  setSelectedSize: (size: string) => void;
-  setSelectedColor: (color: string) => void;
-  setSelectedType: (type: string) => void;
-  setSelectedImage: (image: string) => void;
-} {
+}: ProductCustomizationOptions): ProductCustomizationState {
   const [selectedSize, setSelectedSize] = useState<string | null>(initialSize || sizes[0] || null);
   const [selectedColor, setSelectedColor] = useState<string | null>(initialColor || colors[0] || null);
   const [selectedType, setSelectedType] = useState<string | null>(initialType || types[0] || null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
+  const handleSetSize = useCallback((size: string) => {
+    setSelectedSize(size);
+  }, []);
+
+  const handleSetColor = useCallback((color: string) => {
+    setSelectedColor(color);
+  }, []);
+
+  const handleSetType = useCallback((type: string) => {
+    setSelectedType(type);
+  }, []);
+
+  const handleSetImage = useCallback((image: string) => {
+    setSelectedImage(image);
+  }, []);
+
   return {
     selectedSize,
-    setSelectedSize,
     selectedColor,
-    setSelectedColor,
     selectedType,
-    setSelectedType,
     selectedImage,
-    setSelectedImage
+    setSelectedSize: handleSetSize,
+    setSelectedColor: handleSetColor,
+    setSelectedType: handleSetType,
+    setSelectedImage: handleSetImage
   };
 }
