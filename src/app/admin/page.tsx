@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
+import { supabase } from "@/lib/supabase";
+import type { Order } from "@/types/admin";
 import Link from "next/link";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { format } from 'date-fns';
@@ -121,12 +123,13 @@ export default function AdminDashboard() {
       }).reverse();
 
       const salesData = last7Days.map(date => {
-        const dayOrders = data.filter(order => 
+        const dayOrders = data.filter((order: { created_at: string; total_amount: number }) => 
           format(new Date(order.created_at), 'MMM dd') === date
         );
         return {
           date,
-          revenue: dayOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0),
+          revenue: dayOrders.reduce((sum: number, order: { total_amount: number }) => 
+            sum + (order.total_amount || 0), 0),
           orders: dayOrders.length
         };
       });
@@ -138,23 +141,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const fetchRecentOrders = async () => {
-    const { data, error } = await supabase
-      .from('orders')
-      .select(`
-        *,
-        profiles (username)
-      `)
-      .order('created_at', { ascending: false })
-      .limit(5);
-
-    if (error) {
-      console.error('Error fetching recent orders:', error);
-      return;
-    }
-
-    setRecentOrders(data);
-  };
+  const { recentOrders, subscribeToOrders, fetchRecentOrders } = useOrders();
 
   if (!isAdmin) {
     return (
