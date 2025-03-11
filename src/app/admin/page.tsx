@@ -106,24 +106,26 @@ export default function AdminDashboard() {
   };
 
   const fetchSalesData = async () => {
-    const { data, error } = await supabase
-      .from('orders')
-      .select('created_at, total_amount')
-      .order('created_at', { ascending: false })
-      .limit(7);
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('created_at, total_amount')
+        .order('created_at', { ascending: false })
+        .limit(7);
 
-    if (error) {
+      if (error) throw error;
+
+      const salesData = data.map(order => ({
+        date: format(new Date(order.created_at), 'MMM dd'),
+        revenue: order.total_amount || 0,
+        orders: 1
+      }));
+
+      setSalesData(salesData);
+    } catch (error) {
       console.error('Error fetching sales data:', error);
-      return;
+      toast.error('Failed to load sales data');
     }
-
-    const salesData = data.map(order => ({
-      date: format(new Date(order.created_at), 'MMM dd'),
-      revenue: order.total_amount || 0,
-      orders: 1
-    }));
-
-    setSalesData(salesData);
   };
 
   const fetchRecentOrders = async () => {
