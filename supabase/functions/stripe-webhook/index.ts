@@ -1,5 +1,5 @@
-import { createClient } from 'jsr:@supabase/supabase-js@2'
-import Stripe from 'stripe'
+import { createClient } from 'npm:@supabase/supabase-js@2'
+import Stripe from 'npm:stripe@14.14.0'
 
 // Deno types
 declare global {
@@ -12,7 +12,7 @@ declare global {
 }
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-  apiVersion: '2025-02-24',
+  apiVersion: '2025-02-24.acacia',
   httpClient: Stripe.createFetchHttpClient()
 })
 
