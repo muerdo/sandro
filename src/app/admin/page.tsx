@@ -80,30 +80,26 @@ export default function AdminDashboard() {
   };
 
 
-      // Update sales data for chart
-      const last7Days = Array.from({ length: 7 }, (_, i) => {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        return format(date, 'MMM dd');
-      }).reverse();
+  useEffect(() => {
+    const initializeAdmin = async () => {
+      try {
+        await checkAdminStatus();
+        if (isAdmin) {
+          subscribeToOrders();
+          await Promise.all([
+            fetchStats(),
+            fetchSalesData(),
+            fetchRecentOrders()
+          ]);
+        }
+      } catch (error) {
+        console.error('Error initializing admin dashboard:', error);
+        toast.error('Failed to load dashboard');
+      }
+    };
 
-      const salesData = last7Days.map(date => {
-        const dayOrders = orders.filter(order => 
-          format(new Date(order.created_at), 'MMM dd') === date
-        );
-        return {
-          date,
-          revenue: dayOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0),
-          orders: dayOrders.length
-        };
-      });
-
-      setSalesData(salesData);
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-      toast.error('Failed to load dashboard statistics');
-    }
-  };
+    initializeAdmin();
+  }, [isAdmin, fetchStats]);
 
   const fetchSalesData = async () => {
     try {
@@ -115,11 +111,27 @@ export default function AdminDashboard() {
 
       if (error) throw error;
 
-      const salesData = data.map(order => ({
-        date: format(new Date(order.created_at), 'MMM dd'),
-        revenue: order.total_amount || 0,
-        orders: 1
-      }));
+      if (!data) {
+        setSalesData([]);
+        return;
+      }
+
+      const last7Days = Array.from({ length: 7 }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        return format(date, 'MMM dd');
+      }).reverse();
+
+      const salesData = last7Days.map(date => {
+        const dayOrders = data.filter(order => 
+          format(new Date(order.created_at), 'MMM dd') === date
+        );
+        return {
+          date,
+          revenue: dayOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0),
+          orders: dayOrders.length
+        };
+      });
 
       setSalesData(salesData);
     } catch (error) {
