@@ -25,8 +25,8 @@ export default function RootLayout({
       <body className="min-h-screen bg-background antialiased flex flex-col">
         <AuthProvider>
           <CartProvider>
-            <StripeProvider>
-              <TransitionProvider>
+            <TransitionProvider>
+              <StripeProvider>
                 <div className="flex-1">
                   {children}
                 </div>
@@ -39,8 +39,8 @@ export default function RootLayout({
                 </nav>
                 <Footer />
                 <CartSummary />
-              </TransitionProvider>
-            </StripeProvider>
+              </StripeProvider>
+            </TransitionProvider>
           </CartProvider>
         </AuthProvider>
       </body>
