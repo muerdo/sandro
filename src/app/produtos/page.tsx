@@ -1,17 +1,32 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowLeft, ShoppingCart } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useCart } from "@/contexts/cart-context";
 import { useAuth } from "@/contexts/auth-context";
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { toast } from "sonner";
+import { useStripeProducts } from "@/hooks/useStripeProducts";
+import ProductCard from "@/components/products/product-card";
 
 export default function CatalogoPage() {
-  const [loading, setLoading] = useState(true);
-  const [products, setProducts] = useState([
+  const { products, loading } = useStripeProducts();
+  const { user } = useAuth();
+  const { addItem, setShowAuthDialog } = useCart();
+
+  const handleQuickAdd = (product: Product) => {
+    if (!user) {
+      setShowAuthDialog(true);
+      return;
+    }
+
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.media[0]?.url || product.image
+    });
+  };
+
+  const defaultProducts = [
   {
     id: "camiseta-personalizada",
     name: "Camiseta Personalizada",
