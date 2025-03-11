@@ -1,5 +1,17 @@
-import { createClient } from 'jsr:@supabase/supabase-js@2'
-import Stripe from 'npm:stripe@14.14.0'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7'
+import Stripe from 'https://esm.sh/stripe@14.14.0'
+
+// Deno runtime type declarations
+declare global {
+  interface Window {
+    Deno: {
+      env: {
+        get(key: string): string | undefined;
+      };
+      serve(handler: (req: Request) => Promise<Response>): void;
+    }
+  }
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
