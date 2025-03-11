@@ -1,7 +1,16 @@
-import { createClient } from 'jsr:@supabase/supabase-js@2'
-import Stripe from 'npm:stripe@14.18.0'
+import { createClient } from '@supabase/supabase-js'
+import Stripe from 'stripe'
 
-interface Product extends Stripe.Product {
+interface StripeProduct extends Stripe.Product {
+  id: string;
+  name: string;
+  description: string | null;
+  images: string[];
+  metadata: {
+    category?: string;
+    features?: string;
+    customization?: string;
+  };
   default_price?: Stripe.Price;
 }
 
@@ -32,7 +41,7 @@ Deno.serve(async (req: Request) => {
     });
 
     // Transform Stripe products into our app's format
-    const formattedProducts = products.data.map((product: Product) => ({
+    const formattedProducts = products.data.map((product: StripeProduct) => ({
       id: product.id,
       name: product.name,
       description: product.description || '',
