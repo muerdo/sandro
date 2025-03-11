@@ -8,7 +8,20 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
-const [products, setProducts] = useState([
+"use client";
+
+import { motion } from "framer-motion";
+import { ArrowLeft, ShoppingCart } from "lucide-react";
+import { useCart } from "@/contexts/cart-context";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
+
+export default function CatalogoPage() {
+  const { addItem } = useCart();
+  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState([
   {
     id: "camiseta-personalizada",
     name: "Camiseta Personalizada",
@@ -50,17 +63,52 @@ export default function CatalogoPage() {
   useEffect(() => {
     const fetchStripeProducts = async () => {
       try {
+        setLoading(true);
         const { data, error } = await supabase.functions.invoke('get-stripe-products');
         if (error) throw error;
         
         // Merge Stripe products with existing products
-        setProducts(prevProducts => {
-          const stripeProducts = data.map((product: any) => ({
-            ...product,
-            id: `stripe-${product.id}`
-          }));
-          return [...prevProducts, ...stripeProducts];
-        });
+        const defaultProducts = [
+          {
+            id: "camiseta-personalizada",
+            name: "Camiseta Personalizada",
+            price: 49.90,
+            image: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?q=80&w=2669&auto=format&fit=crop",
+            category: "Vestuário",
+            description: "Camisetas 100% algodão com impressão DTF"
+          },
+          {
+            id: "adesivo-personalizado",
+            name: "Adesivo Personalizado",
+            price: 29.90,
+            image: "https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=2671&auto=format&fit=crop",
+            category: "Adesivos",
+            description: "Adesivos de alta qualidade em vinil"
+          },
+          {
+            id: "banner-grande-formato",
+            name: "Banner Grande Formato",
+            price: 149.90,
+            image: "https://images.unsplash.com/photo-1588412079929-790b9f593d8e?q=80&w=2574&auto=format&fit=crop",
+            category: "Impressão",
+            description: "Banners em lona com acabamento profissional"
+          },
+          {
+            id: "caneca-personalizada",
+            name: "Caneca Personalizada",
+            price: 39.90,
+            image: "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=2670&auto=format&fit=crop",
+            category: "Presentes",
+            description: "Canecas de cerâmica com impressão sublimática"
+          }
+        ];
+
+        const stripeProducts = data?.map((product: any) => ({
+          ...product,
+          id: `stripe-${product.id}`
+        })) || [];
+
+        setProducts([...defaultProducts, ...stripeProducts]);
       } catch (error) {
         console.error('Error fetching Stripe products:', error);
         toast.error('Failed to load some products');
