@@ -1,9 +1,9 @@
-import { createClient } from '@supabase/supabase-js'
-import Stripe from 'stripe'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7'
+import Stripe from 'https://esm.sh/stripe@14.14.0'
 
-// Type declarations for Deno runtime
+// Deno runtime type declarations
 declare global {
-  var Deno: {
+  const Deno: {
     env: {
       get(key: string): string | undefined;
     };
@@ -35,9 +35,9 @@ const corsHeaders = {
 }
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-  apiVersion: '2023-10-16',
+  apiVersion: '2025-02-24.acacia',
   httpClient: Stripe.createFetchHttpClient(),
-})
+}) as unknown as Stripe
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
