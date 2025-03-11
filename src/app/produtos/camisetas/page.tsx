@@ -4,7 +4,8 @@ import { motion } from "framer-motion";
 import { ArrowLeft, ShoppingCart } from "lucide-react";
 import { useCart } from "@/contexts/cart-context";
 import { useAuth } from "@/contexts/auth-context";
-import { useState } from "react";
+import { useProductCustomization } from "@/hooks/useProductCustomization";
+import ProductImages from "@/components/products/product-images";
 
 const product = {
   id: "camiseta-personalizada",
@@ -31,12 +32,22 @@ const product = {
 };
 
 export default function CamisetasPage() {
-  const [selectedImage, setSelectedImage] = useState(product.images[0]);
-  const [selectedSize, setSelectedSize] = useState(product.customization.sizes[1]);
-  const [selectedColor, setSelectedColor] = useState(product.customization.colors[0]);
-
   const { user } = useAuth();
   const { addItem, setShowAuthDialog } = useCart();
+
+  const {
+    selectedSize,
+    setSelectedSize,
+    selectedColor,
+    setSelectedColor,
+    selectedImage,
+    setSelectedImage
+  } = useProductCustomization({
+    initialSize: product.customization.sizes[1],
+    initialColor: product.customization.colors[0],
+    sizes: product.customization.sizes,
+    colors: product.customization.colors
+  });
 
   const handleAddToCart = () => {
     if (!user) {
@@ -66,36 +77,12 @@ export default function CamisetasPage() {
         </motion.button>
 
         <div className="grid grid-cols-2 gap-12">
-          <div className="space-y-4">
-            <motion.img
-              key={selectedImage}
-              src={selectedImage}
-              alt={product.name}
-              className="w-full aspect-square object-cover rounded-xl shadow-lg"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-            />
-            <div className="grid grid-cols-3 gap-4">
-              {product.images.map((image) => (
-                <motion.button
-                  key={image}
-                  onClick={() => setSelectedImage(image)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`relative rounded-lg overflow-hidden ${
-                    selectedImage === image ? 'ring-2 ring-primary' : ''
-                  }`}
-                >
-                  <img
-                    src={image}
-                    alt={product.name}
-                    className="w-full aspect-square object-cover"
-                  />
-                </motion.button>
-              ))}
-            </div>
-          </div>
+          <ProductImages
+            images={product.images}
+            selectedImage={selectedImage || product.images[0]}
+            onImageSelect={setSelectedImage}
+            productName={product.name}
+          />
 
           <div className="space-y-8">
             <div>
