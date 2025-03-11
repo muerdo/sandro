@@ -11,7 +11,8 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Search
+  Search,
+  type LucideIcon
 } from "lucide-react";
 
 import { Order, OrderStatus, PaymentStatus, PaymentMethod } from '@/types/admin';
@@ -124,6 +125,23 @@ export default function OrdersManagement() {
     );
   }
 
+  const OrderActionButton = ({ onClick, icon: Icon, className, children }: { 
+    onClick: () => void;
+    icon: LucideIcon;
+    className: string;
+    children?: React.ReactNode;
+  }) => (
+    <motion.button
+      onClick={onClick}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      className={className}
+    >
+      <Icon className="w-4 h-4" />
+      {children}
+    </motion.button>
+  );
+
   return (
     <main className="min-h-screen bg-background py-12">
       <div className="container mx-auto px-4">
@@ -211,34 +229,25 @@ export default function OrdersManagement() {
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-2">
                         {order.status !== 'completed' && (
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                          <OrderActionButton
                             onClick={() => updateOrderStatus(order.id, 'completed')}
+                            icon={CheckCircle}
                             className="p-2 bg-green-500/10 text-green-500 rounded-lg"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                          </motion.button>
+                          />
                         )}
                         {order.status === 'pending' && (
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                          <OrderActionButton
                             onClick={() => updateOrderStatus(order.id, 'processing')}
+                            icon={Clock}
                             className="p-2 bg-blue-500/10 text-blue-500 rounded-lg"
-                          >
-                            <Clock className="w-4 h-4" />
-                          </motion.button>
+                          />
                         )}
                         {order.status !== 'cancelled' && (
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                          <OrderActionButton
                             onClick={() => updateOrderStatus(order.id, 'cancelled')}
+                            icon={XCircle}
                             className="p-2 bg-destructive/10 text-destructive rounded-lg"
-                          >
-                            <XCircle className="w-4 h-4" />
-                          </motion.button>
+                          />
                         )}
                       </div>
                     </td>
