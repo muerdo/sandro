@@ -1,6 +1,11 @@
-import { createClient } from 'npm:@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
-import Stripe from 'npm:stripe@12.18.0'
+import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { corsHeaders } from '../_shared/cors'
+import Stripe from 'jsr:stripe@14.14'
+
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
+  apiVersion: '2023-10-16',
+  httpClient: Stripe.createFetchHttpClient()
+});
 
 // Add Deno types
 declare global {
