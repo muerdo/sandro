@@ -47,6 +47,44 @@ export default function ProductsManagement() {
     categories: true,
     action: false
   });
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
+
+  const handleProductAction = async (action: 'create' | 'update' | 'delete', productData?: any) => {
+    try {
+      setLoading(prev => ({ ...prev, action: true }));
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No authentication session');
+
+      const { error } = await supabase.functions.invoke('admin-operations', {
+        body: { 
+          action: action === 'create' ? 'createProduct' : 
+                 action === 'update' ? 'updateProduct' : 'deleteProduct',
+          productId: action !== 'create' ? productToDelete : undefined,
+          product: productData
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success(`Product ${action}d successfully`);
+      fetchProducts();
+      setShowProductModal(false);
+      setShowDeleteConfirm(false);
+      setProductToDelete(null);
+    } catch (error) {
+      console.error('Error handling product action:', error);
+      toast.error(`Failed to ${action} product`);
+    } finally {
+      setLoading(prev => ({ ...prev, action: false }));
+    }
+  };
 
   useEffect(() => {
     checkAdminStatus();
