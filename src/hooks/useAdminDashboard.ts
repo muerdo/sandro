@@ -103,7 +103,13 @@ export function useAdminDashboard() {
           total_customers: uniqueCustomers.size,
           average_order_value: averageOrderValue,
           total_products: products?.length || 0,
-          active_products: products?.filter(p => p.status === 'active').length || 0
+          active_products: products?.filter(p => p.status === 'active').length || 0,
+          low_stock_products: products?.filter(p => p.stock <= p.low_stock_threshold).length || 0,
+          out_of_stock_products: products?.filter(p => p.stock === 0).length || 0,
+          inventory: {
+            alerts: [],
+            recentUpdates: []
+          }
         },
         loading: {
           ...prev.loading,

@@ -283,11 +283,15 @@ export default function StripeProductPage() {
                       <label className="block text-sm font-medium mb-1">Low Stock Alert</label>
                       <input
                         type="number"
-                        value={selectedProduct.low_stock_threshold}
-                        onChange={(e) => setSelectedProduct({
-                          ...selectedProduct,
-                          low_stock_threshold: parseInt(e.target.value)
-                        })}
+                        value={selectedProduct.low_stock_threshold || 0}
+                        onChange={(e) => {
+                          if (selectedProduct) {
+                            setSelectedProduct({
+                              ...selectedProduct,
+                              low_stock_threshold: parseInt(e.target.value) || 0
+                            });
+                          }
+                        }}
                         className="w-full bg-background px-3 py-2 rounded-lg border"
                       />
                     </div>

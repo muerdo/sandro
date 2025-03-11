@@ -107,7 +107,7 @@ export interface Product {
   created_at: string;
   updated_at: string;
   status?: string;
-  low_stock_threshold?: number;
+  low_stock_threshold: number;
   inventory_history?: InventoryUpdate[];
 }
 
