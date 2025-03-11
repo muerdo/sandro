@@ -62,6 +62,7 @@ export type Database = {
       orders: {
         Row: {
           created_at: string | null
+          estimated_delivery: string | null
           id: string
           items: Json
           payment_method: string
@@ -69,11 +70,13 @@ export type Database = {
           shipping_address: Json | null
           status: string
           total_amount: number
+          tracking_info: Json | null
           updated_at: string | null
           user_id: string | null
         }
         Insert: {
           created_at?: string | null
+          estimated_delivery?: string | null
           id?: string
           items?: Json
           payment_method: string
@@ -81,11 +84,13 @@ export type Database = {
           shipping_address?: Json | null
           status: string
           total_amount: number
+          tracking_info?: Json | null
           updated_at?: string | null
           user_id?: string | null
         }
         Update: {
           created_at?: string | null
+          estimated_delivery?: string | null
           id?: string
           items?: Json
           payment_method?: string
@@ -93,6 +98,7 @@ export type Database = {
           shipping_address?: Json | null
           status?: string
           total_amount?: number
+          tracking_info?: Json | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -116,7 +122,9 @@ export type Database = {
           created_at: string | null
           id: string
           pix_key: string
+          pix_key_type: string | null
           psp_url: string | null
+          transaction_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -128,7 +136,9 @@ export type Database = {
           created_at?: string | null
           id?: string
           pix_key: string
+          pix_key_type?: string | null
           psp_url?: string | null
+          transaction_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -140,7 +150,9 @@ export type Database = {
           created_at?: string | null
           id?: string
           pix_key?: string
+          pix_key_type?: string | null
           psp_url?: string | null
+          transaction_id?: string | null
           updated_at?: string | null
         }
         Relationships: []
