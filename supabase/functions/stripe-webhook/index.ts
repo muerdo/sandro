@@ -1,9 +1,8 @@
-import { createClient } from '@supabase/supabase-js'
-import { Stripe } from 'npm:stripe@14.18.0'
+import { createClient } from 'jsr:@supabase/supabase-js@2'
+import Stripe from 'jsr:stripe@14.18'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-  apiVersion: '2023-10-16',
-  httpClient: Stripe.createFetchHttpClient(),
+  apiVersion: '2023-10-16'
 })
 
 const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')
