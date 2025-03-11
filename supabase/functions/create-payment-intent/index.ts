@@ -44,25 +44,7 @@ Deno.serve(async (req: Request) => {
 
     const { items, total } = await req.json();
 
-    // Validate items against Stripe prices
-    const lineItems = await Promise.all(items.map(async (item: any) => {
-      const { data: product } = await supabaseClient
-        .from('products')
-        .select('stripe_price_id')
-        .eq('id', item.id)
-        .single();
-
-      if (!product?.stripe_price_id) {
-        throw new Error(`Product ${item.id} not found in Stripe`);
-      }
-
-      return {
-        price: product.stripe_price_id,
-        quantity: item.quantity
-      };
-    }));
-
-    // Create or retrieve Stripe customer
+    // Get or create Stripe customer
     const { data: profiles } = await supabaseClient
       .from('profiles')
       .select('stripe_customer_id')
@@ -86,7 +68,7 @@ Deno.serve(async (req: Request) => {
         .eq('id', user.id);
     }
 
-    // Create payment intent with line items
+    // Create payment intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(total * 100),
       currency: 'brl',
