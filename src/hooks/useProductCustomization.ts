@@ -14,7 +14,7 @@ export function useProductCustomization({
   const [selectedSize, setSelectedSize] = useState<string | null>(initialSize || sizes[0] || null);
   const [selectedColor, setSelectedColor] = useState<string | null>(initialColor || colors[0] || null);
   const [selectedType, setSelectedType] = useState<string | null>(initialType || types[0] || null);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedMedia, setSelectedMedia] = useState<ProductMedia | null>(null);
 
   const handleSetSize = useCallback((size: string) => {
     setSelectedSize(size);
@@ -36,10 +36,10 @@ export function useProductCustomization({
     selectedSize,
     selectedColor,
     selectedType,
-    selectedImage,
+    selectedMedia,
     setSelectedSize: handleSetSize,
     setSelectedColor: handleSetColor,
     setSelectedType: handleSetType,
-    setSelectedImage: handleSetImage
+    setSelectedMedia: setSelectedMedia
   };
 }

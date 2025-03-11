@@ -12,10 +12,23 @@ const product = {
   name: "Camiseta Personalizada",
   price: 49.90,
   description: "Camiseta 100% algodão com impressão DTF de alta qualidade. Personalize com suas próprias artes ou escolha entre nossos designs exclusivos.",
-  images: [
-    "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?q=80&w=2669&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=2680&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?q=80&w=2680&auto=format&fit=crop"
+  media: [
+    {
+      type: 'image',
+      url: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?q=80&w=2669&auto=format&fit=crop",
+      alt: "Camiseta branca básica"
+    },
+    {
+      type: 'video',
+      url: "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+      thumbnail: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=2680&auto=format&fit=crop",
+      alt: "Vídeo demonstrativo da camiseta"
+    },
+    {
+      type: 'image',
+      url: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?q=80&w=2680&auto=format&fit=crop",
+      alt: "Detalhes da camiseta"
+    }
   ],
   features: [
     "Impressão DTF de alta durabilidade",
@@ -78,9 +91,9 @@ export default function CamisetasPage() {
 
         <div className="grid grid-cols-2 gap-12">
           <ProductImages
-            images={product.images}
-            selectedImage={selectedImage || product.images[0]}
-            onImageSelect={setSelectedImage}
+            media={product.media}
+            selectedMedia={selectedMedia || product.media[0]}
+            onMediaSelect={setSelectedMedia}
             productName={product.name}
           />
 

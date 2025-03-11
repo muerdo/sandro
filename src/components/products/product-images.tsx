@@ -2,55 +2,81 @@
 
 import { memo } from "react";
 import { motion } from "framer-motion";
-import type { ProductImage } from "@/types/product";
+import { Play } from "lucide-react";
+import type { ProductMedia } from "@/types/product";
 
 interface ProductImagesProps {
-  images: string[];
-  selectedImage: string;
-  onImageSelect: (image: string) => void;
+  media: ProductMedia[];
+  selectedMedia: ProductMedia;
+  onMediaSelect: (media: ProductMedia) => void;
   productName: string;
   className?: string;
-});
-
-export default ProductImages;
+}
 
 const ProductImages = memo(function ProductImages({ 
-  images, 
-  selectedImage, 
-  onImageSelect,
+  media, 
+  selectedMedia, 
+  onMediaSelect,
   productName,
   className = ""
 }: ProductImagesProps) {
   return (
     <div className={`space-y-4 ${className}`}>
-      <motion.img
-        key={selectedImage}
-        src={selectedImage}
-        alt={productName}
-        className="w-full aspect-square object-cover rounded-xl shadow-lg"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      />
+      {selectedMedia.type === 'video' ? (
+        <motion.video
+          key={selectedMedia.url}
+          src={selectedMedia.url}
+          controls
+          className="w-full aspect-video rounded-xl shadow-lg"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        />
+      ) : (
+        <motion.img
+          key={selectedMedia.url}
+          src={selectedMedia.url}
+          alt={selectedMedia.alt || productName}
+          className="w-full aspect-square object-cover rounded-xl shadow-lg"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        />
+      )}
       <div className="grid grid-cols-3 gap-4">
-        {images.map((image) => (
+        {media.map((item) => (
           <motion.button
-            key={image}
-            onClick={() => onImageSelect(image)}
+            key={item.url}
+            onClick={() => onMediaSelect(item)}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className={`relative rounded-lg overflow-hidden ${
-              selectedImage === image ? 'ring-2 ring-primary' : ''
+              selectedMedia.url === item.url ? 'ring-2 ring-primary' : ''
             }`}
           >
-            <img
-              src={image}
-              alt={productName}
-              className="w-full aspect-square object-cover"
-            />
+            {item.type === 'video' ? (
+              <div className="relative">
+                <img
+                  src={item.thumbnail || item.url}
+                  alt={item.alt || productName}
+                  className="w-full aspect-square object-cover"
+                />
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <Play className="w-8 h-8 text-white" />
+                </div>
+              </div>
+            ) : (
+              <img
+                src={item.url}
+                alt={item.alt || productName}
+                className="w-full aspect-square object-cover"
+              />
+            )}
           </motion.button>
         ))}
       </div>
     </div>
   );
-}
+});
+
+export default ProductImages;
