@@ -34,7 +34,8 @@ export default function CatalogoPage() {
       features: [],
       stock: 100,
       status: 'active',
-      low_stock_threshold: 10
+      low_stock_threshold: 10,
+      stripeId: null
     },
     {
       id: "adesivo-personalizado",
@@ -102,29 +103,30 @@ export default function CatalogoPage() {
         }
 
         // Transform Stripe products to match our format
-        const stripeProducts = stripeData?.map((product: any) => ({
+        const stripeProducts = Array.isArray(stripeData) ? stripeData.map((product: any) => ({
           id: `stripe-${product.id}`,
-          name: product.name,
+          name: product.name || 'Untitled Product',
           description: product.description || '',
           price: product.prices?.[0]?.unit_amount ? product.prices[0].unit_amount / 100 : 0,
           category: product.metadata?.category || 'Outros',
           image: product.images?.[0] || "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9",
           media: [
             {
-              type: 'image',
+              type: 'image' as const,
               url: product.images?.[0] || "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9",
-              alt: product.name
+              alt: product.name || 'Product Image'
             }
           ],
           features: product.metadata?.features?.split(',') || [],
           customization: product.metadata?.customization ? JSON.parse(product.metadata.customization) : undefined,
           stock: 999,
-          status: 'active',
-          stripeId: product.id
-        })) || [];
+          status: 'active' as const,
+          stripeId: product.id,
+          low_stock_threshold: 10
+        })) : [];
 
         const allProducts = [...defaultProducts];
-        if (stripeProducts?.length > 0) {
+        if (stripeProducts.length > 0) {
           allProducts.push(...stripeProducts);
         }
 
