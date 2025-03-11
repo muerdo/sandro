@@ -182,9 +182,28 @@ export default function CheckoutPage() {
     return "34191.79001 01043.510047 91020.150008 6 88770000002000";
   };
 
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center py-12">
+          <h2 className="text-2xl font-semibold mb-4">Please Sign In to Continue</h2>
+          <p className="text-muted-foreground mb-6">You need to be signed in to complete your purchase</p>
+          <motion.button
+            onClick={() => router.push('/')}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="bg-primary text-primary-foreground px-6 py-3 rounded-lg"
+          >
+            Sign In
+          </motion.button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <main className="min-h-screen bg-background py-12">
-      <div className="container mx-auto px-4 max-w-4xl">
+    <div className="min-h-screen bg-background py-12">
+      <div className="container mx-auto px-4">
         <motion.button
           onClick={() => router.back()}
           whileHover={{ scale: 1.05 }}
