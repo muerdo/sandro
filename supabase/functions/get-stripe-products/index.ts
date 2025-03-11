@@ -1,11 +1,21 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
-import Stripe from 'https://esm.sh/stripe@14.14.0'
+import { createClient } from '@supabase/supabase-js'
+import Stripe from 'stripe'
 
-type StripePrice = {
+// Deno types
+declare global {
+  const Deno: {
+    env: {
+      get(key: string): string | undefined;
+    };
+    serve(handler: (req: Request) => Promise<Response>): void;
+  };
+}
+
+interface StripePrice extends Stripe.Price {
   unit_amount: number;
 }
 
-interface StripeProduct {
+interface StripeProduct extends Stripe.Product {
   id: string;
   name: string;
   description: string | null;
@@ -23,20 +33,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// @ts-ignore
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2025-02-24',
   httpClient: Stripe.createFetchHttpClient(),
 })
 
-// @ts-ignore
 const supabaseClient = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 )
 
-// @ts-ignore
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
