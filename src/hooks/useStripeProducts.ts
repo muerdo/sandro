@@ -32,7 +32,7 @@ export function useStripeProducts() {
             alt: product.name
           }
         ],
-        features: product.metadata?.features?.split(',') || [],
+        features: product.metadata?.features?.split(',') || [] as string[],
         customization: product.metadata?.customization ? JSON.parse(product.metadata.customization) : undefined,
         stock: 999,
         status: 'active',
