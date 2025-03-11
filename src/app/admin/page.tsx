@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
+import { useOrders } from "@/hooks/useOrders";
 import { supabase } from "@/lib/supabase";
 import type { Order } from "@/types/admin";
 import Link from "next/link";
@@ -37,7 +38,7 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const { loading, stats, isAdmin, checkAdminStatus, fetchStats } = useAdminDashboard();
-  const { recentOrders, subscribeToOrders } = useOrders();
+  const { recentOrders, subscribeToOrders, fetchRecentOrders } = useOrders();
 
   useEffect(() => {
     const initializeAdmin = async () => {

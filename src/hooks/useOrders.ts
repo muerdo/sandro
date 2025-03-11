@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import type { Order } from "@/types/admin";
+import type { Order, OrderStatus, PaymentStatus, PaymentMethod } from "@/types/admin";
 
 export function useOrders() {
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
