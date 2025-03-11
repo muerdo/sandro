@@ -3,9 +3,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@13.10.0?target=deno";
+import type { PaymentIntent } from "https://esm.sh/stripe@13.10.0?target=deno";
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-  apiVersion: '2025-02-24.acacia',
+  apiVersion: '2025-02-24',
   httpClient: Stripe.createFetchHttpClient()
 });
 
@@ -47,7 +48,7 @@ serve(async (req: Request) => {
 
     switch (event.type) {
       case 'payment_intent.succeeded': {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        const paymentIntent = event.data.object as PaymentIntent;
         
         const { error: updateError } = await supabaseClient
           .from('orders')
@@ -66,7 +67,7 @@ serve(async (req: Request) => {
       }
 
       case 'payment_intent.payment_failed': {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        const paymentIntent = event.data.object as PaymentIntent;
         
         const { error: updateError } = await supabaseClient
           .from('orders')
