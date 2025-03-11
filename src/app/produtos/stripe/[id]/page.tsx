@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Product } from "@/types/product";
 
-export default function StripeProductPage({ params }: { params: { id: string } }) {
+export default function StripeProductPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { addItem, setShowAuthDialog } = useCart();
@@ -37,8 +37,11 @@ export default function StripeProductPage({ params }: { params: { id: string } }
   useEffect(() => {
     const fetchProduct = async () => {
       try {
+        // Get product ID from URL
+        const productId = window.location.pathname.split('/').pop();
+        
         const { data, error } = await supabase.functions.invoke('get-stripe-product', {
-          body: { productId: params.id }
+          body: { productId }
         });
 
         if (error) throw error;
@@ -72,8 +75,10 @@ export default function StripeProductPage({ params }: { params: { id: string } }
       }
     };
 
-    fetchProduct();
-  }, [params.id]);
+    if (typeof window !== 'undefined') {
+      fetchProduct();
+    }
+  }, []);
 
   const handleAddToCart = () => {
     if (!user) {
