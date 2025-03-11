@@ -35,7 +35,15 @@ export default function CamisetasPage() {
   const [selectedSize, setSelectedSize] = useState(product.customization.sizes[1]);
   const [selectedColor, setSelectedColor] = useState(product.customization.colors[0]);
 
+  const { user } = useAuth();
+  const { addItem, setShowAuthDialog } = useCart();
+
   const handleAddToCart = () => {
+    if (!user) {
+      setShowAuthDialog(true);
+      return;
+    }
+
     addItem({
       id: `${product.id}-${selectedSize}-${selectedColor}`,
       name: `${product.name} - ${selectedColor} ${selectedSize}`,

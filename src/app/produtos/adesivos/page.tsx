@@ -35,7 +35,15 @@ export default function AdesivosPage() {
   const [selectedSize, setSelectedSize] = useState(product.customization.sizes[1]);
   const [selectedType, setSelectedType] = useState(product.customization.types[0]);
 
+  const { user } = useAuth();
+  const { addItem, setShowAuthDialog } = useCart();
+
   const handleAddToCart = () => {
+    if (!user) {
+      setShowAuthDialog(true);
+      return;
+    }
+    
     addItem({
       id: `${product.id}-${selectedSize}-${selectedType}`,
       name: `${product.name} - ${selectedType} ${selectedSize}`,

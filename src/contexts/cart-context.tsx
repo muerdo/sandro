@@ -1,6 +1,8 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { useAuth } from "./auth-context";
+import AuthDialog from "@/components/auth/auth-dialog";
 
 export type CartItem = {
   id: string;
@@ -18,6 +20,8 @@ type CartContextType = {
   clearCart: () => void;
   total: number;
   itemCount: number;
+  showAuthDialog: boolean;
+  setShowAuthDialog: (show: boolean) => void;
 };
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -25,6 +29,8 @@ const CartContext = createContext<CartContextType | null>(null);
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isClient, setIsClient] = useState(false);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     setIsClient(true);
@@ -90,10 +96,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         updateQuantity,
         clearCart,
         total,
-        itemCount
+        itemCount,
+        showAuthDialog,
+        setShowAuthDialog
       }}
     >
       {children}
+      {showAuthDialog && (
+        <AuthDialog 
+          isOpen={showAuthDialog} 
+          onClose={() => setShowAuthDialog(false)} 
+        />
+      )}
     </CartContext.Provider>
   );
 }

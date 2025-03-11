@@ -106,7 +106,15 @@ export default function CatalogoPage() {
     fetchStripeProducts();
   }, []);
 
+  const { user } = useAuth();
+  const { addItem, setShowAuthDialog } = useCart();
+
   const handleQuickAdd = (product: typeof products[0]) => {
+    if (!user) {
+      setShowAuthDialog(true);
+      return;
+    }
+
     addItem({
       id: product.id,
       name: product.name,
