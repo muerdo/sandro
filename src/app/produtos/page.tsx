@@ -188,7 +188,9 @@ export default function CatalogoPage() {
                 
                 <div className="flex gap-3">
                   <Link
-                    href={`/produtos/${product.id.split('-')[0]}s`}
+                    href={product.stripeId 
+                      ? `/produtos/stripe/product?id=${product.stripeId}` 
+                      : `/produtos/${product.id.split('-')[0]}s`}
                     className="flex-1"
                   >
                     <motion.button
