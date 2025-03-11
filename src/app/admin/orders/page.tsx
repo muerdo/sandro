@@ -6,16 +6,23 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { format } from 'date-fns';
+import { toast } from "sonner";
 import { 
   AlertCircle,
-  CheckCircle,
+  CheckCircle2,
   XCircle,
   Clock,
   Search,
+  Filter,
+  ArrowUpDown,
+  MessageCircle,
   type LucideIcon
 } from "lucide-react";
 
 import { Order, OrderStatus, PaymentStatus, PaymentMethod } from '@/types/admin';
+
+type SortField = 'created_at' | 'total_amount' | 'status';
+type SortDirection = 'asc' | 'desc';
 
 export default function OrdersManagement() {
   const { user } = useAuth();
