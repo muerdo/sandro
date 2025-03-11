@@ -5,14 +5,16 @@
   "compilerOptions": {
     "allowJs": true,
     "lib": ["deno.window", "deno.ns", "esnext"],
-    "strict": true
+    "strict": true,
+    "noImplicitAny": true
   },
   "lint": {
     "files": {
       "include": ["supabase/functions/"]
     },
     "rules": {
-      "tags": ["recommended"]
+      "tags": ["recommended"],
+      "include": ["ban-untagged-todo"]
     }
   },
   "fmt": {
@@ -24,6 +26,12 @@
       "lineWidth": 100,
       "indentWidth": 2,
       "singleQuote": true
+    }
+  },
+  "importMap": {
+    "imports": {
+      "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.3",
+      "stripe": "https://esm.sh/stripe@13.10.0"
     }
   }
 }

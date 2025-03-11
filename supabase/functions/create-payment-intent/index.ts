@@ -1,10 +1,11 @@
+/// <reference lib="deno.ns" />
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import Stripe from 'https://esm.sh/stripe@13.10.0'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2025-02-24.acacia',
   httpClient: Stripe.createFetchHttpClient()
-}) as any;
+});
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
