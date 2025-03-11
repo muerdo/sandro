@@ -5,13 +5,10 @@ import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
 import TransitionProvider from "@/components/providers/transition-provider";
 import Footer from "@/components/footer";
-import { Elements } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
 import { CartProvider } from "@/contexts/cart-context";
 import { AuthProvider } from "@/contexts/auth-context";
 import CartSummary from "@/components/cart/cart-summary";
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '');
+import { StripeProvider } from "@/components/providers/stripe-provider";
 
 export const metadata: Metadata = {
   title: "VisualPrint - Comunicação Visual Profissional",
@@ -27,7 +24,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-background antialiased flex flex-col">
         <AuthProvider>
           <CartProvider>
-            <Elements stripe={stripePromise}>
+            <StripeProvider>
               <TransitionProvider>
                 <div className="flex-1">
                   {children}
@@ -35,7 +32,7 @@ export default function RootLayout({
                 <Footer />
                 <CartSummary />
               </TransitionProvider>
-            </Elements>
+            </StripeProvider>
           </CartProvider>
         </AuthProvider>
       </body>
