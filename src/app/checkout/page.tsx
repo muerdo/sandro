@@ -86,12 +86,7 @@ export default function CheckoutPage() {
   const isFreeShipping = shippingAddress.city.toLowerCase() === 'açailândia' && 
                         shippingAddress.state.toLowerCase() === 'maranhão';
 
-  const [creditCardData, setCreditCardData] = useState({
-    number: "",
-    name: "",
-    expiry: "",
-    cvc: "",
-  });
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const [stripeError, setStripeError] = useState<string>("");
   const [clientSecret, setClientSecret] = useState<string>("");
@@ -146,24 +141,54 @@ export default function CheckoutPage() {
     setStripeError("");
 
     if (!stripe || !elements || !clientSecret) {
-      setStripeError("Payment system not initialized");
+      toast.error("Sistema de pagamento não inicializado");
       setLoading(false);
       return;
     }
 
+    if (!selectedAddress && !showNewAddressForm) {
+      toast.error("Por favor selecione ou adicione um endereço de entrega");
+      return;
+    }
+
+    setIsProcessing(true);
+
     try {
-      const { error: stripeError } = await stripe.confirmPayment({
+      const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/checkout/success`,
+          payment_method_data: {
+            billing_details: {
+              name: shippingAddress.full_name,
+              email: shippingAddress.email,
+              phone: shippingAddress.phone,
+              address: {
+                line1: shippingAddress.address,
+                city: shippingAddress.city,
+                state: shippingAddress.state,
+                postal_code: shippingAddress.postal_code,
+                country: 'BR'
+              }
+            }
+          }
         },
       });
 
       if (stripeError) {
-        throw stripeError;
+        if (stripeError.type === "card_error" || stripeError.type === "validation_error") {
+          toast.error(stripeError.message || "Erro ao processar pagamento");
+        } else {
+          toast.error("Ocorreu um erro inesperado");
+        }
+        return;
       }
 
-      clearCart();
+      if (paymentIntent && paymentIntent.status === 'succeeded') {
+        toast.success("Pagamento realizado com sucesso!");
+        clearCart();
+        router.push('/checkout/success');
+      }
     } catch (error) {
       console.error("Payment error:", error);
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
@@ -429,19 +454,41 @@ export default function CheckoutPage() {
                 <div className="space-y-4">
                   {clientSecret ? (
                     <form onSubmit={handlePayment} className="space-y-4">
-                      <PaymentElement />
+                      <PaymentElement 
+                        options={{
+                          layout: "tabs",
+                          paymentMethodOrder: ['card'],
+                          defaultValues: {
+                            billingDetails: {
+                              name: shippingAddress.full_name,
+                              email: shippingAddress.email,
+                              phone: shippingAddress.phone,
+                              address: {
+                                country: 'BR',
+                                postal_code: shippingAddress.postal_code,
+                                state: shippingAddress.state,
+                                city: shippingAddress.city,
+                                line1: shippingAddress.address
+                              }
+                            }
+                          }
+                        }}
+                      />
                       {stripeError && (
                         <p className="text-sm text-destructive">{stripeError}</p>
                       )}
                       <motion.button
                         type="submit"
-                        disabled={loading || !stripe || !elements}
+                        disabled={isProcessing || !stripe || !elements}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium mt-6 disabled:opacity-50"
                       >
-                        {loading ? (
-                          <div className="h-5 w-5 animate-spin rounded-full border-2 border-background border-r-transparent mx-auto" />
+                        {isProcessing ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="h-5 w-5 animate-spin rounded-full border-2 border-background border-r-transparent" />
+                            <span>Processando...</span>
+                          </div>
                         ) : (
                           `Pagar R$ ${total.toFixed(2)}`
                         )}
