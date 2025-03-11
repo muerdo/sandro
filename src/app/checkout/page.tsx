@@ -2,10 +2,17 @@
 
 import { motion } from "framer-motion";
 import { ArrowLeft, CreditCard, QrCode, Receipt } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "@/contexts/cart-context";
 import { useRouter } from "next/navigation";
 import { QRCodeCanvas } from "qrcode.react";
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 type PaymentMethod = "credit" | "pix" | "boleto";
 
@@ -22,18 +29,70 @@ export default function CheckoutPage() {
     cvc: "",
   });
 
+  const [stripeError, setStripeError] = useState<string>("");
+  const [clientSecret, setClientSecret] = useState<string>("");
+  const stripe = useStripe();
+  const elements = useElements();
+
+  useEffect(() => {
+    if (paymentMethod === "credit" && !clientSecret) {
+      initializePayment();
+    }
+  }, [paymentMethod]);
+
+  const initializePayment = async () => {
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("No authentication session found");
+      }
+
+      const { data, error } = await supabase.functions.invoke('create-payment-intent', {
+        body: { 
+          items,
+          total 
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) throw error;
+      setClientSecret(data.clientSecret);
+    } catch (error) {
+      console.error("Payment initialization error:", error);
+      toast.error("Failed to initialize payment");
+    }
+  };
+
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setStripeError("");
+
+    if (!stripe || !elements || !clientSecret) {
+      setStripeError("Payment system not initialized");
+      setLoading(false);
+      return;
+    }
 
     try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      const { error: stripeError } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/checkout/success`,
+        },
+      });
+
+      if (stripeError) {
+        throw stripeError;
+      }
+
       clearCart();
-      router.push("/checkout/success");
     } catch (error) {
       console.error("Payment error:", error);
+      setStripeError(error.message);
+      toast.error("Payment failed: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -112,90 +171,35 @@ export default function CheckoutPage() {
               </div>
 
               {paymentMethod === "credit" && (
-                <form onSubmit={handlePayment} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Número do Cartão
-                    </label>
-                    <input
-                      type="text"
-                      value={creditCardData.number}
-                      onChange={(e) => setCreditCardData({ 
-                        ...creditCardData, 
-                        number: e.target.value 
-                      })}
-                      className="w-full p-3 rounded-lg border border-input bg-background"
-                      placeholder="1234 5678 9012 3456"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Nome no Cartão
-                    </label>
-                    <input
-                      type="text"
-                      value={creditCardData.name}
-                      onChange={(e) => setCreditCardData({ 
-                        ...creditCardData, 
-                        name: e.target.value 
-                      })}
-                      className="w-full p-3 rounded-lg border border-input bg-background"
-                      placeholder="NOME COMPLETO"
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        Validade
-                      </label>
-                      <input
-                        type="text"
-                        value={creditCardData.expiry}
-                        onChange={(e) => setCreditCardData({ 
-                          ...creditCardData, 
-                          expiry: e.target.value 
-                        })}
-                        className="w-full p-3 rounded-lg border border-input bg-background"
-                        placeholder="MM/AA"
-                        required
-                      />
+                <div className="space-y-4">
+                  {clientSecret ? (
+                    <Elements stripe={stripePromise} options={{ clientSecret }}>
+                      <form onSubmit={handlePayment} className="space-y-4">
+                        <PaymentElement />
+                        {stripeError && (
+                          <p className="text-sm text-destructive">{stripeError}</p>
+                        )}
+                        <motion.button
+                          type="submit"
+                          disabled={loading || !stripe || !elements}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium mt-6 disabled:opacity-50"
+                        >
+                          {loading ? (
+                            <div className="h-5 w-5 animate-spin rounded-full border-2 border-background border-r-transparent mx-auto" />
+                          ) : (
+                            `Pagar R$ ${total.toFixed(2)}`
+                          )}
+                        </motion.button>
+                      </form>
+                    </Elements>
+                  ) : (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-r-transparent" />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        CVC
-                      </label>
-                      <input
-                        type="text"
-                        value={creditCardData.cvc}
-                        onChange={(e) => setCreditCardData({ 
-                          ...creditCardData, 
-                          cvc: e.target.value 
-                        })}
-                        className="w-full p-3 rounded-lg border border-input bg-background"
-                        placeholder="123"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <motion.button
-                    type="submit"
-                    disabled={loading}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium mt-6 disabled:opacity-50"
-                  >
-                    {loading ? (
-                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-background border-r-transparent mx-auto" />
-                    ) : (
-                      `Pagar R$ ${total.toFixed(2)}`
-                    )}
-                  </motion.button>
-                </form>
+                  )}
+                </div>
               )}
 
               {paymentMethod === "pix" && (
