@@ -8,7 +8,22 @@ import { useOrders } from "@/hooks/useOrders";
 import { supabase } from "@/lib/supabase";
 import type { Order } from "@/types/admin";
 import Link from "next/link";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ComposedChart,
+  Line,
+  Area,
+  AreaChart,
+  Pie,
+  PieChart,
+  Cell
+} from 'recharts';
 import { format } from 'date-fns';
 import { toast } from "sonner";
 import { 
@@ -37,6 +52,9 @@ type SalesData = {
 export default function AdminDashboard() {
   const router = useRouter();
   const [salesData, setSalesData] = useState<SalesData[]>([]);
+  const [productPerformance, setProductPerformance] = useState<any[]>([]);
+  const [customerAcquisition, setCustomerAcquisition] = useState<any[]>([]);
+  const [categoryDistribution, setCategoryDistribution] = useState<any[]>([]);
   const { loading, stats, isAdmin, checkAdminStatus, fetchStats } = useAdminDashboard();
   const { recentOrders, subscribeToOrders, fetchRecentOrders } = useOrders();
 
@@ -84,21 +102,22 @@ export default function AdminDashboard() {
     initializeAdmin();
   }, [isAdmin, fetchStats]);
 
-  const fetchSalesData = async () => {
+  const fetchAnalyticsData = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch sales data
+      const { data: orders, error: ordersError } = await supabase
         .from('orders')
-        .select('created_at, total_amount')
-        .order('created_at', { ascending: false })
-        .limit(7);
+        .select(`
+          created_at,
+          total_amount,
+          items,
+          user_id
+        `)
+        .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (ordersError) throw ordersError;
 
-      if (!data) {
-        setSalesData([]);
-        return;
-      }
-
+      // Process sales data
       const last7Days = Array.from({ length: 7 }, (_, i) => {
         const date = new Date();
         date.setDate(date.getDate() - i);
@@ -106,21 +125,77 @@ export default function AdminDashboard() {
       }).reverse();
 
       const salesData = last7Days.map(date => {
-        const dayOrders = data.filter((order: { created_at: string; total_amount: number }) => 
+        const dayOrders = orders?.filter(order => 
           format(new Date(order.created_at), 'MMM dd') === date
-        );
+        ) || [];
         return {
           date,
-          revenue: dayOrders.reduce((sum: number, order: { total_amount: number }) => 
-            sum + (order.total_amount || 0), 0),
+          revenue: dayOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0),
           orders: dayOrders.length
         };
       });
 
       setSalesData(salesData);
+
+      // Process product performance
+      const productSales: Record<string, { revenue: number; orders: number }> = {};
+      orders?.forEach(order => {
+        const items = order.items as any[];
+        items?.forEach(item => {
+          if (!productSales[item.name]) {
+            productSales[item.name] = { revenue: 0, orders: 0 };
+          }
+          productSales[item.name].revenue += (item.price * item.quantity) || 0;
+          productSales[item.name].orders += item.quantity || 0;
+        });
+      });
+
+      setProductPerformance(Object.entries(productSales).map(([name, data]) => ({
+        name,
+        revenue: data.revenue,
+        orders: data.orders
+      })));
+
+      // Process customer acquisition
+      const customersByMonth: Record<string, number> = {};
+      const uniqueCustomers = new Set<string>();
+      
+      orders?.forEach(order => {
+        const monthYear = format(new Date(order.created_at), 'MMM yyyy');
+        if (!uniqueCustomers.has(order.user_id)) {
+          uniqueCustomers.add(order.user_id);
+          customersByMonth[monthYear] = (customersByMonth[monthYear] || 0) + 1;
+        }
+      });
+
+      setCustomerAcquisition(Object.entries(customersByMonth)
+        .map(([month, count]) => ({
+          month,
+          newCustomers: count
+        }))
+        .slice(-6));
+
+      // Fetch category distribution
+      const { data: products, error: productsError } = await supabase
+        .from('products')
+        .select('category');
+
+      if (productsError) throw productsError;
+
+      const categoryCount: Record<string, number> = {};
+      products?.forEach(product => {
+        categoryCount[product.category] = (categoryCount[product.category] || 0) + 1;
+      });
+
+      setCategoryDistribution(Object.entries(categoryCount)
+        .map(([category, count]) => ({
+          category,
+          count
+        })));
+
     } catch (error) {
-      console.error('Error fetching sales data:', error);
-      toast.error('Failed to load sales data');
+      console.error('Error fetching analytics data:', error);
+      toast.error('Failed to load analytics data');
     }
   };
 
@@ -142,7 +217,18 @@ export default function AdminDashboard() {
   return (
     <main className="min-h-screen bg-background py-12">
       <div className="container mx-auto px-4">
-        <h1 className="text-4xl font-bold mb-8">Admin Dashboard</h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-4xl font-bold">Admin Dashboard</h1>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={fetchAnalyticsData}
+            className="bg-primary text-primary-foreground px-4 py-2 rounded-lg flex items-center gap-2"
+          >
+            Refresh Analytics
+            <TrendingUp className="w-4 h-4" />
+          </motion.button>
+        </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-4 gap-6 mb-8">
@@ -245,31 +331,130 @@ export default function AdminDashboard() {
           </Link>
         </div>
 
-        {/* Sales Chart */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-card p-6 rounded-xl shadow-lg mb-8"
-        >
-          <h2 className="text-xl font-semibold mb-6">Sales Overview</h2>
-          <div className="w-full h-[400px]">
-            <BarChart
-              width={1200}
-              height={400}
-              data={salesData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
-              <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
-              <Tooltip />
-              <Legend />
-              <Bar yAxisId="left" dataKey="revenue" fill="#8884d8" name="Revenue (R$)" />
-              <Bar yAxisId="right" dataKey="orders" fill="#82ca9d" name="Orders" />
-            </BarChart>
-          </div>
-        </motion.div>
+        {/* Analytics Grid */}
+        <div className="grid grid-cols-2 gap-6 mb-8">
+          {/* Sales Chart */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card p-6 rounded-xl shadow-lg col-span-2"
+          >
+            <h2 className="text-xl font-semibold mb-6">Sales Overview</h2>
+            <div className="w-full h-[400px]">
+              <ComposedChart
+                width={800}
+                height={400}
+                data={salesData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis yAxisId="left" orientation="left" stroke="var(--chart-1)" />
+                <YAxis yAxisId="right" orientation="right" stroke="var(--chart-2)" />
+                <Tooltip />
+                <Legend />
+                <Bar yAxisId="right" dataKey="orders" fill="var(--chart-2)" name="Orders" />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="var(--chart-1)"
+                  name="Revenue (R$)"
+                  strokeWidth={2}
+                />
+              </ComposedChart>
+            </div>
+          </motion.div>
+
+          {/* Product Performance */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card p-6 rounded-xl shadow-lg"
+          >
+            <h2 className="text-xl font-semibold mb-6">Product Performance</h2>
+            <div className="w-full h-[400px]">
+              <BarChart
+                width={500}
+                height={400}
+                data={productPerformance}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                layout="vertical"
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis dataKey="name" type="category" width={150} />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="revenue" fill="var(--chart-3)" name="Revenue (R$)" />
+                <Bar dataKey="orders" fill="var(--chart-4)" name="Orders" />
+              </BarChart>
+            </div>
+          </motion.div>
+
+          {/* Customer Acquisition */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card p-6 rounded-xl shadow-lg"
+          >
+            <h2 className="text-xl font-semibold mb-6">Customer Acquisition</h2>
+            <div className="w-full h-[400px]">
+              <AreaChart
+                width={500}
+                height={400}
+                data={customerAcquisition}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Area
+                  type="monotone"
+                  dataKey="newCustomers"
+                  stroke="var(--chart-5)"
+                  fill="var(--chart-5)"
+                  fillOpacity={0.3}
+                  name="New Customers"
+                />
+              </AreaChart>
+            </div>
+          </motion.div>
+
+          {/* Category Distribution */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card p-6 rounded-xl shadow-lg col-span-2"
+          >
+            <h2 className="text-xl font-semibold mb-6">Category Distribution</h2>
+            <div className="w-full h-[400px]">
+              <PieChart width={800} height={400}>
+                <Pie
+                  data={categoryDistribution}
+                  cx={400}
+                  cy={200}
+                  labelLine={false}
+                  outerRadius={150}
+                  fill="var(--chart-1)"
+                  dataKey="count"
+                  nameKey="category"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                >
+                  {categoryDistribution.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={`var(--chart-${(index % 5) + 1})`}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </div>
+          </motion.div>
+        </div>
 
         {/* Recent Orders */}
         <motion.div
