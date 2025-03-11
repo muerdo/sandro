@@ -25,7 +25,12 @@ export default function CatalogoPage() {
       price: 49.90,
       image: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?q=80&w=2669&auto=format&fit=crop",
       category: "Vestuário",
-      description: "Camisetas 100% algodão com impressão DTF"
+      description: "Camisetas 100% algodão com impressão DTF",
+      media: [{
+        type: 'image',
+        url: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?q=80&w=2669&auto=format&fit=crop",
+        alt: "Camiseta Personalizada"
+      }]
     },
     {
       id: "adesivo-personalizado",
@@ -33,7 +38,12 @@ export default function CatalogoPage() {
       price: 29.90,
       image: "https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=2671&auto=format&fit=crop",
       category: "Adesivos",
-      description: "Adesivos de alta qualidade em vinil"
+      description: "Adesivos de alta qualidade em vinil",
+      media: [{
+        type: 'image',
+        url: "https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=2671&auto=format&fit=crop",
+        alt: "Adesivo Personalizado"
+      }]
     },
     {
       id: "banner-grande-formato",
@@ -41,7 +51,12 @@ export default function CatalogoPage() {
       price: 149.90,
       image: "https://images.unsplash.com/photo-1588412079929-790b9f593d8e?q=80&w=2574&auto=format&fit=crop",
       category: "Impressão",
-      description: "Banners em lona com acabamento profissional"
+      description: "Banners em lona com acabamento profissional",
+      media: [{
+        type: 'image',
+        url: "https://images.unsplash.com/photo-1588412079929-790b9f593d8e?q=80&w=2574&auto=format&fit=crop",
+        alt: "Banner Grande Formato"
+      }]
     },
     {
       id: "caneca-personalizada",
@@ -49,7 +64,12 @@ export default function CatalogoPage() {
       price: 39.90,
       image: "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=2670&auto=format&fit=crop",
       category: "Presentes",
-      description: "Canecas de cerâmica com impressão sublimática"
+      description: "Canecas de cerâmica com impressão sublimática",
+      media: [{
+        type: 'image',
+        url: "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=2670&auto=format&fit=crop",
+        alt: "Caneca Personalizada" 
+      }]
     }
   ];
 
@@ -58,19 +78,25 @@ export default function CatalogoPage() {
       try {
         setLoading(true);
         const { data: stripeData, error } = await supabase.functions.invoke('get-stripe-products');
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching Stripe products:', error);
+          toast.error('Failed to load Stripe products');
+          setProducts(defaultProducts); // Fallback to default products
+          return;
+        }
 
         // Transform Stripe products to match our format
         const stripeProducts = stripeData?.map((product: any) => ({
           id: `stripe-${product.id}`,
           name: product.name,
           description: product.description || '',
-          price: product.prices[0]?.unit_amount / 100 || 0,
+          price: product.prices?.[0]?.unit_amount ? product.prices[0].unit_amount / 100 : 0,
           category: product.metadata?.category || 'Outros',
+          image: product.images?.[0] || "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9",
           media: [
             {
               type: 'image',
-              url: product.images[0] || "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9",
+              url: product.images?.[0] || "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9",
               alt: product.name
             }
           ],
@@ -81,43 +107,13 @@ export default function CatalogoPage() {
           stripeId: product.id
         })) || [];
 
-        // Merge with default products
-        const defaultProducts = [
-          {
-            id: "camiseta-personalizada",
-            name: "Camiseta Personalizada",
-            price: 49.90,
-            image: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?q=80&w=2669&auto=format&fit=crop",
-            category: "Vestuário",
-            description: "Camisetas 100% algodão com impressão DTF"
-          },
-          {
-            id: "adesivo-personalizado",
-            name: "Adesivo Personalizado",
-            price: 29.90,
-            image: "https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=2671&auto=format&fit=crop",
-            category: "Adesivos",
-            description: "Adesivos de alta qualidade em vinil"
-          },
-          {
-            id: "banner-grande-formato",
-            name: "Banner Grande Formato",
-            price: 149.90,
-            image: "https://images.unsplash.com/photo-1588412079929-790b9f593d8e?q=80&w=2574&auto=format&fit=crop",
-            category: "Impressão",
-            description: "Banners em lona com acabamento profissional"
-          },
-          {
-            id: "caneca-personalizada",
-            name: "Caneca Personalizada",
-            price: 39.90,
-            image: "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=2670&auto=format&fit=crop",
-            category: "Presentes",
-            description: "Canecas de cerâmica com impressão sublimática"
-          }
-        ];
+        const allProducts = [...defaultProducts];
+        if (stripeProducts?.length > 0) {
+          allProducts.push(...stripeProducts);
+        }
 
-        setProducts([...defaultProducts, ...stripeProducts]);
+        setProducts(allProducts);
+        toast.success('Products loaded successfully');
       } catch (error) {
         console.error('Error fetching Stripe products:', error);
         toast.error('Failed to load some products');
