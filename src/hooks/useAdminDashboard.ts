@@ -107,7 +107,7 @@ export function useAdminDashboard() {
       const averageOrderValue = orders?.length ? totalRevenue / orders.length : 0;
 
       // Process products data with type safety
-      const processedProducts = (products as ProductWithInventory[]) || [];
+      const processedProducts = (products as unknown as ProductWithInventory[]) || [];
       const activeProducts = processedProducts.filter(p => p.status === 'active');
       const lowStockProducts = processedProducts.filter(p => 
         p.stock <= (p.low_stock_threshold || 10)

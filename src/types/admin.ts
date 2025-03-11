@@ -119,12 +119,19 @@ export interface ProductWithInventory extends Product {
   low_stock_threshold: number;
   stock: number;
   status: 'active' | 'draft' | 'archived';
-}
-
-export interface ProductWithInventory extends Product {
-  low_stock_threshold: number;
-  stock: number;
-  status: 'active' | 'draft' | 'archived';
+  inventory_history?: Array<{
+    id: string;
+    product_id: string;
+    previous_stock: number;
+    new_stock: number;
+    change_amount: number;
+    change_type: 'manual' | 'order' | 'restock';
+    created_at: string;
+    notes?: string;
+    profiles?: {
+      username: string;
+    };
+  }>;
 }
 
 export interface InventoryHistoryEntry {
