@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { format } from 'date-fns';
 import { toast } from "sonner";

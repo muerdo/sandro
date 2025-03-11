@@ -5,10 +5,11 @@ import { ArrowRight, User, Package2 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import AuthDialog from "@/components/auth/auth-dialog";
+import Link from "next/link";
 
 export default function HeroSection() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   return (
     <section 
       className="h-screen relative flex items-center justify-center bg-cover bg-center"
