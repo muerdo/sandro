@@ -56,9 +56,14 @@ export default function CatalogoPage() {
   }
 ]);
 
-export default function CatalogoPage() {
-  const { addItem } = useCart();
-  const [loading, setLoading] = useState(true);
+  const handleQuickAdd = (product: typeof products[0]) => {
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image
+    });
+  };
 
   useEffect(() => {
     const fetchStripeProducts = async () => {
