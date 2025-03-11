@@ -6,6 +6,7 @@ import { useCart } from "@/contexts/cart-context";
 import { useAuth } from "@/contexts/auth-context";
 import { useProductCustomization } from "@/hooks/useProductCustomization";
 import ProductImages from "@/components/products/product-images";
+import type { ProductMedia } from "@/types/product";
 
 const product = {
   id: "adesivo-personalizado",

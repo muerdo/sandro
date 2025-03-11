@@ -52,7 +52,7 @@ export function useStripeProducts() {
             url: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?q=80&w=2669&auto=format&fit=crop",
             alt: "Camiseta Personalizada"
           }],
-          features: [],
+          features: [] as string[],
           status: 'active'
         },
         {
