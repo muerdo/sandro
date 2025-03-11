@@ -37,6 +37,7 @@ export default function OrdersManagement() {
     start: null,
     end: null
   });
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   useEffect(() => {
     checkAdminStatus();
