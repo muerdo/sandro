@@ -50,7 +50,8 @@ export interface Product {
     unit_amount: number;
   }>;
   image?: string; // Backwards compatibility
-  low_stock_threshold?: number;
+  low_stock_threshold: number; // Make required
   created_at?: string;
   updated_at?: string;
+  categories?: any; // Add support for categories relation
 }

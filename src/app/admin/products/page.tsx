@@ -202,7 +202,10 @@ export default function ProductsManagement() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setProducts(data || []);
+      setProducts((data || []).map(product => ({
+        ...product,
+        low_stock_threshold: product.low_stock_threshold || 10 // Set default value
+      })));
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error('Failed to load products');
