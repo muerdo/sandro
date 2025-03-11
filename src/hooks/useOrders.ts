@@ -33,7 +33,12 @@ export function useOrders() {
         .limit(5);
 
       if (error) throw error;
-      setRecentOrders(data);
+      setRecentOrders(data?.map(order => ({
+        ...order,
+        status: order.status as OrderStatus,
+        payment_status: order.payment_status as PaymentStatus,
+        payment_method: order.payment_method as PaymentMethod
+      })) || []);
     } catch (error) {
       console.error('Error fetching recent orders:', error);
       toast.error('Failed to load recent orders');

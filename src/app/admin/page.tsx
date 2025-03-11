@@ -36,8 +36,8 @@ type SalesData = {
 export default function AdminDashboard() {
   const router = useRouter();
   const [salesData, setSalesData] = useState<SalesData[]>([]);
-  const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const { loading, stats, isAdmin, checkAdminStatus, fetchStats } = useAdminDashboard();
+  const { recentOrders, subscribeToOrders } = useOrders();
 
   useEffect(() => {
     const initializeAdmin = async () => {
@@ -60,24 +60,6 @@ export default function AdminDashboard() {
   }, [isAdmin, fetchStats]);
 
 
-  const subscribeToOrders = () => {
-    const subscription = supabase
-      .channel('orders')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'orders' 
-      }, () => {
-        fetchStats();
-        fetchRecentOrders();
-        fetchSalesData();
-      })
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  };
 
 
   useEffect(() => {
@@ -141,7 +123,6 @@ export default function AdminDashboard() {
     }
   };
 
-  const { recentOrders, subscribeToOrders, fetchRecentOrders } = useOrders();
 
   if (!isAdmin) {
     return (
