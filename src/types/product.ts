@@ -50,4 +50,7 @@ export interface Product {
     unit_amount: number;
   }>;
   image?: string; // Backwards compatibility
+  low_stock_threshold?: number;
+  created_at?: string;
+  updated_at?: string;
 }

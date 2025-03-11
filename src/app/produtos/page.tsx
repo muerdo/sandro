@@ -18,7 +18,7 @@ export default function CatalogoPage() {
   const { user } = useAuth();
   const { addItem, setShowAuthDialog } = useCart();
 
-  const defaultProducts = [
+  const defaultProducts: Product[] = [
     {
       id: "camiseta-personalizada",
       name: "Camiseta Personalizada",
@@ -30,7 +30,10 @@ export default function CatalogoPage() {
         type: 'image',
         url: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?q=80&w=2669&auto=format&fit=crop",
         alt: "Camiseta Personalizada"
-      }]
+      }],
+      features: [],
+      stock: 100,
+      status: 'active'
     },
     {
       id: "adesivo-personalizado",
@@ -43,7 +46,10 @@ export default function CatalogoPage() {
         type: 'image',
         url: "https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=2671&auto=format&fit=crop",
         alt: "Adesivo Personalizado"
-      }]
+      }],
+      features: [],
+      stock: 100,
+      status: 'active'
     },
     {
       id: "banner-grande-formato",
@@ -56,7 +62,10 @@ export default function CatalogoPage() {
         type: 'image',
         url: "https://images.unsplash.com/photo-1588412079929-790b9f593d8e?q=80&w=2574&auto=format&fit=crop",
         alt: "Banner Grande Formato"
-      }]
+      }],
+      features: [],
+      stock: 100,
+      status: 'active'
     },
     {
       id: "caneca-personalizada",
@@ -69,7 +78,10 @@ export default function CatalogoPage() {
         type: 'image',
         url: "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=2670&auto=format&fit=crop",
         alt: "Caneca Personalizada" 
-      }]
+      }],
+      features: [],
+      stock: 100,
+      status: 'active'
     }
   ];
 
