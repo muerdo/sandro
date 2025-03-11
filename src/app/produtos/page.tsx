@@ -21,7 +21,7 @@ export default function CatalogoPage() {
   const defaultProducts: Product[] = [
     {
       id: "camiseta-personalizada",
-      name: "Camiseta Personalizada",
+      name: "Camiseta Personalizada", 
       price: 49.90,
       image: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?q=80&w=2669&auto=format&fit=crop",
       category: "Vestuário",
