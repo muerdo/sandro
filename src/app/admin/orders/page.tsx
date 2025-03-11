@@ -14,18 +14,7 @@ import {
   Search
 } from "lucide-react";
 
-type Order = {
-  id: string;
-  user_id: string;
-  status: 'pending' | 'processing' | 'completed' | 'cancelled';
-  total_amount: number;
-  payment_method: string;
-  payment_status: string;
-  created_at: string;
-  profiles: {
-    username: string;
-  };
-};
+import { Order } from '@/types/admin';
 
 export default function OrdersManagement() {
   const { user } = useAuth();

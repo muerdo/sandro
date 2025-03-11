@@ -19,25 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-type Product = {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  category: string;
-  stock: number;
-  images: string[];
-  features: string[];
-  customization: any;
-  created_at: string;
-  updated_at: string;
-};
-
-type Category = {
-  id: string;
-  name: string;
-  description: string;
-};
+import { Product, Category } from '@/types/admin';
 
 export default function ProductsManagement() {
   const { user } = useAuth();

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, User } from "lucide-react";
+import { ArrowRight, User, Package2 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import AuthDialog from "@/components/auth/auth-dialog";
@@ -78,7 +78,7 @@ export default function HeroSection() {
                 className="bg-primary/10 backdrop-blur-sm text-white px-6 md:px-12 py-3 md:py-4 rounded-full font-medium hover:bg-primary/20 transition-all flex items-center gap-2 text-base md:text-lg"
               >
                 Admin Dashboard
-                <Package className="w-5 h-5" />
+                <Package2 className="w-5 h-5" />
               </motion.button>
             )}
           </div>
