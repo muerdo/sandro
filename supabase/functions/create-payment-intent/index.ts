@@ -1,16 +1,32 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7'
-import Stripe from 'https://esm.sh/stripe@14.14.0'
+import { createClient } from '@supabase/supabase-js'
+import Stripe from 'stripe'
 
-// Deno runtime type declarations
+// Type declarations for Deno runtime
 declare global {
-  interface Window {
-    Deno: {
-      env: {
-        get(key: string): string | undefined;
-      };
-      serve(handler: (req: Request) => Promise<Response>): void;
-    }
+  var Deno: {
+    env: {
+      get(key: string): string | undefined;
+    };
+    serve(handler: (req: Request) => Promise<Response>): void;
   }
+}
+
+interface PaymentRequestBody {
+  items: Array<{
+    id: string;
+    quantity: number;
+    price: number;
+  }>;
+  total: number;
+  shippingAddress: {
+    full_name: string;
+    email: string;
+    phone: string;
+    address: string;
+    city: string;
+    state: string;
+    postal_code: string;
+  };
 }
 
 const corsHeaders = {
@@ -29,7 +45,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { items, total, shippingAddress } = await req.json()
+    const { items, total, shippingAddress } = (await req.json()) as PaymentRequestBody
 
     // Get user ID from auth header
     const authHeader = req.headers.get('authorization')
