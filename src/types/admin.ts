@@ -117,6 +117,12 @@ export interface ProductWithInventory extends Product {
   status: 'active' | 'draft' | 'archived';
 }
 
+export interface ProductWithInventory extends Product {
+  low_stock_threshold: number;
+  stock: number;
+  status: 'active' | 'draft' | 'archived';
+}
+
 export interface InventoryHistoryEntry {
   id: string;
   product_id: string;

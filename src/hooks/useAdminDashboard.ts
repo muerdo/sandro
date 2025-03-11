@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import type { OrderStats } from "@/types/admin";
+import type { OrderStats, ProductWithInventory } from "@/types/admin";
 
 interface DashboardState {
   loading: {
