@@ -27,39 +27,39 @@ export default function CatalogoPage() {
   };
 
   const defaultProducts = [
-  {
-    id: "camiseta-personalizada",
-    name: "Camiseta Personalizada",
-    price: 49.90,
-    image: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?q=80&w=2669&auto=format&fit=crop",
-    category: "Vestuário",
-    description: "Camisetas 100% algodão com impressão DTF"
-  },
-  {
-    id: "adesivo-personalizado",
-    name: "Adesivo Personalizado",
-    price: 29.90,
-    image: "https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=2671&auto=format&fit=crop",
-    category: "Adesivos",
-    description: "Adesivos de alta qualidade em vinil"
-  },
-  {
-    id: "banner-grande-formato",
-    name: "Banner Grande Formato",
-    price: 149.90,
-    image: "https://images.unsplash.com/photo-1588412079929-790b9f593d8e?q=80&w=2574&auto=format&fit=crop",
-    category: "Impressão",
-    description: "Banners em lona com acabamento profissional"
-  },
-  {
-    id: "caneca-personalizada",
-    name: "Caneca Personalizada",
-    price: 39.90,
-    image: "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=2670&auto=format&fit=crop",
-    category: "Presentes",
-    description: "Canecas de cerâmica com impressão sublimática"
-  }
-]);
+    {
+      id: "camiseta-personalizada",
+      name: "Camiseta Personalizada",
+      price: 49.90,
+      image: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?q=80&w=2669&auto=format&fit=crop",
+      category: "Vestuário",
+      description: "Camisetas 100% algodão com impressão DTF"
+    },
+    {
+      id: "adesivo-personalizado",
+      name: "Adesivo Personalizado",
+      price: 29.90,
+      image: "https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=2671&auto=format&fit=crop",
+      category: "Adesivos",
+      description: "Adesivos de alta qualidade em vinil"
+    },
+    {
+      id: "banner-grande-formato",
+      name: "Banner Grande Formato",
+      price: 149.90,
+      image: "https://images.unsplash.com/photo-1588412079929-790b9f593d8e?q=80&w=2574&auto=format&fit=crop",
+      category: "Impressão",
+      description: "Banners em lona com acabamento profissional"
+    },
+    {
+      id: "caneca-personalizada",
+      name: "Caneca Personalizada",
+      price: 39.90,
+      image: "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=2670&auto=format&fit=crop",
+      category: "Presentes",
+      description: "Canecas de cerâmica com impressão sublimática"
+    }
+  ];
 
   useEffect(() => {
     const fetchStripeProducts = async () => {
