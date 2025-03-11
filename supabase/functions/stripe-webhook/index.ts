@@ -38,7 +38,7 @@ Deno.serve(async (req: Request) => {
     // Handle the event
     switch (event.type) {
       case 'payment_intent.succeeded': {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
         // Update order status to paid
         await supabaseClient
           .from('orders')
@@ -46,11 +46,12 @@ Deno.serve(async (req: Request) => {
             payment_status: 'paid',
             status: 'processing'
           })
-          .eq('payment_intent_id', paymentIntent.id)
-        break
+          .eq('payment_intent_id', paymentIntent.id);
+        break;
+      }
 
       case 'payment_intent.payment_failed': {
-        const failedPayment = event.data.object as Stripe.PaymentIntent
+        const failedPayment = event.data.object as Stripe.PaymentIntent;
         // Update order status to failed
         await supabaseClient
           .from('orders')
@@ -58,8 +59,9 @@ Deno.serve(async (req: Request) => {
             payment_status: 'failed',
             status: 'cancelled'
           })
-          .eq('payment_intent_id', failedPayment.id)
-        break
+          .eq('payment_intent_id', failedPayment.id);
+        break;
+      }
     }
 
     return new Response(JSON.stringify({ received: true }), {
