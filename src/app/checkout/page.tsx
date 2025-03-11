@@ -154,7 +154,7 @@ export default function CheckoutPage() {
     setIsProcessing(true);
 
     try {
-      const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
+      const result = await stripe.confirmPayment({
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/checkout/success`,
@@ -175,16 +175,16 @@ export default function CheckoutPage() {
         },
       });
 
-      if (stripeError) {
-        if (stripeError.type === "card_error" || stripeError.type === "validation_error") {
-          toast.error(stripeError.message || "Erro ao processar pagamento");
+      if (result.error) {
+        if (result.error.type === "card_error" || result.error.type === "validation_error") {
+          toast.error(result.error.message || "Erro ao processar pagamento");
         } else {
           toast.error("Ocorreu um erro inesperado");
         }
         return;
       }
 
-      if (paymentIntent && paymentIntent.status === 'succeeded') {
+      if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
         toast.success("Pagamento realizado com sucesso!");
         clearCart();
         router.push('/checkout/success');

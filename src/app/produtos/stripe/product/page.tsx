@@ -81,7 +81,8 @@ export default function StripeProductPage() {
           customization: data.metadata?.customization ? JSON.parse(data.metadata.customization) : undefined,
           stock: 999,
           status: 'active',
-          stripeId: data.id
+          stripeId: data.id,
+          low_stock_threshold: 10
         };
 
         setProduct(transformedProduct);

@@ -50,12 +50,11 @@ export interface Product {
     unit_amount: number;
   }>;
   image?: string;
-  low_stock_threshold: number; // Make required
+  low_stock_threshold: number;
   created_at?: string;
   updated_at?: string;
   categories?: {
     name: string;
   };
   images?: string[];
-  customization?: Json; // Add Json type from database
 }
