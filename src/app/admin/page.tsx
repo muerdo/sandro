@@ -35,14 +35,13 @@ type SalesData = {
 export default function AdminDashboard() {
   const { user } = useAuth();
   const router = useRouter();
-  const { loading, stats, isAdmin } = useAdminDashboard();
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const { loading, stats, isAdmin, checkAdminStatus, fetchStats } = useAdminDashboard();
 
   useEffect(() => {
     const initializeAdmin = async () => {
       try {
-        await checkAdminStatus();
         if (isAdmin) {
           subscribeToOrders();
           await Promise.all([
@@ -54,39 +53,12 @@ export default function AdminDashboard() {
       } catch (error) {
         console.error('Error initializing admin dashboard:', error);
         toast.error('Failed to load dashboard');
-      } finally {
-        setLoading(prev => ({ ...prev, auth: false } as const));
       }
     };
 
     initializeAdmin();
-  }, [user]);
+  }, [isAdmin, fetchStats]);
 
-  const checkAdminStatus = async () => {
-    try {
-      if (!user) {
-        throw new Error('No user found');
-      }
-
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-
-      if (error) throw error;
-
-      if (profile?.role !== 'admin') {
-        throw new Error('Not an admin user');
-      }
-
-      setIsAdmin(true);
-    } catch (error) {
-      console.error('Admin check error:', error);
-      router.push('/');
-      throw error;
-    }
-  };
 
   const subscribeToOrders = () => {
     const subscription = supabase
@@ -107,47 +79,6 @@ export default function AdminDashboard() {
     };
   };
 
-  const fetchStats = async () => {
-    try {
-      // Fetch orders with customer info
-      // Fetch orders
-      const { data: orders, error: ordersError } = await supabase
-        .from('orders')
-        .select(`
-          status,
-          total_amount,
-          user_id,
-          created_at
-        `);
-
-      // Fetch products
-      const { data: products, error: productsError } = await supabase
-        .from('products')
-        .select('*');
-
-      if (productsError) throw productsError;
-
-      if (ordersError) throw ordersError;
-
-      // Get unique customer count
-      const uniqueCustomers = new Set(orders.map(order => order.user_id));
-
-      // Calculate average order value
-      const totalRevenue = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
-      const averageOrderValue = orders.length > 0 ? totalRevenue / orders.length : 0;
-
-      const stats = {
-        total_orders: orders.length,
-        pending_orders: orders.filter(order => order.status === 'pending').length,
-        completed_orders: orders.filter(order => order.status === 'completed').length,
-        total_revenue: totalRevenue,
-        total_customers: uniqueCustomers.size,
-        average_order_value: averageOrderValue,
-        total_products: products?.length || 0,
-        active_products: products?.filter(p => p.status === 'active').length || 0
-      };
-
-      setStats(stats);
 
       // Update sales data for chart
       const last7Days = Array.from({ length: 7 }, (_, i) => {
