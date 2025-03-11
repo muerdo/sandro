@@ -106,9 +106,15 @@ export interface Product {
   customization: any;
   created_at: string;
   updated_at: string;
-  status?: string;
+  status: string;
   low_stock_threshold: number;
   inventory_history?: InventoryUpdate[];
+}
+
+export interface ProductWithInventory extends Product {
+  low_stock_threshold: number;
+  stock: number;
+  status: 'active' | 'draft' | 'archived';
 }
 
 export interface InventoryHistoryEntry {

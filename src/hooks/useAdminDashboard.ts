@@ -84,7 +84,7 @@ export function useAdminDashboard() {
 
       const { data: products, error: productsError } = await supabase
         .from('products')
-        .select('*');
+        .select('*, inventory_history(*)');
 
       if (ordersError) throw ordersError;
       if (productsError) throw productsError;
@@ -94,15 +94,13 @@ export function useAdminDashboard() {
       const averageOrderValue = orders?.length ? totalRevenue / orders.length : 0;
 
       // Process products data with type safety
-      const processedProducts = products || [];
+      const processedProducts = (products as ProductWithInventory[]) || [];
       const activeProducts = processedProducts.filter(p => p.status === 'active');
       const lowStockProducts = processedProducts.filter(p => 
-        typeof p.stock === 'number' && 
-        typeof p.low_stock_threshold === 'number' && 
-        p.stock <= p.low_stock_threshold
+        p.stock <= (p.low_stock_threshold || 10)
       );
       const outOfStockProducts = processedProducts.filter(p => 
-        typeof p.stock === 'number' && p.stock === 0
+        p.stock === 0
       );
 
       setState(prev => ({
