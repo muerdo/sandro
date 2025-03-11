@@ -23,12 +23,7 @@ import {
   Plus
 } from "lucide-react";
 
-type OrderStats = {
-  total_orders: number;
-  pending_orders: number;
-  completed_orders: number;
-  total_revenue: number;
-};
+import { OrderStats } from '@/types/admin';
 
 type SalesData = {
   date: string;

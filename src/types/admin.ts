@@ -1,4 +1,13 @@
 export type OrderStatus = 'pending' | 'processing' | 'completed' | 'cancelled';
+
+export interface OrderStats {
+  total_orders: number;
+  pending_orders: number;
+  completed_orders: number;
+  total_revenue: number;
+  total_customers: number;
+  average_order_value: number;
+}
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 export type PaymentMethod = 'credit_card' | 'pix' | 'boleto';
 
