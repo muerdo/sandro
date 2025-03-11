@@ -1,15 +1,15 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7'
-import Stripe from 'https://esm.sh/stripe@14.14.0'
+import { createClient } from 'npm:@supabase/supabase-js@2.39.7'
+import Stripe from 'npm:stripe@14.14.0'
 
 // Deno runtime type declarations
-declare global {
-  const Deno: {
-    env: {
-      get(key: string): string | undefined;
-    };
-    serve(handler: (req: Request) => Promise<Response>): void;
-  }
+interface DenoRuntime {
+  env: {
+    get(key: string): string | undefined;
+  };
+  serve(handler: (req: Request) => Promise<Response>): void;
 }
+
+declare const Deno: DenoRuntime;
 
 interface PaymentRequestBody {
   items: Array<{
@@ -35,9 +35,9 @@ const corsHeaders = {
 }
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-  apiVersion: '2025-02-24.acacia',
+  apiVersion: '2023-10-16',
   httpClient: Stripe.createFetchHttpClient(),
-}) as unknown as Stripe
+})
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
