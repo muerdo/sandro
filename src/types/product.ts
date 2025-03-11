@@ -39,4 +39,10 @@ export interface Product {
   customization?: ProductCustomizationOptions;
   stock: number;
   status: 'active' | 'draft' | 'archived';
+  stripeId?: string;
+  metadata?: {
+    category?: string;
+    features?: string;
+    customization?: string;
+  };
 }
