@@ -42,8 +42,8 @@ export default function CheckoutPage() {
 
   const initializePayment = async () => {
     try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.access_token) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
         throw new Error("No authentication session found");
       }
 
@@ -53,7 +53,7 @@ export default function CheckoutPage() {
           total 
         },
         headers: {
-          Authorization: `Bearer ${session.access_token}`
+          Authorization: `Bearer ${session.access_token ?? ''}`
         }
       });
 
@@ -91,8 +91,9 @@ export default function CheckoutPage() {
       clearCart();
     } catch (error) {
       console.error("Payment error:", error);
-      setStripeError(error.message);
-      toast.error("Payment failed: " + error.message);
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
+      setStripeError(errorMessage);
+      toast.error("Payment failed: " + errorMessage);
     } finally {
       setLoading(false);
     }
