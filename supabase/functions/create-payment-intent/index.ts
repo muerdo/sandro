@@ -1,13 +1,34 @@
-import { createClient } from 'jsr:@supabase/supabase-js@2'
-import Stripe from 'npm:stripe@14.14.0'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
+import Stripe from 'https://esm.sh/stripe@14.14.0'
 
-// Declare Deno types
-declare const Deno: {
-  env: {
-    get(key: string): string | undefined;
+// Type definitions
+interface RequestPayload {
+  items: Array<{
+    id: string;
+    quantity: number;
+    price: number;
+  }>;
+  total: number;
+  shippingDetails: {
+    name: string;
+    address: string;
+    city: string;
+    state: string;
+    zipCode: string;
   };
-  serve(handler: (req: Request) => Promise<Response>): void;
-};
+}
+
+interface SupabaseUser {
+  id: string;
+  email?: string;
+}
+
+interface AuthResponse {
+  data: {
+    user: SupabaseUser | null;
+  };
+  error: Error | null;
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,7 +38,7 @@ const corsHeaders = {
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2025-02-24.acacia',
   httpClient: Stripe.createFetchHttpClient(),
-})
+}) as Stripe
 
 const supabaseClient = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
@@ -46,7 +67,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { items, total, shippingDetails } = (await req.json()) as RequestPayload
+    const payload = await req.json() as RequestPayload
+    const { items, total, shippingDetails } = payload
 
     // Get user ID from auth header
     const authHeader = req.headers.get('authorization')
