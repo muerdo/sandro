@@ -1,7 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from 'jsr:@supabase/supabase-js@2'
 import Stripe from 'stripe'
 
-interface StripeProduct extends Stripe.Product {
+interface StripeProduct {
   id: string;
   name: string;
   description: string | null;
@@ -11,7 +11,7 @@ interface StripeProduct extends Stripe.Product {
     features?: string;
     customization?: string;
   };
-  default_price?: Stripe.Price;
+  default_price: Stripe.Price;
 }
 
 const corsHeaders = {
@@ -20,7 +20,7 @@ const corsHeaders = {
 }
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-  apiVersion: '2023-10-16',
+  apiVersion: '2025-02-24',
   httpClient: Stripe.createFetchHttpClient(),
 })
 
