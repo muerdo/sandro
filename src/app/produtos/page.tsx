@@ -127,22 +127,23 @@ export default function CatalogoPage() {
             name: product.name || 'Untitled Product',
             description: product.description || '',
             price: defaultPrice.unit_amount / 100,
-          category: product.metadata?.category || 'Outros',
-          image: product.images?.[0] || "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9",
-          media: [
-            {
-              type: 'image' as const,
-              url: product.images?.[0] || "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9",
-              alt: product.name || 'Product Image'
-            }
-          ],
-          features: product.metadata?.features?.split(',') || [],
-          customization: product.metadata?.customization ? JSON.parse(product.metadata.customization) : undefined,
-          stock: 999,
-          status: 'active' as const,
-          stripeId: product.id,
-          low_stock_threshold: 10
-        })) : [];
+            category: product.metadata?.category || 'Outros',
+            image: product.images?.[0] || "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9",
+            media: [
+              {
+                type: 'image' as const,
+                url: product.images?.[0] || "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9",
+                alt: product.name || 'Product Image'
+              }
+            ],
+            features: product.metadata?.features?.split(',') || [],
+            customization: product.metadata?.customization ? JSON.parse(product.metadata.customization) : undefined,
+            stock: 999,
+            status: 'active' as const,
+            stripeId: product.id,
+            low_stock_threshold: 10
+          };
+        }).filter(Boolean) : [];
 
         const allProducts = [...defaultProducts];
         if (stripeProducts.length > 0) {
