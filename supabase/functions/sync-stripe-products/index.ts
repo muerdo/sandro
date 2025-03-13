@@ -14,83 +14,138 @@ Deno.serve(async (req) => {
 
   try {
     // Initialize Stripe
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+    if (!stripeKey) {
+      throw new Error('Missing Stripe secret key');
+    }
+
+    const stripe = new Stripe(stripeKey, {
       apiVersion: '2023-10-16',
     });
 
-    // Initialize Supabase with service role key for admin access
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    // Initialize Supabase
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    // Fetch all active products from Stripe with their prices
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase credentials');
+    }
+
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    // Fetch all products from Stripe with prices and metadata
     const stripeProducts = await stripe.products.list({
       active: true,
-      expand: ['data.default_price']
+      expand: ['data.default_price'],
+      limit: 100
     });
 
+    console.log(`Found ${stripeProducts.data.length} products in Stripe`);
+
     // Process each product
+    const processedProducts = [];
+    const errors = [];
+
     for (const stripeProduct of stripeProducts.data) {
-      const defaultPrice = stripeProduct.default_price as Stripe.Price;
-      
-      if (!defaultPrice?.unit_amount) {
-        console.error(`No valid price found for product ${stripeProduct.id}`);
-        continue;
-      }
-
-      // Transform Stripe product to our database format
-      const product = {
-        name: stripeProduct.name,
-        description: stripeProduct.description || '',
-        price: defaultPrice.unit_amount / 100,
-        category: stripeProduct.metadata?.category || 'Outros',
-        images: stripeProduct.images || [],
-        features: stripeProduct.metadata?.features?.split(',').map(f => f.trim()) || [],
-        customization: stripeProduct.metadata?.customization ? 
-          JSON.parse(stripeProduct.metadata.customization) : {},
-        stock: parseInt(stripeProduct.metadata?.stock || '999'),
-        status: stripeProduct.active ? 'active' : 'archived',
-        stripe_id: stripeProduct.id,
-        low_stock_threshold: parseInt(stripeProduct.metadata?.low_stock_threshold || '10'),
-        updated_at: new Date().toISOString()
-      };
-
-      // Upsert product in database
-      const { error } = await supabaseClient
-        .from('products')
-        .upsert({
-          ...product,
-          id: `stripe-${stripeProduct.id}` // Ensure consistent ID format
-        }, {
-          onConflict: 'stripe_id'
+      try {
+        // Get all prices for the product
+        const { data: prices } = await stripe.prices.list({
+          product: stripeProduct.id,
+          active: true,
+          currency: 'brl'
         });
 
-      if (error) {
-        console.error(`Error upserting product ${stripeProduct.id}:`, error);
+        // Find default or lowest price
+        const defaultPrice = prices.find(price => price.metadata?.default) || 
+                           prices.reduce((lowest, current) => {
+                             if (!lowest || current.unit_amount < lowest.unit_amount) {
+                               return current;
+                             }
+                             return lowest;
+                           }, null);
+
+        if (!defaultPrice?.unit_amount) {
+          throw new Error(`No valid price found for product ${stripeProduct.id}`);
+        }
+
+        // Parse features and customization from metadata
+        const features = stripeProduct.metadata?.features?.split(',').map(f => f.trim()) || [];
+        let customization = {};
+        try {
+          if (stripeProduct.metadata?.customization) {
+            customization = JSON.parse(stripeProduct.metadata.customization);
+          }
+        } catch (e) {
+          console.error(`Invalid customization JSON for product ${stripeProduct.id}`);
+        }
+
+        // Transform to database format
+        const product = {
+          id: `stripe-${stripeProduct.id}`,
+          name: stripeProduct.name,
+          description: stripeProduct.description || '',
+          price: defaultPrice.unit_amount / 100,
+          category: stripeProduct.metadata?.category || 'Outros',
+          images: stripeProduct.images || [],
+          features,
+          customization,
+          stock: parseInt(stripeProduct.metadata?.stock || '999'),
+          status: stripeProduct.active ? 'active' : 'archived',
+          stripe_id: stripeProduct.id,
+          stripe_price_id: defaultPrice.id,
+          low_stock_threshold: parseInt(stripeProduct.metadata?.low_stock_threshold || '10'),
+          updated_at: new Date().toISOString()
+        };
+
+        // Upsert product
+        const { error } = await supabaseClient
+          .from('products')
+          .upsert(product, {
+            onConflict: 'stripe_id',
+            ignoreDuplicates: false
+          });
+
+        if (error) throw error;
+        processedProducts.push(product.id);
+
+      } catch (error) {
+        errors.push({
+          productId: stripeProduct.id,
+          error: error.message
+        });
+        console.error(`Error processing product ${stripeProduct.id}:`, error);
       }
     }
 
-    // Mark products not in Stripe as archived
-    const stripeProductIds = stripeProducts.data.map(p => p.id);
-    const { error: archiveError } = await supabaseClient
-      .from('products')
-      .update({ status: 'archived' })
-      .filter('stripe_id', 'not.in', `(${stripeProductIds.map(id => `'${id}'`).join(',')})`)
-      .filter('status', 'eq', 'active');
+    // Archive products not in Stripe
+    if (processedProducts.length > 0) {
+      const { error: archiveError } = await supabaseClient
+        .from('products')
+        .update({ 
+          status: 'archived',
+          updated_at: new Date().toISOString()
+        })
+        .filter('stripe_id', 'not.in', `(${processedProducts.map(id => id.replace('stripe-', '')).map(id => `'${id}'`).join(',')})`)
+        .filter('status', 'eq', 'active');
 
-    if (archiveError) {
-      console.error('Error archiving old products:', archiveError);
+      if (archiveError) {
+        errors.push({
+          type: 'archive',
+          error: archiveError.message
+        });
+      }
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Synchronized ${stripeProducts.data.length} products`
+        processed: processedProducts.length,
+        errors: errors.length > 0 ? errors : undefined,
+        message: `Synchronized ${processedProducts.length} products${errors.length > 0 ? ` with ${errors.length} errors` : ''}`
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
+        status: errors.length > 0 ? 207 : 200
       }
     );
 
