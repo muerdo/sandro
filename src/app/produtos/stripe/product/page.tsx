@@ -82,7 +82,13 @@ export default function StripeProductPage() {
           id: `stripe-${data.id}`,
           name: data.name || 'Produto',
           description: data.description || 'Sem descrição disponível',
-          price: data.prices?.[0]?.unit_amount ? data.prices[0].unit_amount / 100 : 0,
+          price: data.prices?.reduce((lowest: any, current: any) => {
+            if (!current.active) return lowest;
+            if (!lowest || current.unit_amount < lowest.unit_amount) {
+              return current;
+            }
+            return lowest;
+          }, null)?.unit_amount / 100 || 0,
           category: data.metadata?.category || 'Outros',
           media: data.images?.map((url: string) => ({
             type: 'image' as const,

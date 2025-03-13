@@ -107,7 +107,13 @@ export default function CatalogoPage() {
           id: `stripe-${product.id}`,
           name: product.name || 'Untitled Product',
           description: product.description || '',
-          price: product.prices?.[0]?.unit_amount ? product.prices[0].unit_amount / 100 : 0,
+          price: product.prices?.reduce((lowest: any, current: any) => {
+            if (!current.active) return lowest;
+            if (!lowest || current.unit_amount < lowest.unit_amount) {
+              return current;
+            }
+            return lowest;
+          }, null)?.unit_amount / 100 || 0,
           category: product.metadata?.category || 'Outros',
           image: product.images?.[0] || "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9",
           media: [

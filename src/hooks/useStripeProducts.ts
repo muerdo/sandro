@@ -19,11 +19,21 @@ export function useStripeProducts() {
       const { data: stripeData, error } = await supabase.functions.invoke('get-stripe-products');
       if (error) throw error;
 
-      const stripeProducts = stripeData?.map((product: any) => ({
-        id: `stripe-${product.id}`,
-        name: product.name,
-        description: product.description || '',
-        price: product.prices[0]?.unit_amount / 100 || 0,
+      const stripeProducts = stripeData?.map((product: any) => {
+        // Find the active price with the lowest amount
+        const activePrice = product.prices?.reduce((lowest: any, current: any) => {
+          if (!current.active) return lowest;
+          if (!lowest || current.unit_amount < lowest.unit_amount) {
+            return current;
+          }
+          return lowest;
+        }, null);
+
+        return {
+          id: `stripe-${product.id}`,
+          name: product.name,
+          description: product.description || '',
+          price: activePrice?.unit_amount ? activePrice.unit_amount / 100 : 0,
         category: product.metadata?.category || 'Outros',
         media: [
           {
