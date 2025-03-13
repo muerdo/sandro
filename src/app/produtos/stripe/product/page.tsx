@@ -141,13 +141,15 @@ export default function StripeProductPage() {
       selectedColor && `Cor: ${selectedColor}`
     ].filter(Boolean).join(', ');
 
-    addItem({
+    const cartItem = {
       id: `${product.id}-${selectedSize}-${selectedColor}`,
       name: `${product.name}${customizations ? ` (${customizations})` : ''}`,
       price: product.price,
       image: selectedMedia?.url || product.media[0].url,
       quantity
-    });
+    };
+    
+    addItem(cartItem);
   };
 
   if (loading) {
