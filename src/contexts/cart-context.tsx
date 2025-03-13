@@ -8,7 +8,7 @@ export type CartItem = {
   id: string;
   name: string;
   price: number;
-  quantity?: number;
+  quantity: number;
   image: string;
 };
 
@@ -46,17 +46,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [items, isClient]);
 
-  const addItem = (newItem: Omit<CartItem, "quantity">) => {
+  const addItem = (newItem: Omit<CartItem, "quantity"> & { quantity?: number }) => {
     setItems(currentItems => {
       const existingItem = currentItems.find(item => item.id === newItem.id);
       if (existingItem) {
         return currentItems.map(item =>
           item.id === newItem.id 
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: item.quantity + (newItem.quantity || 1) }
             : item
         );
       }
-      return [...currentItems, { ...newItem, quantity: 1 }];
+      return [...currentItems, { ...newItem, quantity: newItem.quantity || 1 }];
     });
   };
 
