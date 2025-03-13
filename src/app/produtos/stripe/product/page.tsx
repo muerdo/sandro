@@ -53,44 +53,61 @@ export default function StripeProductPage() {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        // Get product ID from URL search params
+        if (typeof window === 'undefined') return;
+        
         const searchParams = new URLSearchParams(window.location.search);
         const productId = searchParams.get('id');
         
         if (!productId) {
-          toast.error('Product ID not found');
+          toast.error('Produto não encontrado');
           router.push('/produtos');
           return;
         }
 
+        const { data: { session } } = await supabase.auth.getSession();
         const { data, error } = await supabase.functions.invoke('get-stripe-product', {
-          body: { productId }
+          body: { 
+            productId,
+            sessionToken: session?.access_token 
+          }
         });
 
         if (error) throw error;
 
+        if (!data || !data.id) {
+          throw new Error('Produto não encontrado');
+        }
+
         const transformedProduct: Product = {
           id: `stripe-${data.id}`,
-          name: data.name,
-          description: data.description || '',
-          price: data.prices[0]?.unit_amount / 100 || 0,
+          name: data.name || 'Produto',
+          description: data.description || 'Sem descrição disponível',
+          price: data.prices?.[0]?.unit_amount ? data.prices[0].unit_amount / 100 : 0,
           category: data.metadata?.category || 'Outros',
-          media: [
-            {
-              type: 'image',
-              url: data.images[0] || "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9",
-              alt: data.name
-            }
-          ],
-          features: data.metadata?.features?.split(',') || [],
-          customization: data.metadata?.customization ? JSON.parse(data.metadata.customization) : undefined,
-          stock: 999,
+          media: data.images?.map((url: string) => ({
+            type: 'image' as const,
+            url: url || "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9",
+            alt: data.name || 'Imagem do produto'
+          })) || [{
+            type: 'image',
+            url: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9",
+            alt: 'Imagem padrão do produto'
+          }],
+          features: data.metadata?.features?.split(',').map((f: string) => f.trim()) || [],
+          customization: data.metadata?.customization ? 
+            JSON.parse(data.metadata.customization) : undefined,
+          stock: data.metadata?.stock ? parseInt(data.metadata.stock) : 999,
           status: 'active',
           stripeId: data.id,
-          low_stock_threshold: 10
+          low_stock_threshold: data.metadata?.low_stock_threshold ? 
+            parseInt(data.metadata.low_stock_threshold) : 10
         };
 
         setProduct(transformedProduct);
+        
+        if (transformedProduct.media?.[0]) {
+          setSelectedMedia(transformedProduct.media[0]);
+        }
       } catch (error) {
         console.error('Error fetching product:', error);
         toast.error('Failed to load product details');
@@ -123,7 +140,10 @@ export default function StripeProductPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-r-transparent" />
+        <div className="text-center space-y-4">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-r-transparent mx-auto" />
+          <p className="text-muted-foreground animate-pulse">Carregando produto...</p>
+        </div>
       </div>
     );
   }
@@ -131,14 +151,18 @@ export default function StripeProductPage() {
   if (!product) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Produto não encontrado</h1>
+        <div className="text-center space-y-6">
+          <h1 className="text-3xl font-bold mb-4">Produto não encontrado</h1>
+          <p className="text-muted-foreground mb-6">
+            Não foi possível encontrar o produto solicitado.
+          </p>
           <motion.button
             onClick={() => router.push('/produtos')}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="text-primary hover:opacity-80 transition-opacity"
+            className="bg-primary text-primary-foreground px-6 py-3 rounded-lg inline-flex items-center gap-2"
           >
+            <ArrowLeft className="w-4 h-4" />
             Voltar para Produtos
           </motion.button>
         </div>
