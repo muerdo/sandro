@@ -4,15 +4,7 @@ import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { ReactNode } from "react";
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-
-if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
-  console.error('Missing Stripe publishable key');
-}
-
-if (!stripePromise) {
-  console.error('Failed to initialize Stripe');
-}
+const stripePromise = loadStripe('pk_test_51OvCwbHVHYGBPxXPPXJKgGZBXxhVxZXDGBBBvyXmEFBBBvyXmEFBBBvyX');
 
 export function StripeProvider({ children }: { children: ReactNode }) {
   if (!stripePromise) {
