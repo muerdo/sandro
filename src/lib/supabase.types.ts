@@ -104,30 +104,36 @@ export type Database = {
       messages: {
         Row: {
           content: string | null
+          created_by: string | null
           direction: string | null
           id: number
           recipient: string | null
           sender: string | null
           status: string | null
           timestamp: string
+          user_id: string | null
         }
         Insert: {
           content?: string | null
+          created_by?: string | null
           direction?: string | null
           id?: number
           recipient?: string | null
           sender?: string | null
           status?: string | null
           timestamp: string
+          user_id?: string | null
         }
         Update: {
           content?: string | null
+          created_by?: string | null
           direction?: string | null
           id?: number
           recipient?: string | null
           sender?: string | null
           status?: string | null
           timestamp?: string
+          user_id?: string | null
         }
         Relationships: []
       }
