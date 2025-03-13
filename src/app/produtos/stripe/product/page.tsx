@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowLeft, ShoppingCart, X } from "lucide-react";
+import { ArrowLeft, ShoppingCart, X, Plus, Minus } from "lucide-react";
 import { format } from "date-fns";
 import { useCart } from "@/contexts/cart-context";
 import { useAuth } from "@/contexts/auth-context";
@@ -146,7 +146,7 @@ export default function StripeProductPage() {
       name: `${product.name}${customizations ? ` (${customizations})` : ''}`,
       price: product.price,
       image: selectedMedia?.url || product.media[0].url,
-      quantity: quantity
+      quantity
     });
   };
 
