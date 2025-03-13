@@ -20,6 +20,7 @@ export default function StripeProductPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [quantity, setQuantity] = useState(1);
   const [isUpdating, setIsUpdating] = useState(false);
   const [stockHistory, setStockHistory] = useState<Array<{
     id: string;
@@ -135,11 +136,17 @@ export default function StripeProductPage() {
 
     if (!product) return;
 
+    const customizations = [
+      selectedSize && `Tamanho: ${selectedSize}`,
+      selectedColor && `Cor: ${selectedColor}`
+    ].filter(Boolean).join(', ');
+
     addItem({
       id: `${product.id}-${selectedSize}-${selectedColor}`,
-      name: `${product.name} - ${selectedColor || ''} ${selectedSize || ''}`.trim(),
+      name: `${product.name}${customizations ? ` (${customizations})` : ''}`,
       price: product.price,
-      image: selectedMedia?.url || product.media[0].url
+      image: selectedMedia?.url || product.media[0].url,
+      quantity: quantity
     });
   };
 
@@ -273,15 +280,57 @@ export default function StripeProductPage() {
               </div>
             )}
 
-            <motion.button
-              onClick={handleAddToCart}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-medium flex items-center justify-center gap-2 text-lg"
-            >
-              <ShoppingCart className="w-5 h-5" />
-              Adicionar ao Carrinho
-            </motion.button>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <label className="text-lg font-medium">Quantidade:</label>
+                <div className="flex items-center gap-2">
+                  <motion.button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="p-2 rounded-lg bg-secondary text-secondary-foreground"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </motion.button>
+                  <input
+                    type="number"
+                    min="1"
+                    value={quantity}
+                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-16 text-center p-2 rounded-lg border bg-background"
+                  />
+                  <motion.button
+                    onClick={() => setQuantity(quantity + 1)}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="p-2 rounded-lg bg-secondary text-secondary-foreground"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </motion.button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between py-4 border-t">
+                <div>
+                  <p className="text-sm text-muted-foreground">Subtotal:</p>
+                  <p className="text-2xl font-bold">
+                    R$ {(product.price * quantity).toFixed(2)}
+                  </p>
+                </div>
+                <motion.button
+                  onClick={() => {
+                    handleAddToCart();
+                    toast.success(`${quantity} item${quantity > 1 ? 's' : ''} adicionado${quantity > 1 ? 's' : ''} ao carrinho`);
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="bg-primary text-primary-foreground px-8 py-4 rounded-xl font-medium flex items-center gap-2 text-lg"
+                >
+                  <ShoppingCart className="w-5 h-5" />
+                  Adicionar ao Carrinho
+                </motion.button>
+              </div>
+            </div>
           </div>
         </div>
 

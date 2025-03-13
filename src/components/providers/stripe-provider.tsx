@@ -4,7 +4,7 @@ import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { ReactNode } from "react";
 
-const stripePromise = loadStripe('pk_test_51OvCwbHVHYGBPxXPPXJKgGZBXxhVxZXDGBBBvyXmEFBBBvyXmEFBBBvyX');
+const stripePromise = loadStripe('pk_test_51OvCwbHVHYGBPxXPPXJKgGZBXxhVxZXDGBBBvyXmEFBBBvyXmE');
 
 export function StripeProvider({ children }: { children: ReactNode }) {
   if (!stripePromise) {
