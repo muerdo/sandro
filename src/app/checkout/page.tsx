@@ -181,7 +181,7 @@ export default function CheckoutPage() {
       }
 
       // Confirm payment with Stripe
-      const result = await stripe.confirmPayment({
+      const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/checkout/success`,
@@ -202,7 +202,7 @@ export default function CheckoutPage() {
         }
       });
 
-      if (result.error) {
+      if (error) {
         // Update order status to failed if payment fails
         await supabase
           .from('orders')
@@ -214,15 +214,15 @@ export default function CheckoutPage() {
           .order('created_at', { ascending: false })
           .limit(1);
 
-        if (result.error.type === "card_error" || result.error.type === "validation_error") {
-          toast.error(result.error.message || "Error processing payment");
+        if (error.type === "card_error" || error.type === "validation_error") {
+          toast.error(error.message || "Error processing payment");
         } else {
           toast.error("An unexpected error occurred");
         }
         return;
       }
 
-      if (result.paymentIntent?.status === 'succeeded') {
+      if (paymentIntent?.status === 'succeeded') {
         // Update order status to completed
         await supabase
           .from('orders')
