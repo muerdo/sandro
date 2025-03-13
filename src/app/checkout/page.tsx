@@ -120,7 +120,6 @@ export default function CheckoutPage() {
         throw new Error("Stripe not initialized");
       }
 
-    try {
       const result = await stripe.confirmPayment({
         elements,
         confirmParams: {
