@@ -34,20 +34,21 @@ export function useStripeProducts() {
           name: product.name,
           description: product.description || '',
           price: activePrice?.unit_amount ? activePrice.unit_amount / 100 : 0,
-        category: product.metadata?.category || 'Outros',
-        media: [
-          {
-            type: 'image',
-            url: product.images[0] || "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9",
-            alt: product.name
-          }
-        ],
-        features: product.metadata?.features?.split(',') || [] as string[],
-        customization: product.metadata?.customization ? JSON.parse(product.metadata.customization) : undefined,
-        stock: 999,
-        status: 'active',
-        stripeId: product.id
-      })) || [];
+          category: product.metadata?.category || 'Outros',
+          media: [
+            {
+              type: 'image',
+              url: product.images[0] || "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9",
+              alt: product.name
+            }
+          ],
+          features: product.metadata?.features?.split(',') || [] as string[],
+          customization: product.metadata?.customization ? JSON.parse(product.metadata.customization) : undefined,
+          stock: 999,
+          status: 'active',
+          stripeId: product.id
+        };
+      }) || [];
 
       const defaultProducts = [
         {
