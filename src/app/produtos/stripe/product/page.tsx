@@ -83,13 +83,23 @@ export default function StripeProductPage() {
           id: `stripe-${data.id}`,
           name: data.name || 'Produto',
           description: data.description || 'Sem descrição disponível',
-          price: data.prices?.reduce((lowest: any, current: any) => {
-            if (!current.active) return lowest;
-            if (!lowest || current.unit_amount < lowest.unit_amount) {
-              return current;
+          price: (() => {
+            const activePrices = data.prices?.filter((price: any) => price.active) || [];
+            const defaultPrice = activePrices.find((price: any) => price.metadata?.default) || 
+                               activePrices.reduce((lowest: any, current: any) => {
+                                 if (!lowest || current.unit_amount < lowest.unit_amount) {
+                                   return current;
+                                 }
+                                 return lowest;
+                               }, null);
+            
+            if (!defaultPrice?.unit_amount) {
+              console.error(`No valid price found for product ${data.id}`);
+              return 0;
             }
-            return lowest;
-          }, null)?.unit_amount / 100 || 0,
+            
+            return defaultPrice.unit_amount / 100;
+          })(),
           category: data.metadata?.category || 'Outros',
           media: data.images?.map((url: string) => ({
             type: 'image' as const,

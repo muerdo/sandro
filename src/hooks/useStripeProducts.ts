@@ -20,20 +20,29 @@ export function useStripeProducts() {
       if (error) throw error;
 
       const stripeProducts = stripeData?.map((product: any) => {
-        // Find the active price with the lowest amount
-        const activePrice = product.prices?.reduce((lowest: any, current: any) => {
-          if (!current.active) return lowest;
-          if (!lowest || current.unit_amount < lowest.unit_amount) {
-            return current;
-          }
-          return lowest;
-        }, null);
+        // Get all active prices
+        const activePrices = product.prices?.filter((price: any) => price.active) || [];
+        
+        // Find default price or lowest price
+        const defaultPrice = activePrices.find((price: any) => price.metadata?.default) || 
+                           activePrices.reduce((lowest: any, current: any) => {
+                             if (!lowest || current.unit_amount < lowest.unit_amount) {
+                               return current;
+                             }
+                             return lowest;
+                           }, null);
+
+        // Ensure we have a valid price
+        if (!defaultPrice?.unit_amount) {
+          console.error(`No valid price found for product ${product.id}`);
+          return null;
+        }
 
         return {
           id: `stripe-${product.id}`,
-          name: product.name,
+          name: product.name || 'Untitled Product',
           description: product.description || '',
-          price: activePrice?.unit_amount ? activePrice.unit_amount / 100 : 0,
+          price: defaultPrice.unit_amount / 100,
           category: product.metadata?.category || 'Outros',
           media: [
             {

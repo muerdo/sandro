@@ -103,17 +103,30 @@ export default function CatalogoPage() {
         }
 
         // Transform Stripe products to match our format
-        const stripeProducts = Array.isArray(stripeData) ? stripeData.map((product: any) => ({
-          id: `stripe-${product.id}`,
-          name: product.name || 'Untitled Product',
-          description: product.description || '',
-          price: product.prices?.reduce((lowest: any, current: any) => {
-            if (!current.active) return lowest;
-            if (!lowest || current.unit_amount < lowest.unit_amount) {
-              return current;
-            }
-            return lowest;
-          }, null)?.unit_amount / 100 || 0,
+        const stripeProducts = Array.isArray(stripeData) ? stripeData.map((product: any) => {
+          // Get all active prices
+          const activePrices = product.prices?.filter((price: any) => price.active) || [];
+          
+          // Find default price or lowest price
+          const defaultPrice = activePrices.find((price: any) => price.metadata?.default) || 
+                             activePrices.reduce((lowest: any, current: any) => {
+                               if (!lowest || current.unit_amount < lowest.unit_amount) {
+                                 return current;
+                               }
+                               return lowest;
+                             }, null);
+
+          // Skip products without valid prices
+          if (!defaultPrice?.unit_amount) {
+            console.error(`No valid price found for product ${product.id}`);
+            return null;
+          }
+
+          return {
+            id: `stripe-${product.id}`,
+            name: product.name || 'Untitled Product',
+            description: product.description || '',
+            price: defaultPrice.unit_amount / 100,
           category: product.metadata?.category || 'Outros',
           image: product.images?.[0] || "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9",
           media: [
