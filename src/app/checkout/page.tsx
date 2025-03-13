@@ -106,17 +106,32 @@ export default function CheckoutPage() {
         throw new Error("No authentication session found");
       }
 
-      const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-        body: { 
-          items,
-          total 
-        },
+      const response = await fetch('https://tgtxeiaisnyqjlebgcgn.supabase.co/functions/v1/create-payment-intent', {
+        method: 'POST',
         headers: {
-          Authorization: `Bearer ${session.access_token ?? ''}`
-        }
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          amount: Math.round(total * 100), // Convert to cents
+          currency: 'brl',
+          payment_method_types: ['card'],
+          metadata: {
+            order_id: crypto.randomUUID(),
+            customer_id: user?.id,
+          }
+        })
       });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error('Failed to create payment intent');
+      }
+
+      const data = await response.json();
+      if (!data.clientSecret) {
+        throw new Error('No client secret received');
+      }
+
       setClientSecret(data.clientSecret);
     } catch (error) {
       console.error("Payment initialization error:", error);
@@ -169,6 +184,16 @@ export default function CheckoutPage() {
                 state: shippingAddress.state,
                 postal_code: shippingAddress.postal_code,
                 country: 'BR'
+              }
+            }
+          },
+          setup_future_usage: 'off_session',
+          mandate_data: {
+            customer_acceptance: {
+              type: 'online',
+              online: {
+                ip_address: window?.navigator?.userAgent ?? 'unknown',
+                user_agent: window?.navigator?.userAgent ?? 'unknown'
               }
             }
           }

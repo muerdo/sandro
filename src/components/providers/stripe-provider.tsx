@@ -10,6 +10,10 @@ if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
   console.error('Missing Stripe publishable key');
 }
 
+if (!stripePromise) {
+  console.error('Failed to initialize Stripe');
+}
+
 export function StripeProvider({ children }: { children: ReactNode }) {
   if (!stripePromise) {
     return null;
