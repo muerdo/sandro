@@ -101,8 +101,38 @@ export default function CheckoutPage() {
 
   const initializePayment = async () => {
     try {
-      // For testing, use a hardcoded client secret
-      setClientSecret('pi_3OvCwbHVHYGBPxXP0eZjLxKs_secret_veMqQZHF8veMqQZHF8');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("No authentication session found");
+      }
+
+      const response = await fetch('https://tgtxeiaisnyqjlebgcgn.supabase.co/functions/v1/create-payment-intent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          amount: Math.round(total * 100),
+          currency: 'brl',
+          payment_method_types: ['card'],
+          metadata: {
+            order_id: crypto.randomUUID(),
+            customer_id: user?.id,
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create payment intent');
+      }
+
+      const data = await response.json();
+      if (!data.clientSecret) {
+        throw new Error('No client secret received');
+      }
+
+      setClientSecret(data.clientSecret);
     } catch (error) {
       console.error("Payment initialization error:", error);
       toast.error("Failed to initialize payment");
@@ -111,15 +141,46 @@ export default function CheckoutPage() {
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!user) {
+      toast.error('Please sign in to complete your purchase');
+      return;
+    }
+
+    if (!selectedAddress && !showNewAddressForm) {
+      toast.error('Please select or add a shipping address');
+      return;
+    }
+
     setLoading(true);
     setStripeError("");
     setIsProcessing(true);
 
     try {
-      if (!stripe || !elements) {
-        throw new Error("Stripe not initialized");
+      if (!stripe || !elements || !clientSecret) {
+        toast.error("Payment system not initialized");
+        return;
       }
 
+      // Create order in database first
+      const { error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          id: crypto.randomUUID(),
+          user_id: user.id,
+          items: items,
+          total_amount: total,
+          payment_method: 'credit_card',
+          payment_status: 'pending',
+          status: 'pending',
+          shipping_address: shippingAddress
+        });
+
+      if (orderError) {
+        throw new Error('Failed to create order');
+      }
+
+      // Confirm payment with Stripe
       const result = await stripe.confirmPayment({
         elements,
         confirmParams: {
@@ -137,32 +198,46 @@ export default function CheckoutPage() {
                 country: 'BR'
               }
             }
-          },
-          setup_future_usage: 'off_session',
-          mandate_data: {
-            customer_acceptance: {
-              type: 'online',
-              online: {
-                ip_address: window?.navigator?.userAgent ?? 'unknown',
-                user_agent: window?.navigator?.userAgent ?? 'unknown'
-              }
-            }
           }
-        },
+        }
       });
 
       if (result.error) {
+        // Update order status to failed if payment fails
+        await supabase
+          .from('orders')
+          .update({ 
+            payment_status: 'failed',
+            status: 'cancelled'
+          })
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
         if (result.error.type === "card_error" || result.error.type === "validation_error") {
-          toast.error(result.error.message || "Erro ao processar pagamento");
+          toast.error(result.error.message || "Error processing payment");
         } else {
-          toast.error("Ocorreu um erro inesperado");
+          toast.error("An unexpected error occurred");
         }
         return;
       }
 
-      toast.success("Pagamento realizado com sucesso!");
-      clearCart();
-      router.push('/checkout/success');
+      if (result.paymentIntent?.status === 'succeeded') {
+        // Update order status to completed
+        await supabase
+          .from('orders')
+          .update({ 
+            payment_status: 'paid',
+            status: 'processing'
+          })
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        toast.success("Payment successful!");
+        clearCart();
+        router.push('/checkout/success');
+      }
     } catch (error) {
       console.error("Payment error:", error);
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
