@@ -1,6 +1,7 @@
--- Create products table
+-- Create products table with Stripe integration
 create table if not exists public.products (
   id uuid default gen_random_uuid() primary key,
+  stripe_id text unique not null,
   name text not null,
   description text,
   price decimal(10,2) not null,
@@ -8,13 +9,18 @@ create table if not exists public.products (
   images text[] default array[]::text[],
   features text[] default array[]::text[],
   customization jsonb default '{}'::jsonb,
+  metadata jsonb default '{}'::jsonb,
   stock integer default 0,
   status text default 'active',
   low_stock_threshold integer default 10,
-  stripe_id text unique,
   created_at timestamp with time zone default timezone('utc'::text, now()),
   updated_at timestamp with time zone default timezone('utc'::text, now())
 );
+
+-- Add indexes for better performance
+create index if not exists idx_products_stripe_id on public.products(stripe_id);
+create index if not exists idx_products_category on public.products(category);
+create index if not exists idx_products_status on public.products(status);
 
 -- Create orders table
 create table if not exists public.orders (

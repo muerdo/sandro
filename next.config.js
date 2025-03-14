@@ -1,9 +1,7 @@
 
       /** @type {import("next").NextConfig} */
       const config = {
-        trailingSlash: true,
         images: {
-          unoptimized: true,
           remotePatterns: [
             {
               protocol: 'https',
@@ -21,7 +19,6 @@
         webpack: (config, { isServer }) => {
           config.stats = "verbose";
           return config;
-        },
-        output: "export"
+        }
       };
       export default config;
