@@ -7,7 +7,8 @@ export type TableName =
   | "profiles"
   | "payment_settings"
   | "products"
-  | "shipping_addresses";
+  | "shipping_addresses"
+  | string; // Allow any string for system tables
 
 export interface TableColumn {
   name: string;
