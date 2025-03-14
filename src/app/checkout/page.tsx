@@ -197,9 +197,7 @@ export default function CheckoutPage() {
                   postal_code: shippingAddress.postal_code,
                   country: 'BR'
                 }
-              }
-            },
-            payment_method_data: {
+              },
               type: 'card'
             }
           }
