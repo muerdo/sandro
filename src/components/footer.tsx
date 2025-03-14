@@ -31,8 +31,8 @@ export default function Footer() {
 
   return (
     <footer className="bg-background border-t">
-      <div className="container mx-auto px-4 py-6 sm:py-8">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
+      <div className="container mx-auto px-4 py-4 sm:py-8">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
           <div className="flex items-center gap-4">
             <motion.p 
               initial={{ opacity: 0 }}

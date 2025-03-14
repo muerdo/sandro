@@ -389,8 +389,8 @@ export default function CheckoutPage() {
           <ArrowLeft className="w-4 h-4" />
           Back to Cart
         </motion.button>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
-            <div className="col-span-2 space-y-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+            <div className="col-span-1 lg:col-span-2 space-y-6 sm:space-y-8">
               {/* Shipping Information */}
               <div className="bg-card p-6 rounded-xl shadow-lg">
                 <h2 className="text-2xl font-semibold mb-6">Shipping Information</h2>

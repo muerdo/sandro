@@ -15,9 +15,9 @@ export default function ProductCard({ product, onQuickAdd }: ProductCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-card rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
+      className="bg-card rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow w-full"
     >
-      <div className="relative aspect-square">
+      <div className="relative aspect-square w-full">
         <img
           src={product.media?.[0]?.url || product.image || 'https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9'}
           alt={product.name}

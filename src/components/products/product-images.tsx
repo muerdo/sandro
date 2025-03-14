@@ -43,7 +43,7 @@ const ProductImages = memo(function ProductImages({
           transition={{ duration: 0.3 }}
         />
       )}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
+      <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-3 gap-2 sm:gap-4">
         {media.map((item) => (
           <motion.button
             key={item.url}

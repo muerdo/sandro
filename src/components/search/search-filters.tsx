@@ -53,8 +53,8 @@ export default function SearchFilters({ onSearch, onFilter }: SearchFiltersProps
 
   return (
     <div className="w-full space-y-4">
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
+      <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
+        <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <input
             type="text"
