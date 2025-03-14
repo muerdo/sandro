@@ -27,10 +27,20 @@ export function useDatabaseTables(): DatabaseTableHookReturn {
 
       if (error) throw error;
 
-      const processedTables = (data as TableInfo[] || [])
-        .filter(table => 
-          showSystemTables || (!table.name.startsWith('_') && !table.name.startsWith('pg_'))
-        );
+      // Transform the data to match TableInfo type
+      const processedTables = (data || []).map(table => ({
+        name: table.name as TableName,
+        schema: table.schema,
+        columns: (table.columns as any[]).map(col => ({
+          name: col.name,
+          type: col.type,
+          is_nullable: col.is_nullable,
+          is_identity: col.is_identity
+        })),
+        row_count: table.row_count
+      })).filter(table => 
+        showSystemTables || (!table.name.startsWith('_') && !table.name.startsWith('pg_'))
+      );
 
       setTables(processedTables);
     } catch (error) {

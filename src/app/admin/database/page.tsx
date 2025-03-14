@@ -81,7 +81,6 @@ export default function DatabaseManagement() {
 
   const initializeDatabase = async () => {
     try {
-      setLoading(true);
       await checkAdminStatus();
       if (isAdmin) {
         await fetchTables();
@@ -89,8 +88,6 @@ export default function DatabaseManagement() {
     } catch (error) {
       console.error('Error initializing database:', error);
       toast.error('Failed to initialize database management');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -98,7 +95,7 @@ export default function DatabaseManagement() {
     initializeDatabase();
   }, [isAdmin]);
 
-  const handleTableSelect = async (tableName: string) => {
+  const handleTableSelect = async (tableName: TableName) => {
     try {
       await fetchTableData(tableName);
     } catch (error) {
@@ -131,7 +128,7 @@ export default function DatabaseManagement() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => setShowSystemTables(!showSystemTables)}
+              onClick={() => toggleSystemTables()}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground"
             >
               {showSystemTables ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
