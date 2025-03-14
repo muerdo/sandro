@@ -7,24 +7,41 @@ import type { TableInfo } from '@/types/database';
 
 export function useDatabaseTables() {
   const [tables, setTables] = useState<TableInfo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedTable, setSelectedTable] = useState<string | null>(null);
-  const [tableData, setTableData] = useState<any[]>([]);
-  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
-  const [showSystemTables, setShowSystemTables] = useState(false);
+  const { 
+    tables,
+    loading,
+    selectedTable,
+    tableData,
+    expandedRows,
+    showSystemTables,
+    fetchTables,
+    fetchTableData,
+    toggleRowExpansion,
+    toggleSystemTables,
+    setSelectedTable
+  } = useDatabaseTables();
 
   const fetchTables = useCallback(async () => {
     try {
       setLoading(true);
       
-      // Use RPC call to get table info
-      const { data, error } = await supabase.rpc('get_table_info');
+      const { data: tablesData, error } = await supabase
+        .from('information_schema.tables')
+        .select('table_name, table_schema')
+        .eq('table_schema', 'public');
 
       if (error) throw error;
 
-      const processedTables = (data as TableInfo[] || []).filter(table => 
-        showSystemTables || (!table.name.startsWith('_') && !table.name.startsWith('pg_'))
-      );
+      const processedTables = (tablesData || [])
+        .filter(table => 
+          showSystemTables || (!table.table_name.startsWith('_') && !table.table_name.startsWith('pg_'))
+        )
+        .map(table => ({
+          name: table.table_name as TableName,
+          schema: table.table_schema,
+          columns: [],
+          row_count: 0
+        }));
 
       setTables(processedTables);
     } catch (error) {
@@ -35,7 +52,7 @@ export function useDatabaseTables() {
     }
   }, [showSystemTables]);
 
-  const fetchTableData = useCallback(async (tableName: string) => {
+  const fetchTableData = useCallback(async (tableName: TableName) => {
     try {
       const { data, error } = await supabase
         .from(tableName)
