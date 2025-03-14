@@ -61,7 +61,7 @@ export function useDatabaseTables(): DatabaseTableHookReturn {
 
       if (error) throw error;
 
-      setTableData(data as DatabaseTableRow<typeof tableName>[] || []);
+      setTableData(data as Record<string, unknown>[] || []);
       setSelectedTable(tableName);
     } catch (error) {
       console.error(`Error fetching data from ${tableName}:`, error);

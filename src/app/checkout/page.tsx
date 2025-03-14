@@ -209,7 +209,6 @@ export default function CheckoutPage() {
               customer_name: shippingAddress.full_name,
               shipping_address: JSON.stringify(shippingAddress)
             }
-            }
           }
         });
 

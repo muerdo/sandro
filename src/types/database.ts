@@ -1,8 +1,6 @@
 export type TableName = string;
 
-export type DatabaseTableRow<T extends TableName> = T extends keyof Database['public']['Tables'] 
-  ? Database['public']['Tables'][T]['Row']
-  : Record<string, unknown>;
+export type DatabaseTableRow<T extends string> = Record<string, unknown>;
 
 export interface TableColumn {
   name: string;
