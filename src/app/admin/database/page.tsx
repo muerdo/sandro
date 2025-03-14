@@ -74,12 +74,23 @@ export default function DatabaseManagement() {
   const fetchTables = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .rpc('get_table_info');
+      
+      // Get all tables from the schema
+      const { data: schemaData, error: schemaError } = await supabase
+        .from('information_schema.tables')
+        .select('table_name')
+        .eq('table_schema', 'public');
 
-      if (error) throw error;
+      if (schemaError) throw schemaError;
 
-      const filteredTables = (data as TableInfo[]).filter(table => 
+      const tables = (schemaData || []).map(table => ({
+        name: table.table_name,
+        schema: 'public',
+        columns: [],
+        row_count: 0
+      }));
+
+      const filteredTables = tables.filter(table => 
         showSystemTables || (!table.name.startsWith('_') && !table.name.startsWith('pg_'))
       );
 
@@ -94,10 +105,10 @@ export default function DatabaseManagement() {
 
   const fetchTableData = async (tableName: string) => {
     try {
+      // Type-safe way to fetch table data
+      const query = `SELECT * FROM "${tableName}" LIMIT 100`;
       const { data, error } = await supabase
-        .from(tableName)
-        .select('*')
-        .limit(100);
+        .rpc('execute_sql', { query_text: query });
 
       if (error) throw error;
       setTableData(data || []);
