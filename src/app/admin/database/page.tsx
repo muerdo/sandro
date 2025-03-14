@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useDatabaseTables } from "@/hooks/useDatabaseTables";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/auth-context";
@@ -37,12 +38,18 @@ export default function DatabaseManagement() {
   const { user } = useAuth();
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [tables, setTables] = useState<TableInfo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedTable, setSelectedTable] = useState<string | null>(null);
-  const [tableData, setTableData] = useState<any[]>([]);
-  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
-  const [showSystemTables, setShowSystemTables] = useState(false);
+  const { 
+    tables,
+    loading,
+    selectedTable,
+    tableData,
+    expandedRows,
+    showSystemTables,
+    fetchTables,
+    fetchTableData,
+    toggleRowExpansion,
+    toggleSystemTables
+  } = useDatabaseTables();
 
   useEffect(() => {
     checkAdminStatus();
@@ -71,15 +78,6 @@ export default function DatabaseManagement() {
     setIsAdmin(true);
   };
 
-  const { 
-    tables,
-    loading,
-    state,
-    fetchTables,
-    fetchTableData,
-    toggleRowExpansion,
-    toggleSystemTables
-  } = useTableManagement();
 
   const initializeDatabase = async () => {
     try {
@@ -109,15 +107,6 @@ export default function DatabaseManagement() {
     }
   };
 
-  const toggleRowExpansion = (index: number) => {
-    const newExpandedRows = new Set(expandedRows);
-    if (expandedRows.has(index)) {
-      newExpandedRows.delete(index);
-    } else {
-      newExpandedRows.add(index);
-    }
-    setExpandedRows(newExpandedRows);
-  };
 
   if (!isAdmin) {
     return (
