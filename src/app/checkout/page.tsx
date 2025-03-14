@@ -199,7 +199,7 @@ export default function CheckoutPage() {
                 }
               }
             },
-            payment_method_types: ['card']
+            payment_method: 'card'
           }
         });
 
