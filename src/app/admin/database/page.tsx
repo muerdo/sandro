@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useDatabaseTables } from "@/hooks/useDatabaseTables";
-import type { TableName, TableColumn } from "@/types/database";
+import type { TableName, TableColumn, TableData, TableFilter, TableSort } from "@/types/database";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/auth-context";
@@ -26,7 +26,13 @@ import {
   Filter,
   ArrowUpDown,
   Download,
-  Upload
+  Upload,
+  Search,
+  Settings,
+  MoreVertical,
+  Copy,
+  FileJson,
+  FileSpreadsheet
 } from "lucide-react";
 
 interface TableInfo {

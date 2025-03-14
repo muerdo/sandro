@@ -18,6 +18,14 @@ export function useDatabaseTables(): DatabaseTableHookReturn {
   const [tableData, setTableData] = useState<TableData[]>([]);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [showSystemTables, setShowSystemTables] = useState(false);
+  const [filters, setFilters] = useState<TableFilter[]>([]);
+  const [sorts, setSorts] = useState<TableSort[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalRows, setTotalRows] = useState(0);
+  const [editingCell, setEditingCell] = useState<{row: number; col: string} | null>(null);
+  const [showTableSettings, setShowTableSettings] = useState(false);
 
   const fetchTables = useCallback(async () => {
     try {
@@ -52,18 +60,49 @@ export function useDatabaseTables(): DatabaseTableHookReturn {
     }
   }, [showSystemTables]);
 
-  const fetchTableData = useCallback(async (tableName: TableName) => {
+  const fetchTableData = useCallback(async (
+    tableName: TableName,
+    options?: {
+      filters?: TableFilter[];
+      sorts?: TableSort[];
+      page?: number;
+      pageSize?: number;
+    }
+  ) => {
     try {
-      // Type assertion needed since we allow string for system tables
-      const { data, error } = await supabase
-        .from(tableName as 'orders' | 'products' | 'profiles')
-        .select('*')
-        .limit(100);
+      let query = supabase
+        .from(tableName as string)
+        .select('*', { count: 'exact' });
+
+      // Apply filters
+      if (options?.filters) {
+        options.filters.forEach(filter => {
+          query = query.filter(filter.column, filter.operator, filter.value);
+        });
+      }
+
+      // Apply sorting
+      if (options?.sorts) {
+        options.sorts.forEach(sort => {
+          query = query.order(sort.column, { ascending: sort.direction === 'asc' });
+        });
+      }
+
+      // Apply pagination
+      if (options?.page && options?.pageSize) {
+        const from = (options.page - 1) * options.pageSize;
+        query = query
+          .range(from, from + options.pageSize - 1);
+      }
+
+      const { data, error, count } = await query;
 
       if (error) throw error;
 
       setTableData(data as Record<string, unknown>[] || []);
       setSelectedTable(tableName);
+      if (count !== null) setTotalRows(count);
+
     } catch (error) {
       console.error(`Error fetching data from ${String(tableName)}:`, error);
       toast.error(`Failed to load data from ${String(tableName)}`);
