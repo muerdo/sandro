@@ -256,59 +256,135 @@ export default function ProductsManagement() {
   const handleSave = async () => {
     if (!isEditing) return;
 
-    const { error } = await supabase
-      .from('products')
-      .update(editForm)
-      .eq('id', isEditing);
+    try {
+      setLoading(prev => ({ ...prev, action: true }));
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No authentication session');
 
-    if (error) {
+      const { error } = await supabase.functions.invoke('admin-operations', {
+        body: { 
+          action: 'updateProduct',
+          productId: isEditing,
+          updates: {
+            name: editForm.name,
+            description: editForm.description,
+            images: editForm.images,
+            metadata: {
+              category: editForm.category,
+              features: editForm.features?.join(','),
+              customization: JSON.stringify(editForm.customization),
+              stock: editForm.stock?.toString(),
+              low_stock_threshold: editForm.low_stock_threshold?.toString()
+            },
+            price: editForm.price ? {
+              unit_amount: Math.round(editForm.price * 100),
+              currency: 'brl'
+            } : undefined
+          }
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success('Product updated successfully');
+      setIsEditing(null);
+      setEditForm({});
+      fetchProducts();
+    } catch (error) {
       console.error('Error updating product:', error);
-      return;
+      toast.error('Failed to update product');
+    } finally {
+      setLoading(prev => ({ ...prev, action: false }));
     }
-
-    setIsEditing(null);
-    setEditForm({});
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', id);
+    try {
+      setLoading(prev => ({ ...prev, action: true }));
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No authentication session');
 
-    if (error) {
+      const { error } = await supabase.functions.invoke('admin-operations', {
+        body: { 
+          action: 'deleteProduct',
+          productId: id
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success('Product deleted successfully');
+      fetchProducts();
+    } catch (error) {
       console.error('Error deleting product:', error);
-      return;
+      toast.error('Failed to delete product');
+    } finally {
+      setLoading(prev => ({ ...prev, action: false }));
     }
   };
 
   const handleCreate = async () => {
-    const { error } = await supabase
-      .from('products')
-      .insert({
-        ...newProduct,
-        id: crypto.randomUUID(),
-        name: newProduct.name || '',
-        price: newProduct.price || 0,
-        status: 'active'
+    try {
+      setLoading(prev => ({ ...prev, action: true }));
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No authentication session');
+
+      // Create product in Stripe first
+      const { error: stripeError } = await supabase.functions.invoke('admin-operations', {
+        body: { 
+          action: 'createStripeProduct',
+          product: {
+            name: newProduct.name,
+            description: newProduct.description,
+            images: newProduct.images,
+            metadata: {
+              category: newProduct.category,
+              features: newProduct.features?.join(','),
+              customization: JSON.stringify(newProduct.customization),
+              stock: newProduct.stock?.toString(),
+              low_stock_threshold: '10'
+            }
+          },
+          price: {
+            unit_amount: Math.round(newProduct.price * 100),
+            currency: 'brl'
+          }
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
-    if (error) {
-      console.error('Error creating product:', error);
-      return;
-    }
+      if (stripeError) throw stripeError;
 
-    setIsCreating(false);
-    setNewProduct({
-      name: '',
-      description: '',
-      price: 0,
-      category: '',
-      stock: 0,
-      images: [],
-      features: [],
-      customization: {}
-    });
+      toast.success('Product created successfully');
+      setIsCreating(false);
+      setNewProduct({
+        name: '',
+        description: '',
+        price: 0,
+        category: '',
+        stock: 0,
+        images: [],
+        features: [],
+        customization: {}
+      });
+      fetchProducts();
+    } catch (error) {
+      console.error('Error creating product:', error);
+      toast.error('Failed to create product');
+    } finally {
+      setLoading(prev => ({ ...prev, action: false }));
+    }
   };
 
   if (!isAdmin) {
@@ -330,15 +406,44 @@ export default function ProductsManagement() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-bold">Products Management</h1>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setIsCreating(true)}
-            className="bg-primary text-primary-foreground px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add Product
-          </motion.button>
+          <div className="flex items-center gap-4">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={async () => {
+                try {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (!session) throw new Error('No authentication session');
+
+                  const { error } = await supabase.functions.invoke('sync-stripe-products', {
+                    headers: {
+                      Authorization: `Bearer ${session.access_token}`
+                    }
+                  });
+
+                  if (error) throw error;
+                  toast.success('Products synchronized with Stripe');
+                  fetchProducts();
+                } catch (error) {
+                  console.error('Error syncing products:', error);
+                  toast.error('Failed to sync products');
+                }
+              }}
+              className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg flex items-center gap-2"
+            >
+              <ArrowUpDown className="w-4 h-4" />
+              Sync with Stripe
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setIsCreating(true)}
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-lg flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Product
+            </motion.button>
+          </div>
         </div>
 
         {/* Product List */}
