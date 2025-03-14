@@ -1,5 +1,5 @@
-import { createClient } from 'jsr:@supabase/supabase-js@2';
-import Stripe from 'npm:stripe@14.21.0';
+import { createClient } from '@supabase/supabase-js';
+import Stripe from 'stripe';
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import Stripe from 'npm:stripe@14.21.0';
