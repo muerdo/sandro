@@ -143,12 +143,12 @@ export default function CheckoutPage() {
     e.preventDefault();
 
     if (!user) {
-      toast.error('Please sign in to complete your purchase');
+      toast.error('Por favor, faça login para continuar');
       return;
     }
 
     if (!selectedAddress && !showNewAddressForm) {
-      toast.error('Please select or add a shipping address');
+      toast.error('Selecione ou adicione um endereço de entrega');
       return;
     }
 
@@ -157,8 +157,36 @@ export default function CheckoutPage() {
     setIsProcessing(true);
 
     try {
-      // Create order first
       const orderId = crypto.randomUUID();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Sessão não encontrada');
+      }
+
+      // Create payment intent first
+      const { data: paymentIntent, error: paymentError } = await supabase.functions.invoke(
+        'create-payment-intent',
+        {
+          body: {
+            amount: Math.round(total * 100),
+            currency: 'brl',
+            payment_method_type: paymentMethod,
+            metadata: {
+              order_id: orderId,
+              customer_id: user.id,
+              shipping_address: JSON.stringify(shippingAddress)
+            }
+          },
+          headers: {
+            Authorization: `Bearer ${session.access_token}`
+          }
+        }
+      );
+
+      if (paymentError) throw paymentError;
+
+      // Create order in database
       const { error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -169,16 +197,17 @@ export default function CheckoutPage() {
           payment_method: paymentMethod,
           payment_status: 'pending',
           status: 'pending',
-          shipping_address: shippingAddress
+          shipping_address: shippingAddress,
+          stripe_payment_intent_id: paymentIntent.id
         });
 
       if (orderError) {
-        throw new Error('Failed to create order');
+        throw new Error('Erro ao criar pedido');
       }
 
       if (paymentMethod === 'credit') {
-        if (!stripe || !elements || !clientSecret) {
-          throw new Error("Payment system not initialized");
+        if (!stripe || !elements || !paymentIntent.client_secret) {
+          throw new Error("Sistema de pagamento não inicializado");
         }
 
         const result = await stripe.confirmPayment({
@@ -198,8 +227,7 @@ export default function CheckoutPage() {
                   country: 'BR'
                 }
               }
-            },
-            payment_method: 'card'
+            }
           }
         });
 
@@ -216,73 +244,52 @@ export default function CheckoutPage() {
         }
 
       } else if (paymentMethod === 'pix') {
-        const { data: pixData, error: pixError } = await supabase.functions.invoke('create-payment-intent', {
-          body: {
-            amount: Math.round(total * 100),
-            currency: 'brl',
-            payment_method_types: ['pix'],
-            metadata: {
-              order_id: orderId,
-              customer_name: shippingAddress.full_name,
-              shipping_address: JSON.stringify(shippingAddress)
-            }
-          }
-        });
+        if (!paymentIntent.pix_qr_code) {
+          throw new Error('QR Code PIX não gerado');
+        }
 
-        if (pixError) throw pixError;
-
-        // Store PIX info in localStorage for later verification
+        setPixCode(paymentIntent.pix_qr_code);
+        
         if (typeof window !== 'undefined') {
           localStorage.setItem('pix_payment_info', JSON.stringify({
             order_id: orderId,
-            payment_intent_id: pixData.id,
+            payment_intent_id: paymentIntent.id,
             amount: total,
-            expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutes
+            expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString()
           }));
         }
 
-        // Show PIX QR code and copy button
-        setPixCode(pixData.qr_code);
-        toast.success('PIX QR Code generated successfully');
+        toast.success('QR Code PIX gerado com sucesso');
+        return;
 
       } else if (paymentMethod === 'boleto') {
-        const { data: boletoData, error: boletoError } = await supabase.functions.invoke('create-payment-intent', {
-          body: {
-            amount: Math.round(total * 100),
-            currency: 'brl',
-            payment_method_types: ['boleto'],
-            metadata: {
-              order_id: orderId,
-              customer_name: shippingAddress.full_name,
-              shipping_address: JSON.stringify(shippingAddress)
-            }
-          }
-        });
+        if (!paymentIntent.boleto_url) {
+          throw new Error('Boleto não gerado');
+        }
 
-        if (boletoError) throw boletoError;
-
-        // Store boleto info
+        setBoletoUrl(paymentIntent.boleto_url);
+        
         if (typeof window !== 'undefined') {
           localStorage.setItem('boleto_payment_info', JSON.stringify({
             order_id: orderId,
-            payment_intent_id: boletoData.id,
+            payment_intent_id: paymentIntent.id,
             amount: total,
-            expires_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days
+            expires_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
           }));
         }
 
-        setBoletoUrl(boletoData.boleto_url);
-        toast.success('Boleto generated successfully');
+        toast.success('Boleto gerado com sucesso');
+        return;
       }
 
       clearCart();
       router.push('/checkout/success');
 
     } catch (error) {
-      console.error("Payment error:", error);
-      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
+      console.error("Erro no pagamento:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erro inesperado";
       setStripeError(errorMessage);
-      toast.error("Payment failed: " + errorMessage);
+      toast.error("Falha no pagamento: " + errorMessage);
     } finally {
       setLoading(false);
       setIsProcessing(false);
