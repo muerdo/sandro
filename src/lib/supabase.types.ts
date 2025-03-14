@@ -368,7 +368,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_table_info: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          name: string
+          schema: string
+          columns: Json
+          row_count: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
