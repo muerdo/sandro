@@ -67,12 +67,26 @@ export function useDatabaseTables(): DatabaseTableHookReturn {
       sorts?: TableSort[];
       page?: number;
       pageSize?: number;
+      searchTerm?: string;
     }
   ) => {
     try {
       let query = supabase
         .from(tableName as string)
         .select('*', { count: 'exact' });
+
+      // Apply search if provided
+      if (options?.searchTerm) {
+        const columns = await supabase.rpc('get_searchable_columns', { table_name: tableName });
+        if (Array.isArray(columns)) {
+          const searchConditions = columns.map(column => 
+            `${column}::text ILIKE '%${options.searchTerm}%'`
+          );
+          if (searchConditions.length > 0) {
+            query = query.or(searchConditions.join(','));
+          }
+        }
+      }
 
       // Apply filters
       if (options?.filters) {
