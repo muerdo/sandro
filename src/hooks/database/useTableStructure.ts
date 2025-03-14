@@ -48,9 +48,9 @@ export function useTableStructure(): UseTableStructureReturn {
         indexes: [] as TableIndex[],
         row_count: typeof table.row_count === 'number' ? table.row_count : 0,
         size_bytes: 0,
-        last_vacuum: null,
-        last_analyze: null,
-        description: null
+        last_vacuum: null as string | null,
+        last_analyze: null as string | null,
+        description: null as string | null
       }));
 
       setTables(processedTables.filter(table => {

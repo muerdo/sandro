@@ -32,8 +32,8 @@ export function useDatabaseTables(): DatabaseTableHookReturn {
   // Local state
   const [selectedTable, setSelectedTable] = useState<TableName | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
-  const [filters] = useState<TableFilter[]>([]);
-  const [sorts] = useState<TableSort[]>([]);
+  const [filters, setFilters] = useState<TableFilter[]>([]);
+  const [sorts, setSorts] = useState<TableSort[]>([]);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
