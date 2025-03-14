@@ -197,9 +197,9 @@ export default function CheckoutPage() {
                   postal_code: shippingAddress.postal_code,
                   country: 'BR'
                 }
-              },
-              type: 'card'
-            }
+              }
+            },
+            payment_method_types: ['card']
           }
         });
 
