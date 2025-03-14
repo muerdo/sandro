@@ -17,22 +17,16 @@ export function useDatabaseTables() {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase.from('information_schema.tables')
-        .select('table_name, table_schema')
-        .eq('table_schema', 'public');
+      // Use RPC call to get table info
+      const { data, error } = await supabase.rpc('get_table_info');
 
       if (error) throw error;
 
-      const processedTables = (data || []).map(table => ({
-        name: table.table_name,
-        schema: table.table_schema,
-        columns: [],
-        row_count: 0
-      }));
-
-      setTables(processedTables.filter(table => 
+      const processedTables = (data as TableInfo[] || []).filter(table => 
         showSystemTables || (!table.name.startsWith('_') && !table.name.startsWith('pg_'))
-      ));
+      );
+
+      setTables(processedTables);
     } catch (error) {
       console.error('Error fetching tables:', error);
       toast.error('Failed to load database tables');

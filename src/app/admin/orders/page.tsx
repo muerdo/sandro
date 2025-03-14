@@ -16,6 +16,8 @@ import {
   Filter,
   ArrowUpDown,
   MessageCircle,
+  Eye,
+  X,
   type LucideIcon
 } from "lucide-react";
 
@@ -40,7 +42,6 @@ export default function OrdersManagement() {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   useEffect(() => {
     checkAdminStatus();
