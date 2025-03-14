@@ -9,7 +9,7 @@ export function useTableManagement() {
   const [state, setState] = useState<TableState>({
     selectedTable: null,
     tableData: [],
-    expandedRows: new Set(),
+    expandedRows: new Set<number>(),
     showSystemTables: false
   });
 
@@ -17,7 +17,6 @@ export function useTableManagement() {
     try {
       setLoading(true);
       
-      // Execute raw SQL query to get table information
       const { data, error } = await supabase.rpc('execute_sql', {
         query: `
           SELECT 
@@ -29,8 +28,8 @@ export function useTableManagement() {
               'is_nullable', is_nullable = 'YES',
               'is_identity', is_identity = 'YES'
             )) as columns,
-            0 as row_count
-          FROM information_schema.columns 
+            (SELECT count(*) FROM information_schema.columns WHERE table_name = t.table_name) as row_count
+          FROM information_schema.columns t
           WHERE table_schema = 'public'
           GROUP BY table_name, table_schema
         `
@@ -38,14 +37,14 @@ export function useTableManagement() {
 
       if (error) throw error;
 
-      const tables = (data || []).map((table: any) => ({
+      const processedTables = (data || []).map((table: any) => ({
         name: table.name,
         schema: table.schema,
         columns: table.columns || [],
-        row_count: table.row_count
+        row_count: parseInt(table.row_count) || 0
       }));
 
-      setTables(tables.filter(table => 
+      setTables(processedTables.filter(table => 
         state.showSystemTables || (!table.name.startsWith('_') && !table.name.startsWith('pg_'))
       ));
     } catch (error) {
@@ -58,7 +57,6 @@ export function useTableManagement() {
 
   const fetchTableData = useCallback(async (tableName: string) => {
     try {
-      // Execute raw SQL query to fetch table data
       const { data, error } = await supabase.rpc('execute_sql', {
         query: `SELECT * FROM "${tableName}" LIMIT 100`
       });

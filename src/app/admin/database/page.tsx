@@ -94,12 +94,6 @@ export default function DatabaseManagement() {
     } finally {
       setLoading(false);
     }
-    } catch (error) {
-      console.error('Error fetching tables:', error);
-      toast.error('Failed to load database tables');
-    } finally {
-      setLoading(false);
-    }
   };
 
   useEffect(() => {
