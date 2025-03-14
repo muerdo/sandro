@@ -17,7 +17,11 @@
           ignoreBuildErrors: true,
         },
         webpack: (config, { isServer }) => {
-          config.stats = "verbose";
+          config.stats = {
+            preset: 'verbose',
+            bodySizeLimit: undefined,
+            allowedOrigins: undefined
+          };
           return config;
         },
         experimental: {
