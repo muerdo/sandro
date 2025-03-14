@@ -55,9 +55,21 @@ const config = {
     ".next/",
     "out/",
     "public/",
-    "supabase/functions/**/*",
     "*.css",
     "*.scss"
+  ],
+  overrides: [
+    {
+      files: ["supabase/functions/**/*"],
+      env: {
+        browser: false,
+        node: true,
+        es6: true
+      },
+      rules: {
+        "@typescript-eslint/no-explicit-any": "off"
+      }
+    }
   ],
   env: {
     browser: true,
