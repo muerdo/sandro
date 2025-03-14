@@ -204,7 +204,6 @@ export default function CheckoutPage() {
                 setup_future_usage: 'off_session'
               }
             }
-            setup_future_usage: 'off_session'
           }
         });
 

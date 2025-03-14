@@ -1,3 +1,5 @@
+import type { Database } from '@/lib/supabase.types';
+
 export type TableName = string;
 
 export type DatabaseTable = keyof Database['public']['Tables'];
