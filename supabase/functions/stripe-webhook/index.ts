@@ -1,26 +1,35 @@
-import { createClient } from '@supabase/supabase-js';
-import Stripe from 'stripe';
-
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import Stripe from 'npm:stripe@14.21.0';
+import { Database } from '../_shared/database.types';
 
-type WebhookResponse = {
+interface WebhookResponse {
   received: boolean;
   type: string;
   error?: string;
-};
+}
 
-type OrderStatus = 'pending' | 'processing' | 'completed' | 'cancelled';
-type PaymentStatus = 'pending' | 'processing' | 'paid' | 'failed' | 'refunded';
-
-type OrderUpdate = {
-  status: OrderStatus;
-  payment_status: PaymentStatus;
+interface OrderUpdate {
+  status: 'pending' | 'processing' | 'completed' | 'cancelled';
+  payment_status: 'pending' | 'processing' | 'paid' | 'failed' | 'refunded';
   updated_at: string;
   stripe_payment_intent_id: string;
   stripe_payment_method?: string;
   stripe_customer_id?: string;
-};
+  tracking_info?: {
+    status: string;
+    location: string;
+    timestamp: string;
+    last_updated: string;
+    notes?: string;
+  };
+}
+
+interface InventoryUpdate {
+  productId: string;
+  quantity: number;
+  type: 'order' | 'restock' | 'manual';
+  notes?: string;
+}
 
 // Constants
 const CORS_HEADERS = {
@@ -52,13 +61,48 @@ const createResponse = (data: WebhookResponse, status: number = 200): Response =
 };
 
 const updateOrder = async (orderId: string, update: OrderUpdate): Promise<void> => {
-  const { error } = await supabaseClient
-    .from('orders')
-    .update(update)
-    .eq('id', orderId);
+  try {
+    const { error } = await supabaseClient
+      .from('orders')
+      .update({
+        ...update,
+        tracking_info: {
+          ...update.tracking_info,
+          last_updated: new Date().toISOString()
+        }
+      })
+      .eq('id', orderId);
 
-  if (error) {
+    if (error) throw error;
+
+    // Log order update
+    console.log(`Order ${orderId} updated:`, {
+      status: update.status,
+      payment_status: update.payment_status,
+      tracking: update.tracking_info
+    });
+
+  } catch (error) {
     console.error('Error updating order:', error);
+    throw error;
+  }
+};
+
+const updateInventory = async (updates: InventoryUpdate[]): Promise<void> => {
+  try {
+    for (const update of updates) {
+      await supabaseClient.functions.invoke('inventory-management', {
+        body: {
+          action: 'update_stock',
+          productId: update.productId,
+          quantity: update.quantity,
+          type: update.type,
+          notes: update.notes
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error updating inventory:', error);
     throw error;
   }
 };
@@ -85,56 +129,86 @@ const handlePaymentIntent = async (
       throw new Error('No order ID found in payment intent metadata');
     }
 
-    // Get payment method details
-    const paymentMethod = paymentIntent.payment_method as string;
-    const customer = paymentIntent.customer as string;
+    console.log(`Processing payment intent ${paymentIntent.id} for order ${orderId}`);
 
-    // Update order with payment details
+    // Get order details to verify
+    const { data: order, error: orderError } = await supabaseClient
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .single();
+
+    if (orderError || !order) {
+      throw new Error(`Order ${orderId} not found`);
+    }
+
+    // Prepare tracking info
+    const trackingInfo = {
+      status: status,
+      location: 'Payment Processing Center',
+      timestamp: new Date().toISOString(),
+      last_updated: new Date().toISOString(),
+      notes: status === 'cancelled' ? 
+        paymentIntent.last_payment_error?.message : 
+        `Payment ${paymentStatus}`
+    };
+
+    // Update order status
     await updateOrder(orderId, {
       status,
       payment_status: paymentStatus,
       updated_at: new Date().toISOString(),
       stripe_payment_intent_id: paymentIntent.id,
-      stripe_payment_method: paymentMethod,
-      stripe_customer_id: customer
+      stripe_payment_method: paymentIntent.payment_method as string,
+      stripe_customer_id: paymentIntent.customer as string,
+      tracking_info: trackingInfo
     });
 
-    // Update inventory if payment successful
-    if (status === 'completed') {
-      const items = JSON.parse(paymentIntent.metadata.items || '[]');
-      for (const item of items) {
-        await supabaseClient
-          .from('products')
-          .update({ 
-            stock: supabase.sql`stock - ${item.quantity}`,
-            updated_at: new Date().toISOString()
-          })
-          .eq('stripe_id', item.stripeId);
-      }
+    // Handle inventory updates
+    if (status === 'processing' && order.items) {
+      const inventoryUpdates: InventoryUpdate[] = order.items.map(item => ({
+        productId: item.id,
+        quantity: -item.quantity,
+        type: 'order',
+        notes: `Order ${orderId} payment completed`
+      }));
+
+      await updateInventory(inventoryUpdates);
     }
 
     // Send notifications
-    if (status === 'completed' || status === 'cancelled') {
-      await sendAdminNotification(
-        status === 'completed' ? 'payment_success' : 'payment_failed',
-        orderId,
-        paymentIntent.amount / 100
-      );
+    await Promise.all([
+      // Admin notification
+      supabaseClient.functions.invoke('admin-operations', {
+        body: {
+          action: 'sendNotification',
+          type: status === 'processing' ? 'payment_success' : 'payment_failed',
+          orderId,
+          amount: paymentIntent.amount / 100,
+          status,
+          tracking: trackingInfo
+        }
+      }),
 
-      // Send customer notification
-      if (paymentIntent.metadata.customer_id) {
-        await supabaseClient.functions.invoke('admin-operations', {
+      // Customer notification if available
+      paymentIntent.metadata.customer_id ? 
+        supabaseClient.functions.invoke('admin-operations', {
           body: {
             action: 'sendNotification',
             userId: paymentIntent.metadata.customer_id,
-            type: status === 'completed' ? 'order_confirmed' : 'payment_failed',
-            orderId
+            type: status === 'processing' ? 'order_confirmed' : 'payment_failed',
+            orderId,
+            tracking: trackingInfo
           }
-        });
-      }
-    }
+        }) : Promise.resolve()
+    ]);
 
-    console.log(`Order ${orderId} marked as ${status}`);
+    console.log(`Order ${orderId} processing completed:`, {
+      status,
+      payment_status: paymentStatus,
+      tracking: trackingInfo
+    });
+
   } catch (error) {
     console.error('Error handling payment intent:', error);
     throw error;
