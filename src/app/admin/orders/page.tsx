@@ -458,27 +458,14 @@ export default function OrdersManagement() {
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-2">
-                        {order.status !== 'completed' && (
-                          <OrderActionButton
-                            onClick={() => updateOrderStatus(order.id, 'completed')}
-                            icon={CheckCircle2}
-                            className="p-2 bg-green-500/10 text-green-500 rounded-lg"
-                          />
-                        )}
-                        {order.status === 'pending' && (
-                          <OrderActionButton
-                            onClick={() => updateOrderStatus(order.id, 'processing')}
-                            icon={Clock}
-                            className="p-2 bg-blue-500/10 text-blue-500 rounded-lg"
-                          />
-                        )}
-                        {order.status !== 'cancelled' && (
-                          <OrderActionButton
-                            onClick={() => updateOrderStatus(order.id, 'cancelled')}
-                            icon={XCircle}
-                            className="p-2 bg-destructive/10 text-destructive rounded-lg"
-                          />
-                        )}
+                        <motion.button
+                          onClick={() => setSelectedOrder(order)}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="p-2 bg-primary/10 text-primary rounded-lg"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </motion.button>
                         <motion.a
                           href={`https://wa.me/${order.shipping_address?.phone}?text=Hello! Regarding your order ${order.id.slice(0, 8)}...`}
                           target="_blank"
