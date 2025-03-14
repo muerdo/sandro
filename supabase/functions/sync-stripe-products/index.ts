@@ -1,6 +1,15 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import Stripe from 'npm:stripe@14.21.0'
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+
+interface StripePrice {
+  id: string
+  unit_amount: number
+  active: boolean
+  currency: string
+  metadata?: {
+    default?: boolean
+  }
+}
 
 interface StripeProduct {
   id: string
@@ -40,7 +49,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS'
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
