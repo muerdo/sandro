@@ -19,6 +19,9 @@
         webpack: (config, { isServer }) => {
           config.stats = "verbose";
           return config;
+        },
+        experimental: {
+          serverActions: true
         }
       };
       export default config;
