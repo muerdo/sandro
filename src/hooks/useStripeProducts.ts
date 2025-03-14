@@ -135,7 +135,9 @@ export function useStripeProducts() {
                 parseInt(product.metadata.low_stock_threshold) : 10
             };
           })
-          .filter((product): product is Product => Boolean(product));
+          .filter((product): product is Product => {
+            return Boolean(product) && typeof product.image === 'string';
+          });
         
         setProducts([...DEFAULT_PRODUCTS, ...transformedProducts]);
         toast.success('Products loaded successfully');

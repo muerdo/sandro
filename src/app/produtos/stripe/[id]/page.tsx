@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-export default function StripeDynamicProductPage() {
+export default function StripeDynamicProductPage(): JSX.Element {
   const router = useRouter();
   
   useEffect(() => {
