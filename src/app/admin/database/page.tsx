@@ -71,35 +71,29 @@ export default function DatabaseManagement() {
     setIsAdmin(true);
   };
 
-  const fetchTables = async () => {
+  const { 
+    tables,
+    loading,
+    state,
+    fetchTables,
+    fetchTableData,
+    toggleRowExpansion,
+    toggleSystemTables
+  } = useTableManagement();
+
+  const initializeDatabase = async () => {
     try {
       setLoading(true);
-      
-      // Get all tables using a raw query via RPC
-      const { data: schemaData, error: schemaError } = await supabase
-        .rpc('list_tables', {
-          schema_name: 'public'
-        });
-
-      if (schemaError) throw schemaError;
-
-      const tables = (schemaData as Array<{ table_name: string }> || []).map(table => ({
-        name: table.table_name,
-        schema: 'public',
-        columns: [] as Array<{
-          name: string;
-          type: string;
-          is_nullable: boolean;
-          is_identity: boolean;
-        }>,
-        row_count: 0
-      }));
-
-      const filteredTables = tables.filter(table => 
-        showSystemTables || (!table.name.startsWith('_') && !table.name.startsWith('pg_'))
-      );
-
-      setTables(filteredTables);
+      await checkAdminStatus();
+      if (isAdmin) {
+        await fetchTables();
+      }
+    } catch (error) {
+      console.error('Error initializing database:', error);
+      toast.error('Failed to initialize database management');
+    } finally {
+      setLoading(false);
+    }
     } catch (error) {
       console.error('Error fetching tables:', error);
       toast.error('Failed to load database tables');
@@ -108,17 +102,13 @@ export default function DatabaseManagement() {
     }
   };
 
-  const fetchTableData = async (tableName: string) => {
-    try {
-      // Type-safe way to fetch table data
-      const { data, error } = await supabase
-        .from(tableName)
-        .select('*')
-        .limit(100);
+  useEffect(() => {
+    initializeDatabase();
+  }, [isAdmin]);
 
-      if (error) throw error;
-      setTableData(data || []);
-      setSelectedTable(tableName);
+  const handleTableSelect = async (tableName: string) => {
+    try {
+      await fetchTableData(tableName);
     } catch (error) {
       console.error(`Error fetching data from ${tableName}:`, error);
       toast.error(`Failed to load data from ${tableName}`);
