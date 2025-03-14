@@ -38,9 +38,10 @@ export function useDatabaseTables(): DatabaseTableHookReturn {
           is_identity: col.is_identity
         })),
         row_count: table.row_count
-      })).filter(table => 
-        showSystemTables || (!table.name.startsWith('_') && !table.name.startsWith('pg_'))
-      );
+      })).filter(table => {
+        const tableName = String(table.name);
+        return showSystemTables || (!tableName.startsWith('_') && !tableName.startsWith('pg_'));
+      });
 
       setTables(processedTables);
     } catch (error) {
@@ -55,7 +56,7 @@ export function useDatabaseTables(): DatabaseTableHookReturn {
     try {
       // Type assertion needed since we allow string for system tables
       const { data, error } = await supabase
-        .from(tableName as keyof Database['public']['Tables'])
+        .from(String(tableName))
         .select('*')
         .limit(100);
 
@@ -64,8 +65,8 @@ export function useDatabaseTables(): DatabaseTableHookReturn {
       setTableData(data as Record<string, unknown>[] || []);
       setSelectedTable(tableName);
     } catch (error) {
-      console.error(`Error fetching data from ${tableName}:`, error);
-      toast.error(`Failed to load data from ${tableName}`);
+      console.error(`Error fetching data from ${String(tableName)}:`, error);
+      toast.error(`Failed to load data from ${String(tableName)}`);
     }
   }, []);
 

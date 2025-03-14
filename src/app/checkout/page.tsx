@@ -199,11 +199,11 @@ export default function CheckoutPage() {
                 }
               }
             },
-            metadata: {
-              order_id: orderId,
-              customer_name: shippingAddress.full_name,
-              shipping_address: JSON.stringify(shippingAddress)
-            },
+            payment_method_options: {
+              card: {
+                setup_future_usage: 'off_session'
+              }
+            }
             setup_future_usage: 'off_session'
           }
         });

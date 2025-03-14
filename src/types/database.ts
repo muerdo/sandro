@@ -1,4 +1,8 @@
-export type TableName = keyof Database['public']['Tables'] | string;
+export type TableName = string;
+
+export type DatabaseTable = keyof Database['public']['Tables'];
+
+export type ValidTableName = DatabaseTable | string;
 
 export type DatabaseTableRow<T extends string> = Record<string, unknown>;
 
