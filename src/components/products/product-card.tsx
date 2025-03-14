@@ -39,7 +39,7 @@ export default function ProductCard({ product, onQuickAdd }: ProductCardProps) {
         <div className="flex gap-3">
           <Link
             href={product.stripeId 
-              ? `/produtos/stripe/product?id=${product.stripeId}` 
+              ? `/produtos/stripe/product/${product.stripeId}` 
               : `/produtos/${product.id.split('-')[0]}s`}
             className="flex-1"
           >
