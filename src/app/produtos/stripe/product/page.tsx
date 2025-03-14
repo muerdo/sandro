@@ -66,10 +66,17 @@ export default function StripeProductPage() {
         }
 
         const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          throw new Error('No authentication session');
+        }
+
         const { data, error } = await supabase.functions.invoke('get-stripe-product', {
           body: { 
             productId,
-            sessionToken: session?.access_token 
+            sessionToken: session.access_token 
+          },
+          headers: {
+            Authorization: `Bearer ${session.access_token}`
           }
         });
 
@@ -77,6 +84,25 @@ export default function StripeProductPage() {
 
         if (!data || !data.id) {
           throw new Error('Produto não encontrado');
+        }
+
+        // Log raw response for debugging
+        console.log('Raw Stripe product response:', data);
+
+        // Get all active prices
+        const activePrices = data.prices?.filter((price: any) => price.active) || [];
+        
+        // Find default price or lowest price
+        const defaultPrice = activePrices.find((price: any) => price.metadata?.default) || 
+                           activePrices.reduce((lowest: any, current: any) => {
+                             if (!lowest || current.unit_amount < lowest.unit_amount) {
+                               return current;
+                             }
+                             return lowest;
+                           }, null);
+
+        if (!defaultPrice?.unit_amount) {
+          throw new Error('No valid price found for product');
         }
 
         const transformedProduct: Product = {
