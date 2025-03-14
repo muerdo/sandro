@@ -44,35 +44,6 @@ export function useStripeProducts() {
       }));
 
       setProducts(transformedProducts);
-          image: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?q=80&w=2669&auto=format&fit=crop",
-          category: "Vestuário",
-          description: "Camisetas 100% algodão com impressão DTF",
-          media: [{
-            type: 'image',
-            url: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?q=80&w=2669&auto=format&fit=crop",
-            alt: "Camiseta Personalizada"
-          }],
-          features: [] as string[],
-          status: 'active'
-        },
-        {
-          id: "adesivo-personalizado",
-          name: "Adesivo Personalizado",
-          price: 29.90,
-          image: "https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=2671&auto=format&fit=crop",
-          category: "Adesivos",
-          description: "Adesivos de alta qualidade em vinil",
-          media: [{
-            type: 'image',
-            url: "https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=2671&auto=format&fit=crop",
-            alt: "Adesivo Personalizado"
-          }],
-          features: [],
-          status: 'active'
-        }
-      ];
-
-      setProducts([...defaultProducts, ...stripeProducts]);
     } catch (error) {
       console.error('Error fetching Stripe products:', error);
       toast.error('Failed to load some products');
