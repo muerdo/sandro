@@ -17,13 +17,15 @@ export default function PixQRCode({ pixCode, amount, expiresAt }: PixQRCodeProps
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(pixCode);
-      setCopied(true);
-      toast.success('PIX code copied to clipboard');
-      setTimeout(() => setCopied(false), 2000);
+      if (typeof window !== 'undefined') {
+        await navigator.clipboard.writeText(pixCode);
+        setCopied(true);
+        toast.success('Código PIX copiado');
+        setTimeout(() => setCopied(false), 2000);
+      }
     } catch (error) {
-      console.error('Failed to copy:', error);
-      toast.error('Failed to copy PIX code');
+      console.error('Erro ao copiar:', error);
+      toast.error('Erro ao copiar código PIX');
     }
   };
 
