@@ -67,31 +67,31 @@ export function useDatabaseTables(): DatabaseTableHookReturn {
     setSelectedTable(tableName);
   };
 
-  const addFilter = useCallback((filter: TableFilter) => {
-    setFilters(prev => [...prev, filter]);
-  }, []);
+  const addFilter = (filter: TableFilter) => {
+    setFilters((prev: TableFilter[]) => [...prev, filter]);
+  };
 
-  const removeFilter = useCallback((index: number) => {
-    setFilters(prev => prev.filter((_, i) => i !== index));
-  }, []);
+  const removeFilter = (index: number) => {
+    setFilters((prev: TableFilter[]) => prev.filter((_: TableFilter, i: number) => i !== index));
+  };
 
-  const addSort = useCallback((sort: TableSort) => {
-    setSorts(prev => [...prev, sort]);
-  }, []);
+  const addSort = (sort: TableSort) => {
+    setSorts((prev: TableSort[]) => [...prev, sort]);
+  };
 
-  const removeSort = useCallback((index: number) => {
-    setSorts(prev => prev.filter((_, i) => i !== index));
-  }, []);
+  const removeSort = (index: number) => {
+    setSorts((prev: TableSort[]) => prev.filter((_: TableSort, i: number) => i !== index));
+  };
 
-  const exportData = useCallback(async (format: 'csv' | 'json') => {
+  const exportData = async (format: 'csv' | 'json') => {
     if (!selectedTable) return;
     // Export implementation
-  }, [selectedTable]);
+  };
 
-  const importData = useCallback(async (file: File) => {
+  const importData = async (file: File) => {
     if (!selectedTable) return;
     // Import implementation
-  }, [selectedTable]);
+  };
 
   return {
     tables,

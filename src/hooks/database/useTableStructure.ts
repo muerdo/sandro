@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import type { TableInfo } from '@/types/database';
+import type { TableInfo, TableName, TableConstraint, TableIndex } from '@/types/database';
 
 interface UseTableStructureReturn {
   tables: TableInfo[];
@@ -47,10 +47,10 @@ export function useTableStructure(): UseTableStructureReturn {
         constraints: [] as TableConstraint[],
         indexes: [] as TableIndex[],
         row_count: typeof table.row_count === 'number' ? table.row_count : 0,
-        size_bytes: typeof table.size_bytes === 'number' ? table.size_bytes : 0,
-        last_vacuum: table.last_vacuum as string | null,
-        last_analyze: table.last_analyze as string | null,
-        description: table.description as string | null
+        size_bytes: 0,
+        last_vacuum: null,
+        last_analyze: null,
+        description: null
       }));
 
       setTables(processedTables.filter(table => {

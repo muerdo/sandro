@@ -4,6 +4,9 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import type { TableData, TableName } from '@/types/database';
+import type { Database } from '@/lib/supabase.types';
+
+type DatabaseTable = keyof Database['public']['Tables'];
 
 interface UseTableDataReturn {
   tableData: TableData[];
@@ -50,7 +53,7 @@ export function useTableData(): UseTableDataReturn {
 
       if (error) throw error;
 
-      setTableData(data as Record<string, unknown>[] || []);
+      setTableData((data as unknown as Record<string, unknown>[]) || []);
       if (count !== null) setTotalRows(count);
 
     } catch (error) {
