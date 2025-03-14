@@ -1,4 +1,4 @@
-export type TableName = keyof Database['public']['Tables'] | string;
+export type TableName = string;
 
 export type DatabaseTableRow<T extends TableName> = T extends keyof Database['public']['Tables'] 
   ? Database['public']['Tables'][T]['Row']

@@ -199,10 +199,16 @@ export default function CheckoutPage() {
                 }
               }
             },
+            payment_method_options: {
+              card: {
+                setup_future_usage: 'off_session'
+              }
+            },
             metadata: {
               order_id: orderId,
               customer_name: shippingAddress.full_name,
               shipping_address: JSON.stringify(shippingAddress)
+            }
             }
           }
         });
@@ -295,6 +301,14 @@ export default function CheckoutPage() {
 
   const [pixCode, setPixCode] = useState<string>('');
   const [boletoUrl, setBoletoUrl] = useState<string>('');
+
+  const generatePixCode = () => {
+    return pixCode || "00020126580014BR.GOV.BCB.PIX0136123e4567-e12b-12d1-a456-426655440000";
+  };
+
+  const generateBoletoCode = () => {
+    return "34191.79001 01043.510047 91020.150008 6 88770000002000";
+  };
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'processing' | 'completed' | 'failed'>('pending');
 
   // Check payment status periodically for PIX and Boleto
