@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { Product } from "@/types/product";
+import type { StripeProduct, TransformedStripeProduct } from "@/types/stripe";
 
 const DEFAULT_PRODUCTS: Product[] = [
   {
@@ -113,18 +114,23 @@ export function useStripeProducts() {
               return null;
             }
 
-            return {
+            const defaultImage = "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9";
+            const transformedProduct: TransformedStripeProduct = {
               id: `stripe-${product.id}`,
               name: product.name || 'Untitled Product',
               description: product.description || '',
               price: defaultPrice.unit_amount / 100,
               category: product.metadata?.category || 'Outros',
-              image: product.images?.[0] || "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9",
+              image: product.images?.[0] || defaultImage,
               media: product.images?.map((url: string) => ({
                 type: 'image' as const,
                 url,
                 alt: product.name || 'Product Image'
-              })) || [],
+              })) || [{
+                type: 'image',
+                url: defaultImage,
+                alt: 'Default Product Image'
+              }],
               features: product.metadata?.features?.split(',').map((f: string) => f.trim()) || [],
               customization: product.metadata?.customization ? 
                 JSON.parse(product.metadata.customization) : undefined,
@@ -134,13 +140,14 @@ export function useStripeProducts() {
               low_stock_threshold: product.metadata?.low_stock_threshold ? 
                 parseInt(product.metadata.low_stock_threshold) : 10
             };
+            return transformedProduct;
           })
-          .filter((product): product is Product => {
+          .filter((product): product is TransformedStripeProduct => {
             if (!product) return false;
-            const transformedProduct = product as Partial<Product>;
-            return typeof transformedProduct.image === 'string' || 
-                   (Array.isArray(transformedProduct.media) && transformedProduct.media.length > 0);
-          });
+            return typeof product.image === 'string' && 
+                   Array.isArray(product.media) && 
+                   product.media.length > 0;
+          }) as unknown as Product[];
         
         setProducts([...DEFAULT_PRODUCTS, ...transformedProducts]);
         toast.success('Products loaded successfully');
