@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useDatabaseTables } from "@/hooks/useDatabaseTables";
-import type { TableName } from "@/types/database";
+import type { TableName, TableColumn } from "@/types/database";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/auth-context";
@@ -20,7 +20,13 @@ import {
   EyeOff,
   ChevronDown,
   ChevronUp,
-  X
+  X,
+  Edit,
+  Check,
+  Filter,
+  ArrowUpDown,
+  Download,
+  Upload
 } from "lucide-react";
 
 interface TableInfo {
