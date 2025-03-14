@@ -1,17 +1,17 @@
-import { createClient } from 'jsr:@supabase/supabase-js@2'
-import Stripe from 'jsr:stripe@12.0.0'
+import { createClient } from 'jsr:@supabase/supabase-js@2';
+import Stripe from 'npm:stripe@14.21.0';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2023-10-16'
 });
+
+const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
-
-const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -74,6 +74,16 @@ Deno.serve(async (req) => {
           throw updateError;
         }
 
+        // Send notification to admin
+        await supabaseClient.functions.invoke('admin-operations', {
+          body: {
+            action: 'sendNotification',
+            type: 'payment_success',
+            orderId: orderId,
+            amount: paymentIntent.amount / 100
+          }
+        });
+
         console.log(`Order ${orderId} marked as completed`);
         break;
       }
@@ -101,6 +111,16 @@ Deno.serve(async (req) => {
           console.error('Error updating order:', updateError);
           throw updateError;
         }
+
+        // Send notification to admin
+        await supabaseClient.functions.invoke('admin-operations', {
+          body: {
+            action: 'sendNotification',
+            type: 'payment_failed',
+            orderId: orderId,
+            amount: paymentIntent.amount / 100
+          }
+        });
 
         console.log(`Order ${orderId} marked as cancelled due to payment failure`);
         break;
