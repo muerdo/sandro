@@ -8,7 +8,7 @@ export default function TransitionProvider({ children }: PropsWithChildren) {
   const pathname = usePathname();
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="wait" initial={false}>
       <div key={pathname} className="min-h-screen">
         {children}
       </div>
