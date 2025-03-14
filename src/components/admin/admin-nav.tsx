@@ -8,7 +8,8 @@ import {
   Package2,
   ShoppingCart,
   Users,
-  Settings
+  Settings,
+  Database
 } from "lucide-react";
 
 const navItems = [
@@ -31,6 +32,11 @@ const navItems = [
     href: "/admin/customers",
     label: "Customers",
     icon: Users
+  },
+  {
+    href: "/admin/database",
+    label: "Database",
+    icon: Database
   },
   {
     href: "/admin/settings",
