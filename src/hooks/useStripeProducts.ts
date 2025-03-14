@@ -136,7 +136,10 @@ export function useStripeProducts() {
             };
           })
           .filter((product): product is Product => {
-            return Boolean(product) && typeof product.image === 'string';
+            if (!product) return false;
+            const transformedProduct = product as Partial<Product>;
+            return typeof transformedProduct.image === 'string' || 
+                   (Array.isArray(transformedProduct.media) && transformedProduct.media.length > 0);
           });
         
         setProducts([...DEFAULT_PRODUCTS, ...transformedProducts]);
