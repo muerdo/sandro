@@ -43,19 +43,19 @@ export function useStripeProducts() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
+      const { data: stripeData, error } = await supabase.functions.invoke('get-stripe-products', {
+        body: { limit: 100 }
+      });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching Stripe products:', error);
+        toast.error('Failed to load Stripe products');
+        setProducts(defaultProducts); // Fallback to default products
+        return;
+      }
 
-      const transformedProducts = (data || [])
-        .map(transformDatabaseProduct)
-        .filter((product): product is Product => Boolean(product));
-
-      setProducts(transformedProducts);
+      // Log the raw response for debugging
+      console.log('Stripe products response:', stripeData);
     } catch (error) {
       console.error('Error fetching Stripe products:', error);
       toast.error('Failed to load some products');
