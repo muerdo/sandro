@@ -67,6 +67,32 @@ export function useDatabaseTables(): DatabaseTableHookReturn {
     setSelectedTable(tableName);
   };
 
+  const addFilter = useCallback((filter: TableFilter) => {
+    setFilters(prev => [...prev, filter]);
+  }, []);
+
+  const removeFilter = useCallback((index: number) => {
+    setFilters(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const addSort = useCallback((sort: TableSort) => {
+    setSorts(prev => [...prev, sort]);
+  }, []);
+
+  const removeSort = useCallback((index: number) => {
+    setSorts(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const exportData = useCallback(async (format: 'csv' | 'json') => {
+    if (!selectedTable) return;
+    // Export implementation
+  }, [selectedTable]);
+
+  const importData = useCallback(async (file: File) => {
+    if (!selectedTable) return;
+    // Import implementation
+  }, [selectedTable]);
+
   return {
     tables,
     loading: tablesLoading || dataLoading,
@@ -85,6 +111,12 @@ export function useDatabaseTables(): DatabaseTableHookReturn {
     toggleSystemTables,
     setSelectedTable,
     setPage,
-    setPageSize
+    setPageSize,
+    addFilter,
+    removeFilter,
+    addSort,
+    removeSort,
+    exportData,
+    importData
   };
 }

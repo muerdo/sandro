@@ -32,7 +32,7 @@ export function useTableData(): UseTableDataReturn {
     try {
       setLoading(true);
       let query = supabase
-        .from(tableName as string)
+        .from(tableName as DatabaseTable)
         .select('*', { count: 'exact' });
 
       // Apply pagination

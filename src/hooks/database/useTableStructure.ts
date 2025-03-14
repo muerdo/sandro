@@ -28,23 +28,29 @@ export function useTableStructure(): UseTableStructureReturn {
 
       // Transform the data to match TableInfo type
       const processedTables = (data || []).map(table => ({
-        name: table.name,
-        schema: table.schema,
-        columns: table.columns.map((col: any) => ({
-          name: col.name,
-          type: col.type,
-          is_nullable: col.is_nullable,
-          is_identity: col.is_identity,
-          is_primary: false,
-          is_foreign: false
+        name: table.name as TableName,
+        schema: table.schema as string,
+        columns: (typeof table.columns === 'string' ? 
+          JSON.parse(table.columns) : table.columns).map((col: Record<string, unknown>) => ({
+          name: col.name as string,
+          type: col.type as string,
+          is_nullable: Boolean(col.is_nullable),
+          is_identity: Boolean(col.is_identity),
+          is_primary: Boolean(col.is_primary),
+          is_foreign: Boolean(col.is_foreign),
+          foreign_table: col.foreign_table as string | undefined,
+          foreign_column: col.foreign_column as string | undefined,
+          default_value: col.default_value as string | undefined,
+          max_length: typeof col.max_length === 'number' ? col.max_length : undefined,
+          description: col.description as string | undefined
         })),
-        constraints: [],
-        indexes: [],
-        row_count: table.row_count,
-        size_bytes: 0,
-        last_vacuum: null,
-        last_analyze: null,
-        description: null
+        constraints: [] as TableConstraint[],
+        indexes: [] as TableIndex[],
+        row_count: typeof table.row_count === 'number' ? table.row_count : 0,
+        size_bytes: typeof table.size_bytes === 'number' ? table.size_bytes : 0,
+        last_vacuum: table.last_vacuum as string | null,
+        last_analyze: table.last_analyze as string | null,
+        description: table.description as string | null
       }));
 
       setTables(processedTables.filter(table => {
