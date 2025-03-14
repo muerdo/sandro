@@ -13,6 +13,33 @@ export function useStripeProducts() {
     fetchProducts();
   }, []);
 
+  const transformDatabaseProduct = (product: any): Product => {
+    const customization = product.customization ? {
+      sizes: product.customization.sizes || [],
+      colors: product.customization.colors || [],
+      types: product.customization.types || []
+    } : undefined;
+
+    return {
+      id: product.id,
+      name: product.name,
+      description: product.description || '',
+      price: product.price,
+      category: product.category || 'Outros',
+      media: product.images?.map((url: string) => ({
+        type: 'image' as const,
+        url,
+        alt: product.name
+      })) || [],
+      features: product.features || [],
+      customization,
+      stock: product.stock || 0,
+      status: product.status as 'active' | 'draft' | 'archived',
+      stripeId: product.stripe_id,
+      low_stock_threshold: product.low_stock_threshold || 10
+    };
+  };
+
   const fetchProducts = async () => {
     try {
       setLoading(true);
@@ -24,24 +51,9 @@ export function useStripeProducts() {
 
       if (error) throw error;
 
-      const transformedProducts = (data || []).map(product => ({
-        id: product.id,
-        name: product.name,
-        description: product.description || '',
-        price: product.price,
-        category: product.category || 'Outros',
-        media: product.images?.map(url => ({
-          type: 'image' as const,
-          url,
-          alt: product.name
-        })) || [],
-        features: product.features || [],
-        customization: product.customization,
-        stock: product.stock || 0,
-        status: product.status as 'active' | 'draft' | 'archived',
-        stripeId: product.stripe_id,
-        low_stock_threshold: product.low_stock_threshold || 10
-      }));
+      const transformedProducts = (data || [])
+        .map(transformDatabaseProduct)
+        .filter((product): product is Product => Boolean(product));
 
       setProducts(transformedProducts);
     } catch (error) {
