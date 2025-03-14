@@ -10,60 +10,40 @@ export function useStripeProducts() {
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
-    fetchStripeProducts();
+    fetchProducts();
   }, []);
 
-  const fetchStripeProducts = async () => {
+  const fetchProducts = async () => {
     try {
       setLoading(true);
-      const { data: stripeData, error } = await supabase.functions.invoke('get-stripe-products');
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
       if (error) throw error;
 
-      const stripeProducts = stripeData?.map((product: any) => {
-        // Get all active prices
-        const activePrices = product.prices?.filter((price: any) => price.active) || [];
-        
-        // Find default price or lowest price
-        const defaultPrice = activePrices.find((price: any) => price.metadata?.default) || 
-                           activePrices.reduce((lowest: any, current: any) => {
-                             if (!lowest || current.unit_amount < lowest.unit_amount) {
-                               return current;
-                             }
-                             return lowest;
-                           }, null);
+      const transformedProducts = (data || []).map(product => ({
+        id: product.id,
+        name: product.name,
+        description: product.description || '',
+        price: product.price,
+        category: product.category || 'Outros',
+        media: product.images?.map(url => ({
+          type: 'image' as const,
+          url,
+          alt: product.name
+        })) || [],
+        features: product.features || [],
+        customization: product.customization,
+        stock: product.stock || 0,
+        status: product.status as 'active' | 'draft' | 'archived',
+        stripeId: product.stripe_id,
+        low_stock_threshold: product.low_stock_threshold || 10
+      }));
 
-        // Ensure we have a valid price
-        if (!defaultPrice?.unit_amount) {
-          console.error(`No valid price found for product ${product.id}`);
-          return null;
-        }
-
-        return {
-          id: `stripe-${product.id}`,
-          name: product.name || 'Untitled Product',
-          description: product.description || '',
-          price: defaultPrice.unit_amount / 100,
-          category: product.metadata?.category || 'Outros',
-          media: [
-            {
-              type: 'image',
-              url: product.images[0] || "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9",
-              alt: product.name
-            }
-          ],
-          features: product.metadata?.features?.split(',') || [] as string[],
-          customization: product.metadata?.customization ? JSON.parse(product.metadata.customization) : undefined,
-          stock: 999,
-          status: 'active',
-          stripeId: product.id
-        };
-      }) || [];
-
-      const defaultProducts = [
-        {
-          id: "camiseta-personalizada",
-          name: "Camiseta Personalizada",
-          price: 49.90,
+      setProducts(transformedProducts);
           image: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?q=80&w=2669&auto=format&fit=crop",
           category: "Vestuário",
           description: "Camisetas 100% algodão com impressão DTF",
