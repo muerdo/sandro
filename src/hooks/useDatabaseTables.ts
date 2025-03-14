@@ -3,45 +3,34 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import type { TableInfo } from '@/types/database';
+import type { 
+  TableInfo, 
+  TableName, 
+  DatabaseTableHookReturn,
+  SchemaTable,
+  TableData 
+} from '@/types/database';
 
-export function useDatabaseTables() {
+export function useDatabaseTables(): DatabaseTableHookReturn {
   const [tables, setTables] = useState<TableInfo[]>([]);
-  const { 
-    tables,
-    loading,
-    selectedTable,
-    tableData,
-    expandedRows,
-    showSystemTables,
-    fetchTables,
-    fetchTableData,
-    toggleRowExpansion,
-    toggleSystemTables,
-    setSelectedTable
-  } = useDatabaseTables();
+  const [loading, setLoading] = useState(true);
+  const [selectedTable, setSelectedTable] = useState<TableName | null>(null);
+  const [tableData, setTableData] = useState<TableData[]>([]);
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [showSystemTables, setShowSystemTables] = useState(false);
 
   const fetchTables = useCallback(async () => {
     try {
       setLoading(true);
       
-      const { data: tablesData, error } = await supabase
-        .from('information_schema.tables')
-        .select('table_name, table_schema')
-        .eq('table_schema', 'public');
+      const { data, error } = await supabase.rpc('get_table_info');
 
       if (error) throw error;
 
-      const processedTables = (tablesData || [])
+      const processedTables = (data as TableInfo[] || [])
         .filter(table => 
-          showSystemTables || (!table.table_name.startsWith('_') && !table.table_name.startsWith('pg_'))
-        )
-        .map(table => ({
-          name: table.table_name as TableName,
-          schema: table.table_schema,
-          columns: [],
-          row_count: 0
-        }));
+          showSystemTables || (!table.name.startsWith('_') && !table.name.startsWith('pg_'))
+        );
 
       setTables(processedTables);
     } catch (error) {
