@@ -1,7 +1,9 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import Stripe from 'npm:stripe@14.21.0';
 
-// Types
+import { createClient } from 'jsr:@supabase/supabase-js@2';
+import Stripe from 'npm:stripe@14.21.0';
+
 type WebhookResponse = {
   received: boolean;
   type: string;
@@ -9,13 +11,15 @@ type WebhookResponse = {
 };
 
 type OrderStatus = 'pending' | 'processing' | 'completed' | 'cancelled';
-type PaymentStatus = 'pending' | 'processing' | 'paid' | 'failed';
+type PaymentStatus = 'pending' | 'processing' | 'paid' | 'failed' | 'refunded';
 
 type OrderUpdate = {
   status: OrderStatus;
   payment_status: PaymentStatus;
   updated_at: string;
   stripe_payment_intent_id: string;
+  stripe_payment_method?: string;
+  stripe_customer_id?: string;
 };
 
 // Constants
@@ -75,27 +79,66 @@ const handlePaymentIntent = async (
   status: OrderStatus,
   paymentStatus: PaymentStatus
 ): Promise<void> => {
-  const orderId = paymentIntent.metadata.orderId;
-  if (!orderId) {
-    throw new Error('No order ID found in payment intent metadata');
+  try {
+    const orderId = paymentIntent.metadata.orderId;
+    if (!orderId) {
+      throw new Error('No order ID found in payment intent metadata');
+    }
+
+    // Get payment method details
+    const paymentMethod = paymentIntent.payment_method as string;
+    const customer = paymentIntent.customer as string;
+
+    // Update order with payment details
+    await updateOrder(orderId, {
+      status,
+      payment_status: paymentStatus,
+      updated_at: new Date().toISOString(),
+      stripe_payment_intent_id: paymentIntent.id,
+      stripe_payment_method: paymentMethod,
+      stripe_customer_id: customer
+    });
+
+    // Update inventory if payment successful
+    if (status === 'completed') {
+      const items = JSON.parse(paymentIntent.metadata.items || '[]');
+      for (const item of items) {
+        await supabaseClient
+          .from('products')
+          .update({ 
+            stock: supabase.sql`stock - ${item.quantity}`,
+            updated_at: new Date().toISOString()
+          })
+          .eq('stripe_id', item.stripeId);
+      }
+    }
+
+    // Send notifications
+    if (status === 'completed' || status === 'cancelled') {
+      await sendAdminNotification(
+        status === 'completed' ? 'payment_success' : 'payment_failed',
+        orderId,
+        paymentIntent.amount / 100
+      );
+
+      // Send customer notification
+      if (paymentIntent.metadata.customer_id) {
+        await supabaseClient.functions.invoke('admin-operations', {
+          body: {
+            action: 'sendNotification',
+            userId: paymentIntent.metadata.customer_id,
+            type: status === 'completed' ? 'order_confirmed' : 'payment_failed',
+            orderId
+          }
+        });
+      }
+    }
+
+    console.log(`Order ${orderId} marked as ${status}`);
+  } catch (error) {
+    console.error('Error handling payment intent:', error);
+    throw error;
   }
-
-  await updateOrder(orderId, {
-    status,
-    payment_status: paymentStatus,
-    updated_at: new Date().toISOString(),
-    stripe_payment_intent_id: paymentIntent.id
-  });
-
-  if (status === 'completed' || status === 'cancelled') {
-    await sendAdminNotification(
-      status === 'completed' ? 'payment_success' : 'payment_failed',
-      orderId,
-      paymentIntent.amount / 100
-    );
-  }
-
-  console.log(`Order ${orderId} marked as ${status}`);
 };
 
 // Main webhook handler
@@ -150,6 +193,29 @@ Deno.serve(async (req) => {
           event.data.object as Stripe.PaymentIntent,
           'pending',
           'pending'
+        );
+        break;
+
+      case 'charge.refunded':
+        const charge = event.data.object as Stripe.Charge;
+        if (charge.payment_intent) {
+          await handlePaymentIntent(
+            { 
+              ...charge,
+              id: charge.payment_intent as string,
+              metadata: charge.metadata
+            } as Stripe.PaymentIntent,
+            'cancelled',
+            'refunded'
+          );
+        }
+        break;
+
+      case 'payment_intent.canceled':
+        await handlePaymentIntent(
+          event.data.object as Stripe.PaymentIntent,
+          'cancelled',
+          'failed'
         );
         break;
 
