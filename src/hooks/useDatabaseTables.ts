@@ -5,10 +5,10 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import type { 
   TableInfo, 
-  TableName, 
   DatabaseTableHookReturn,
   SchemaTable,
-  TableData 
+  TableData,
+  TableName 
 } from '@/types/database';
 
 export function useDatabaseTables(): DatabaseTableHookReturn {
