@@ -157,20 +157,16 @@ export default function CheckoutPage() {
     setIsProcessing(true);
 
     try {
-      if (!stripe || !elements || !clientSecret) {
-        toast.error("Payment system not initialized");
-        return;
-      }
-
-      // Create order in database first
+      // Create order first
+      const orderId = crypto.randomUUID();
       const { error: orderError } = await supabase
         .from('orders')
         .insert({
-          id: crypto.randomUUID(),
+          id: orderId,
           user_id: user.id,
           items: items,
           total_amount: total,
-          payment_method: 'credit_card',
+          payment_method: paymentMethod,
           payment_status: 'pending',
           status: 'pending',
           shipping_address: shippingAddress
@@ -180,68 +176,112 @@ export default function CheckoutPage() {
         throw new Error('Failed to create order');
       }
 
-      // Confirm payment with Stripe
-      const result = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/checkout/success`,
-          payment_method_data: {
-            billing_details: {
-              name: shippingAddress.full_name,
-              email: shippingAddress.email,
-              phone: shippingAddress.phone,
-              address: {
-                line1: shippingAddress.address,
-                city: shippingAddress.city,
-                state: shippingAddress.state,
-                postal_code: shippingAddress.postal_code,
-                country: 'BR'
+      if (paymentMethod === 'credit') {
+        if (!stripe || !elements || !clientSecret) {
+          throw new Error("Payment system not initialized");
+        }
+
+        const result = await stripe.confirmPayment({
+          elements,
+          confirmParams: {
+            return_url: `${window.location.origin}/checkout/success`,
+            payment_method_data: {
+              billing_details: {
+                name: shippingAddress.full_name,
+                email: shippingAddress.email,
+                phone: shippingAddress.phone,
+                address: {
+                  line1: shippingAddress.address,
+                  city: shippingAddress.city,
+                  state: shippingAddress.state,
+                  postal_code: shippingAddress.postal_code,
+                  country: 'BR'
+                }
               }
+            },
+            metadata: {
+              order_id: orderId,
+              customer_name: shippingAddress.full_name,
+              shipping_address: JSON.stringify(shippingAddress)
             }
           }
+        });
+
+        if (result.error) {
+          await supabase
+            .from('orders')
+            .update({ 
+              payment_status: 'failed',
+              status: 'cancelled'
+            })
+            .eq('id', orderId);
+
+          throw result.error;
         }
-      });
 
-      if (result.error) {
+      } else if (paymentMethod === 'pix') {
+        const { data: pixData, error: pixError } = await supabase.functions.invoke('create-payment-intent', {
+          body: {
+            amount: Math.round(total * 100),
+            currency: 'brl',
+            payment_method_types: ['pix'],
+            metadata: {
+              order_id: orderId,
+              customer_name: shippingAddress.full_name,
+              shipping_address: JSON.stringify(shippingAddress)
+            }
+          }
+        });
 
-      if (result.error) {
-        // Update order status to failed if payment fails
-        await supabase
-          .from('orders')
-          .update({ 
-            payment_status: 'failed',
-            status: 'cancelled'
-          })
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
+        if (pixError) throw pixError;
 
-        if (result.error.type === "card_error" || result.error.type === "validation_error") {
-          toast.error(result.error.message || "Error processing payment");
-        } else {
-          toast.error("An unexpected error occurred");
+        // Store PIX info in localStorage for later verification
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('pix_payment_info', JSON.stringify({
+            order_id: orderId,
+            payment_intent_id: pixData.id,
+            amount: total,
+            expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutes
+          }));
         }
-        return;
+
+        // Show PIX QR code and copy button
+        setPixCode(pixData.qr_code);
+        toast.success('PIX QR Code generated successfully');
+
+      } else if (paymentMethod === 'boleto') {
+        const { data: boletoData, error: boletoError } = await supabase.functions.invoke('create-payment-intent', {
+          body: {
+            amount: Math.round(total * 100),
+            currency: 'brl',
+            payment_method_types: ['boleto'],
+            metadata: {
+              order_id: orderId,
+              customer_name: shippingAddress.full_name,
+              shipping_address: JSON.stringify(shippingAddress)
+            }
+          }
+        });
+
+        if (boletoError) throw boletoError;
+
+        // Store boleto info
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('boleto_payment_info', JSON.stringify({
+            order_id: orderId,
+            payment_intent_id: boletoData.id,
+            amount: total,
+            expires_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days
+          }));
+        }
+
+        setBoletoUrl(boletoData.boleto_url);
+        toast.success('Boleto generated successfully');
       }
 
-      // The payment intent status will be handled by the return_url redirect
       clearCart();
       router.push('/checkout/success');
-        // Update order status to completed
-        await supabase
-          .from('orders')
-          .update({ 
-            payment_status: 'paid',
-            status: 'processing'
-          })
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
 
-        toast.success("Payment successful!");
-        clearCart();
-        router.push('/checkout/success');
-      }
     } catch (error) {
       console.error("Payment error:", error);
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
@@ -253,15 +293,40 @@ export default function CheckoutPage() {
     }
   };
 
-  const generatePixCode = () => {
-    // Simulate PIX code generation
-    return "00020126580014BR.GOV.BCB.PIX0136123e4567-e12b-12d1-a456-426655440000";
-  };
+  const [pixCode, setPixCode] = useState<string>('');
+  const [boletoUrl, setBoletoUrl] = useState<string>('');
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'processing' | 'completed' | 'failed'>('pending');
 
-  const generateBoletoCode = () => {
-    // Simulate boleto code generation
-    return "34191.79001 01043.510047 91020.150008 6 88770000002000";
-  };
+  // Check payment status periodically for PIX and Boleto
+  useEffect(() => {
+    if (paymentMethod !== 'credit' && (pixCode || boletoUrl)) {
+      const interval = setInterval(async () => {
+        try {
+          const paymentInfo = paymentMethod === 'pix' 
+            ? JSON.parse(localStorage.getItem('pix_payment_info') || '{}')
+            : JSON.parse(localStorage.getItem('boleto_payment_info') || '{}');
+
+          if (!paymentInfo.payment_intent_id) return;
+
+          const { data, error } = await supabase.functions.invoke('check-payment-status', {
+            body: { payment_intent_id: paymentInfo.payment_intent_id }
+          });
+
+          if (error) throw error;
+
+          if (data.status === 'succeeded') {
+            clearInterval(interval);
+            setPaymentStatus('completed');
+            router.push('/checkout/success');
+          }
+        } catch (error) {
+          console.error('Error checking payment status:', error);
+        }
+      }, 5000); // Check every 5 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [paymentMethod, pixCode, boletoUrl]);
 
   if (!user) {
     return (
