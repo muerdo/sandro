@@ -1,4 +1,3 @@
-
 /** @type {import("next").NextConfig} */
 const config = {
   images: {
@@ -17,7 +16,13 @@ const config = {
     ignoreBuildErrors: true,
   },
   webpack: (config) => {
-    config.stats = 'normal';
+    config.stats = {
+      preset: 'verbose',
+      colors: true,
+      modules: true,
+      reasons: true,
+      errorDetails: true
+    };
     return config;
   }
 };
