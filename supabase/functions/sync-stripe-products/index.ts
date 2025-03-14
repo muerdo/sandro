@@ -1,5 +1,38 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import Stripe from 'npm:stripe@14.21.0'
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+
+interface StripeProduct {
+  id: string
+  name: string
+  description: string | null
+  active: boolean
+  images: string[]
+  metadata?: {
+    category?: string
+    features?: string
+    customization?: string
+    stock?: string
+    low_stock_threshold?: string
+  }
+}
+
+interface ProcessedProduct {
+  id: string
+  stripe_id: string
+  name: string
+  description: string
+  price: number
+  category: string
+  images: string[]
+  features: string[]
+  customization: Record<string, unknown>
+  stock: number
+  status: 'active' | 'archived'
+  stripe_price_id: string
+  low_stock_threshold: number
+  updated_at: string
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,159 +40,192 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS'
 }
 
-Deno.serve(async (req) => {
+serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    // Initialize Stripe
-    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
-    if (!stripeKey) {
-      throw new Error('Missing Stripe secret key');
-    }
+    const { stripe, supabaseClient } = await initializeClients()
 
-    const stripe = new Stripe(stripeKey, {
-      apiVersion: '2023-10-16',
-    });
+    const { processedProducts, errors } = await processStripeProducts(stripe, supabaseClient)
 
-    // Initialize Supabase
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing Supabase credentials');
-    }
-
-    const supabaseClient = createClient(supabaseUrl, supabaseKey);
-
-    // Fetch all products from Stripe with prices and metadata
-    const stripeProducts = await stripe.products.list({
-      active: true,
-      expand: ['data.default_price'],
-      limit: 100
-    });
-
-    console.log(`Found ${stripeProducts.data.length} products in Stripe`);
-
-    // Process each product
-    const processedProducts = [];
-    const errors = [];
-
-    for (const stripeProduct of stripeProducts.data) {
-      try {
-        // Get all prices for the product
-        const { data: prices } = await stripe.prices.list({
-          product: stripeProduct.id,
-          active: true,
-          currency: 'brl'
-        });
-
-        // Find default or lowest price
-        const defaultPrice = prices.find(price => price.metadata?.default) || 
-                           prices.reduce((lowest, current) => {
-                             if (!lowest || current.unit_amount < lowest.unit_amount) {
-                               return current;
-                             }
-                             return lowest;
-                           }, null);
-
-        if (!defaultPrice?.unit_amount) {
-          throw new Error(`No valid price found for product ${stripeProduct.id}`);
-        }
-
-        // Parse features and customization from metadata
-        const features = stripeProduct.metadata?.features?.split(',').map(f => f.trim()) || [];
-        let customization = {};
-        try {
-          if (stripeProduct.metadata?.customization) {
-            customization = JSON.parse(stripeProduct.metadata.customization);
-          }
-        } catch (e) {
-          console.error(`Invalid customization JSON for product ${stripeProduct.id}`);
-        }
-
-        // Transform to database format
-        const product = {
-          id: `stripe-${stripeProduct.id}`,
-          name: stripeProduct.name,
-          description: stripeProduct.description || '',
-          price: defaultPrice.unit_amount / 100,
-          category: stripeProduct.metadata?.category || 'Outros',
-          images: stripeProduct.images || [],
-          features,
-          customization,
-          stock: parseInt(stripeProduct.metadata?.stock || '999'),
-          status: stripeProduct.active ? 'active' : 'archived',
-          stripe_id: stripeProduct.id,
-          stripe_price_id: defaultPrice.id,
-          low_stock_threshold: parseInt(stripeProduct.metadata?.low_stock_threshold || '10'),
-          updated_at: new Date().toISOString()
-        };
-
-        // Upsert product
-        const { error } = await supabaseClient
-          .from('products')
-          .upsert(product, {
-            onConflict: 'stripe_id',
-            ignoreDuplicates: false
-          });
-
-        if (error) throw error;
-        processedProducts.push(product.id);
-
-      } catch (error) {
-        errors.push({
-          productId: stripeProduct.id,
-          error: error.message
-        });
-        console.error(`Error processing product ${stripeProduct.id}:`, error);
-      }
-    }
-
-    // Archive products not in Stripe
     if (processedProducts.length > 0) {
-      const { error: archiveError } = await supabaseClient
-        .from('products')
-        .update({ 
-          status: 'archived',
-          updated_at: new Date().toISOString()
-        })
-        .filter('stripe_id', 'not.in', `(${processedProducts.map(id => id.replace('stripe-', '')).map(id => `'${id}'`).join(',')})`)
-        .filter('status', 'eq', 'active');
-
-      if (archiveError) {
-        errors.push({
-          type: 'archive',
-          error: archiveError.message
-        });
-      }
+      await archiveOldProducts(supabaseClient, processedProducts, errors)
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        processed: processedProducts.length,
-        errors: errors.length > 0 ? errors : undefined,
-        message: `Synchronized ${processedProducts.length} products${errors.length > 0 ? ` with ${errors.length} errors` : ''}`
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: errors.length > 0 ? 207 : 200
-      }
-    );
-
+    return createSuccessResponse(processedProducts.length, errors)
   } catch (error) {
-    console.error('Error syncing products:', error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
-      }
-    );
+    console.error('Error syncing products:', error)
+    return createErrorResponse(error)
   }
-});
+})
+
+async function initializeClients() {
+  const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')
+  if (!stripeKey) {
+    throw new Error('Missing Stripe secret key')
+  }
+
+  const stripe = new Stripe(stripeKey, {
+    apiVersion: '2023-10-16',
+  })
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Missing Supabase credentials')
+  }
+
+  const supabaseClient = createClient(supabaseUrl, supabaseKey)
+
+  return { stripe, supabaseClient }
+}
+
+async function processStripeProducts(stripe: Stripe, supabaseClient: ReturnType<typeof createClient>) {
+  const processedProducts: string[] = []
+  const errors: Array<{ productId: string; error: string }> = []
+
+  const stripeProducts = await stripe.products.list({
+    active: true,
+    expand: ['data.default_price'],
+    limit: 100
+  })
+
+  console.log(`Found ${stripeProducts.data.length} products in Stripe`)
+
+  for (const stripeProduct of stripeProducts.data) {
+    try {
+      const product = await processProduct(stripe, stripeProduct)
+      await upsertProduct(supabaseClient, product)
+      processedProducts.push(product.id)
+    } catch (error) {
+      errors.push({
+        productId: stripeProduct.id,
+        error: error instanceof Error ? error.message : String(error)
+      })
+      console.error(`Error processing product ${stripeProduct.id}:`, error)
+    }
+  }
+
+  return { processedProducts, errors }
+}
+
+async function processProduct(stripe: Stripe, stripeProduct: StripeProduct): Promise<ProcessedProduct> {
+  const { data: prices } = await stripe.prices.list({
+    product: stripeProduct.id,
+    active: true,
+    currency: 'brl'
+  })
+
+  const defaultPrice = findDefaultPrice(prices)
+  if (!defaultPrice?.unit_amount) {
+    throw new Error(`No valid price found for product ${stripeProduct.id}`)
+  }
+
+  const features = parseFeatures(stripeProduct.metadata?.features)
+  const customization = parseCustomization(stripeProduct.metadata?.customization)
+
+  return {
+    id: `stripe-${stripeProduct.id}`,
+    name: stripeProduct.name,
+    description: stripeProduct.description || '',
+    price: defaultPrice.unit_amount / 100,
+    category: stripeProduct.metadata?.category || 'Outros',
+    images: stripeProduct.images || [],
+    features,
+    customization,
+    stock: parseInt(stripeProduct.metadata?.stock || '999'),
+    status: stripeProduct.active ? 'active' : 'archived',
+    stripe_id: stripeProduct.id,
+    stripe_price_id: defaultPrice.id,
+    low_stock_threshold: parseInt(stripeProduct.metadata?.low_stock_threshold || '10'),
+    updated_at: new Date().toISOString()
+  }
+}
+
+function findDefaultPrice(prices: Array<{ metadata?: { default?: boolean }, unit_amount?: number }>) {
+  return prices.find(price => price.metadata?.default) || 
+         prices.reduce((lowest, current) => {
+           if (!lowest || (current.unit_amount || 0) < (lowest.unit_amount || 0)) {
+             return current
+           }
+           return lowest
+         }, null as { unit_amount?: number } | null)
+}
+
+function parseFeatures(features?: string): string[] {
+  return features?.split(',').map(f => f.trim()) || []
+}
+
+function parseCustomization(customization?: string): Record<string, unknown> {
+  if (!customization) return {}
+  try {
+    return JSON.parse(customization)
+  } catch (e) {
+    console.error('Invalid customization JSON:', e)
+    return {}
+  }
+}
+
+async function upsertProduct(supabaseClient: ReturnType<typeof createClient>, product: ProcessedProduct) {
+  const { error } = await supabaseClient
+    .from('products')
+    .upsert(product, {
+      onConflict: 'stripe_id',
+      ignoreDuplicates: false
+    })
+
+  if (error) throw error
+}
+
+async function archiveOldProducts(
+  supabaseClient: ReturnType<typeof createClient>,
+  processedProducts: string[],
+  errors: Array<{ type?: string; error: string }>
+) {
+  const { error: archiveError } = await supabaseClient
+    .from('products')
+    .update({ 
+      status: 'archived',
+      updated_at: new Date().toISOString()
+    })
+    .filter('stripe_id', 'not.in', `(${processedProducts.map(id => id.replace('stripe-', '')).map(id => `'${id}'`).join(',')})`)
+    .filter('status', 'eq', 'active')
+
+  if (archiveError) {
+    errors.push({
+      type: 'archive',
+      error: archiveError.message
+    })
+  }
+}
+
+function createSuccessResponse(processedCount: number, errors: Array<{ type?: string; error: string }>) {
+  return new Response(
+    JSON.stringify({
+      success: true,
+      processed: processedCount,
+      errors: errors.length > 0 ? errors : undefined,
+      message: `Synchronized ${processedCount} products${errors.length > 0 ? ` with ${errors.length} errors` : ''}`
+    }),
+    { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: errors.length > 0 ? 207 : 200
+    }
+  )
+}
+
+function createErrorResponse(error: unknown) {
+  return new Response(
+    JSON.stringify({
+      success: false,
+      error: error instanceof Error ? error.message : String(error)
+    }),
+    {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500
+    }
+  )
+}
