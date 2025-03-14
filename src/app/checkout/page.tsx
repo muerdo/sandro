@@ -199,10 +199,8 @@ export default function CheckoutPage() {
                 }
               }
             },
-            payment_method_options: {
-              card: {
-                setup_future_usage: 'off_session'
-              }
+            payment_method_data: {
+              type: 'card'
             }
           }
         });

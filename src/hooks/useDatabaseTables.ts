@@ -56,7 +56,7 @@ export function useDatabaseTables(): DatabaseTableHookReturn {
     try {
       // Type assertion needed since we allow string for system tables
       const { data, error } = await supabase
-        .from(String(tableName))
+        .from(tableName as 'orders' | 'products' | 'profiles')
         .select('*')
         .limit(100);
 
