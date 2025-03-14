@@ -1,4 +1,4 @@
-export type TableName = string;
+export type TableName = keyof Database['public']['Tables'] | string;
 
 export type DatabaseTableRow<T extends string> = Record<string, unknown>;
 
