@@ -1,216 +1,167 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import Stripe from 'npm:stripe@14.21.0';
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-  apiVersion: '2023-10-16'
-});
+// Types
+interface WebhookResponse {
+  received: boolean;
+  type: string;
+  error?: string;
+}
 
-const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+type OrderStatus = 'pending' | 'processing' | 'completed' | 'cancelled';
+type PaymentStatus = 'pending' | 'processing' | 'paid' | 'failed';
 
-const corsHeaders = {
+interface OrderUpdate {
+  status: OrderStatus;
+  payment_status: PaymentStatus;
+  updated_at: string;
+  stripe_payment_intent_id: string;
+}
+
+// Constants
+const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
+// Initialize Stripe
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
+  apiVersion: '2023-10-16'
+});
+
+// Initialize Supabase
+const supabaseClient = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+);
+
+// Utility Functions
+const createResponse = (data: WebhookResponse, status: number = 200): Response => {
+  return new Response(
+    JSON.stringify(data),
+    {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      status
+    }
+  );
+};
+
+const updateOrder = async (orderId: string, update: OrderUpdate): Promise<void> => {
+  const { error } = await supabaseClient
+    .from('orders')
+    .update(update)
+    .eq('id', orderId);
+
+  if (error) {
+    console.error('Error updating order:', error);
+    throw error;
+  }
+};
+
+const sendAdminNotification = async (type: string, orderId: string, amount: number): Promise<void> => {
+  await supabaseClient.functions.invoke('admin-operations', {
+    body: {
+      action: 'sendNotification',
+      type,
+      orderId,
+      amount
+    }
+  });
+};
+
+const handlePaymentIntent = async (
+  paymentIntent: Stripe.PaymentIntent,
+  status: OrderStatus,
+  paymentStatus: PaymentStatus
+): Promise<void> => {
+  const orderId = paymentIntent.metadata.orderId;
+  if (!orderId) {
+    throw new Error('No order ID found in payment intent metadata');
+  }
+
+  await updateOrder(orderId, {
+    status,
+    payment_status: paymentStatus,
+    updated_at: new Date().toISOString(),
+    stripe_payment_intent_id: paymentIntent.id
+  });
+
+  if (status === 'completed' || status === 'cancelled') {
+    await sendAdminNotification(
+      status === 'completed' ? 'payment_success' : 'payment_failed',
+      orderId,
+      paymentIntent.amount / 100
+    );
+  }
+
+  console.log(`Order ${orderId} marked as ${status}`);
+};
+
+// Main webhook handler
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: CORS_HEADERS });
   }
 
   try {
+    const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
     if (!webhookSecret) {
       throw new Error('Missing Stripe webhook secret');
     }
 
-    // Initialize Supabase client with service role key for admin access
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    // Get the stripe signature from headers
     const signature = req.headers.get('stripe-signature');
     if (!signature) {
       throw new Error('No Stripe signature found');
     }
 
-    // Get the raw body
     const rawBody = await req.text();
-
-    // Verify the webhook signature
-    const event = stripe.webhooks.constructEvent(
-      rawBody,
-      signature,
-      webhookSecret
-    );
+    const event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
 
     console.log(`Processing Stripe event: ${event.type}`);
 
-    // Handle different event types
     switch (event.type) {
-      case 'payment_intent.succeeded': {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        
-        // Get order details from metadata
-        const orderId = paymentIntent.metadata.orderId;
-        if (!orderId) {
-          throw new Error('No order ID found in payment intent metadata');
-        }
-
-        // Update order status to completed
-        const { error: updateError } = await supabaseClient
-          .from('orders')
-          .update({ 
-            status: 'completed',
-            payment_status: 'paid',
-            updated_at: new Date().toISOString(),
-            stripe_payment_intent_id: paymentIntent.id
-          })
-          .eq('id', orderId);
-
-        if (updateError) {
-          console.error('Error updating order:', updateError);
-          throw updateError;
-        }
-
-        // Send notification to admin
-        await supabaseClient.functions.invoke('admin-operations', {
-          body: {
-            action: 'sendNotification',
-            type: 'payment_success',
-            orderId: orderId,
-            amount: paymentIntent.amount / 100
-          }
-        });
-
-        console.log(`Order ${orderId} marked as completed`);
+      case 'payment_intent.succeeded':
+        await handlePaymentIntent(
+          event.data.object as Stripe.PaymentIntent,
+          'completed',
+          'paid'
+        );
         break;
-      }
 
-      case 'payment_intent.payment_failed': {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        const orderId = paymentIntent.metadata.orderId;
-        
-        if (!orderId) {
-          throw new Error('No order ID found in payment intent metadata');
-        }
-
-        // Update order status to cancelled
-        const { error: updateError } = await supabaseClient
-          .from('orders')
-          .update({ 
-            status: 'cancelled',
-            payment_status: 'failed',
-            updated_at: new Date().toISOString(),
-            stripe_payment_intent_id: paymentIntent.id
-          })
-          .eq('id', orderId);
-
-        if (updateError) {
-          console.error('Error updating order:', updateError);
-          throw updateError;
-        }
-
-        // Send notification to admin
-        await supabaseClient.functions.invoke('admin-operations', {
-          body: {
-            action: 'sendNotification',
-            type: 'payment_failed',
-            orderId: orderId,
-            amount: paymentIntent.amount / 100
-          }
-        });
-
-        console.log(`Order ${orderId} marked as cancelled due to payment failure`);
+      case 'payment_intent.payment_failed':
+        await handlePaymentIntent(
+          event.data.object as Stripe.PaymentIntent,
+          'cancelled',
+          'failed'
+        );
         break;
-      }
 
-      case 'payment_intent.processing': {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        const orderId = paymentIntent.metadata.orderId;
-        
-        if (!orderId) {
-          throw new Error('No order ID found in payment intent metadata');
-        }
-
-        // Update order status to processing
-        const { error: updateError } = await supabaseClient
-          .from('orders')
-          .update({ 
-            status: 'processing',
-            payment_status: 'processing',
-            updated_at: new Date().toISOString(),
-            stripe_payment_intent_id: paymentIntent.id
-          })
-          .eq('id', orderId);
-
-        if (updateError) {
-          console.error('Error updating order:', updateError);
-          throw updateError;
-        }
-
-        console.log(`Order ${orderId} marked as processing`);
+      case 'payment_intent.processing':
+        await handlePaymentIntent(
+          event.data.object as Stripe.PaymentIntent,
+          'processing',
+          'processing'
+        );
         break;
-      }
 
-      case 'payment_intent.requires_action': {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        const orderId = paymentIntent.metadata.orderId;
-        
-        if (!orderId) {
-          throw new Error('No order ID found in payment intent metadata');
-        }
-
-        // Update order status to pending
-        const { error: updateError } = await supabaseClient
-          .from('orders')
-          .update({ 
-            status: 'pending',
-            payment_status: 'pending',
-            updated_at: new Date().toISOString(),
-            stripe_payment_intent_id: paymentIntent.id
-          })
-          .eq('id', orderId);
-
-        if (updateError) {
-          console.error('Error updating order:', updateError);
-          throw updateError;
-        }
-
-        console.log(`Order ${orderId} marked as pending, requires additional action`);
+      case 'payment_intent.requires_action':
+        await handlePaymentIntent(
+          event.data.object as Stripe.PaymentIntent,
+          'pending',
+          'pending'
+        );
         break;
-      }
 
-      default: {
+      default:
         console.log(`Unhandled event type: ${event.type}`);
-      }
     }
 
-    return new Response(
-      JSON.stringify({ 
-        received: true,
-        type: event.type
-      }), 
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      }
-    );
+    return createResponse({ received: true, type: event.type });
 
   } catch (error) {
     console.error('Webhook error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    
-    return new Response(
-      JSON.stringify({
-        error: errorMessage,
-        type: 'webhook_error'
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400
-      }
-    );
+    return createResponse({ received: false, type: 'webhook_error', error: errorMessage }, 400);
   }
 });
