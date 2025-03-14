@@ -1,2 +1,6 @@
 # Supabase Edge Functions
 supabase/functions/**/*
+
+# SQL files
+*.sql
+migrations/
