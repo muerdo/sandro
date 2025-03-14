@@ -53,14 +53,15 @@ export function useDatabaseTables(): DatabaseTableHookReturn {
 
   const fetchTableData = useCallback(async (tableName: TableName) => {
     try {
+      // Type assertion needed since we allow string for system tables
       const { data, error } = await supabase
-        .from(tableName)
+        .from(tableName as keyof Database['public']['Tables'])
         .select('*')
         .limit(100);
 
       if (error) throw error;
 
-      setTableData(data || []);
+      setTableData(data as DatabaseTableRow<typeof tableName>[] || []);
       setSelectedTable(tableName);
     } catch (error) {
       console.error(`Error fetching data from ${tableName}:`, error);

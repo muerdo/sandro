@@ -1,14 +1,8 @@
-export type TableName = 
-  | "categories"
-  | "contacts" 
-  | "data"
-  | "messages"
-  | "orders"
-  | "profiles"
-  | "payment_settings"
-  | "products"
-  | "shipping_addresses"
-  | string; // Allow any string for system tables
+export type TableName = keyof Database['public']['Tables'] | string;
+
+export type DatabaseTableRow<T extends TableName> = T extends keyof Database['public']['Tables'] 
+  ? Database['public']['Tables'][T]['Row']
+  : Record<string, unknown>;
 
 export interface TableColumn {
   name: string;
