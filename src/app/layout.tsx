@@ -12,7 +12,7 @@ import { StripeProvider } from "@/components/providers/stripe-provider";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "VisualPrint - Comunicação Visual Profissional",
+  title: "Sandro Adesivos - Comunicação Visual Profissional",
   description: "Serviços profissionais de comunicação visual, impressão digital, plotagem, adesivos e personalização.",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };

@@ -10,7 +10,7 @@ interface OrderSummaryProps {
 export default function OrderSummary({ items, total }: OrderSummaryProps) {
   return (
     <div className="bg-card p-6 rounded-xl shadow-lg">
-      <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
+      <h3 className="text-lg font-semibold mb-4">Resumo do Pedido</h3>
       <div className="space-y-4">
         {items.map((item) => (
           <div key={item.id} className="flex gap-4">
@@ -22,7 +22,7 @@ export default function OrderSummary({ items, total }: OrderSummaryProps) {
             <div className="flex-1">
               <p className="font-medium">{item.name}</p>
               <p className="text-sm text-muted-foreground">
-                Quantity: {item.quantity}
+                Quantidade: {item.quantity}
               </p>
               <p className="text-sm">
                 R$ {(item.price * item.quantity).toFixed(2)}

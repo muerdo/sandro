@@ -1,5 +1,5 @@
-import { createClient } from 'jsr:@supabase/supabase-js@2';
-import Stripe from 'npm:stripe@14.21.0';
+import { createClient } from '@supabase/supabase-js';
+import Stripe from 'stripe';
 import { Database } from '../_shared/database.types';
 
 interface WebhookResponse {
@@ -39,14 +39,14 @@ const CORS_HEADERS = {
 };
 
 // Initialize Stripe
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-  apiVersion: '2023-10-16'
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
+  apiVersion: '2025-02-24.acacia'
 });
 
 // Initialize Supabase
 const supabaseClient = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  process.env.SUPABASE_URL ?? '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
 );
 
 // Utility Functions
@@ -120,8 +120,8 @@ const sendAdminNotification = async (type: string, orderId: string, amount: numb
 
 const handlePaymentIntent = async (
   paymentIntent: Stripe.PaymentIntent,
-  status: OrderStatus,
-  paymentStatus: PaymentStatus
+  status: 'pending' | 'processing' | 'completed' | 'cancelled',
+  paymentStatus: 'pending' | 'processing' | 'completed' | 'failed'
 ): Promise<void> => {
   try {
     const orderId = paymentIntent.metadata.orderId;
@@ -155,8 +155,8 @@ const handlePaymentIntent = async (
 
     // Update order status
     await updateOrder(orderId, {
-      status,
-      payment_status: paymentStatus,
+      status: status === 'completed' ? 'processing' : status,
+      payment_status: paymentStatus === 'completed' ? 'paid' : paymentStatus,
       updated_at: new Date().toISOString(),
       stripe_payment_intent_id: paymentIntent.id,
       stripe_payment_method: paymentIntent.payment_method as string,
@@ -220,9 +220,8 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS_HEADERS });
   }
-
   try {
-    const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     if (!webhookSecret) {
       throw new Error('Missing Stripe webhook secret');
     }
@@ -242,7 +241,7 @@ Deno.serve(async (req) => {
         await handlePaymentIntent(
           event.data.object as Stripe.PaymentIntent,
           'completed',
-          'paid'
+          'completed'
         );
         break;
 
@@ -274,13 +273,15 @@ Deno.serve(async (req) => {
         const charge = event.data.object as Stripe.Charge;
         if (charge.payment_intent) {
           await handlePaymentIntent(
-            { 
-              ...charge,
+            {
               id: charge.payment_intent as string,
-              metadata: charge.metadata
-            } as Stripe.PaymentIntent,
+              metadata: charge.metadata,
+              amount: charge.amount,
+              currency: charge.currency,
+              status: 'succeeded'
+            } as unknown as Stripe.PaymentIntent,
             'cancelled',
-            'refunded'
+            'failed'
           );
         }
         break;

@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { useAuth } from "./auth-context";
+import { useAuth } from "@/contexts/auth-context";
 import AuthDialog from "@/components/auth/auth-dialog";
 
 export type CartItem = {

@@ -17,12 +17,10 @@ export default function PixQRCode({ pixCode, amount, expiresAt }: PixQRCodeProps
 
   const handleCopy = async () => {
     try {
-      if (typeof window !== 'undefined') {
-        await navigator.clipboard.writeText(pixCode);
-        setCopied(true);
-        toast.success('Código PIX copiado');
-        setTimeout(() => setCopied(false), 2000);
-      }
+      await navigator.clipboard.writeText(pixCode);
+      setCopied(true);
+      toast.success('Código PIX copiado');
+      setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error('Erro ao copiar:', error);
       toast.error('Erro ao copiar código PIX');
@@ -51,7 +49,7 @@ export default function PixQRCode({ pixCode, amount, expiresAt }: PixQRCodeProps
       <div className="text-center space-y-2">
         <p className="text-2xl font-bold">R$ {amount.toFixed(2)}</p>
         <p className="text-sm text-muted-foreground">
-          PIX code expires in {timeLeft()} minutes
+          O código PIX expira em {timeLeft()} minutos
         </p>
       </div>
 
@@ -68,19 +66,19 @@ export default function PixQRCode({ pixCode, amount, expiresAt }: PixQRCodeProps
           {copied ? (
             <>
               <Check className="w-4 h-4" />
-              Copied!
+              Copiado!
             </>
           ) : (
             <>
               <Copy className="w-4 h-4" />
-              Copy PIX Code
+              Copiar código PIX
             </>
           )}
         </motion.button>
       </div>
 
       <p className="text-sm text-muted-foreground text-center">
-        Open your bank app and scan the QR code or copy the PIX code to complete your payment
+        Abra seu aplicativo do banco e escaneie o QR code ou copie o código PIX para completar o pagamento
       </p>
     </div>
   );

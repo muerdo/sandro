@@ -8,22 +8,22 @@ export default function HomePage() {
     title: "Plotagem",
     icon: <Printer className="w-6 h-6" />,
     description: "Impressão em alta qualidade para grandes formatos",
-    image: "https://images.unsplash.com/photo-1588412079929-790b9f593d8e?q=80&w=2574&auto=format&fit=crop"
+    image: "/img/plot.png"
   }, {
     title: "Adesivos",
     icon: <Palette className="w-6 h-6" />,
     description: "Adesivos personalizados para qualquer superfície",
-    image: "https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=2671&auto=format&fit=crop"
+    image: "/img/adesivo.png"
   }, {
     title: "DTF e Camisetas",
     icon: <Shirt className="w-6 h-6" />,
     description: "Personalização profissional de vestuário",
-    image: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?q=80&w=2669&auto=format&fit=crop"
+    image: "/img/camisetass.jpeg"
   }, {
     title: "Corte a Laser",
     icon: <Scissors className="w-6 h-6" />,
     description: "Precisão e qualidade em cada corte",
-    image: "https://picsum.photos/200"
+    image: "/img/laser.png"
   }];
   return <main className="min-h-screen bg-background">
       {/* Hero Section */}

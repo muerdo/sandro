@@ -1,9 +1,10 @@
-import { createClient } from 'jsr:@supabase/supabase-js@2'
-import Stripe from 'npm:stripe@14.21.0'
+/// <reference lib="deno.ns" />
+import { createClient } from '@supabase/supabase-js'
+import Stripe from 'stripe'
 
 interface StripePrice {
   id: string
-  unit_amount: number
+  unit_amount: number | null
   active: boolean
   currency: string
   metadata?: {
@@ -69,19 +70,18 @@ Deno.serve(async (req) => {
     return createErrorResponse(error)
   }
 })
-
 async function initializeClients() {
-  const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')
+  const stripeKey = process.env.STRIPE_SECRET_KEY
   if (!stripeKey) {
     throw new Error('Missing Stripe secret key')
   }
 
   const stripe = new Stripe(stripeKey, {
-    apiVersion: '2023-10-16',
+    apiVersion: '2025-02-24.acacia',
   })
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')
-  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const supabaseUrl = process.env.SUPABASE_URL
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!supabaseUrl || !supabaseKey) {
     throw new Error('Missing Supabase credentials')
@@ -153,15 +153,14 @@ async function processProduct(stripe: Stripe, stripeProduct: StripeProduct): Pro
     updated_at: new Date().toISOString()
   }
 }
-
-function findDefaultPrice(prices: Array<{ metadata?: { default?: boolean }, unit_amount?: number }>) {
-  return prices.find(price => price.metadata?.default) || 
-         prices.reduce((lowest, current) => {
-           if (!lowest || (current.unit_amount || 0) < (lowest.unit_amount || 0)) {
+function findDefaultPrice(prices: StripePrice[]) {
+  return prices.find(price => price.metadata?.default) ||
+         prices.reduce<StripePrice | null>((lowest, current) => {
+           if (!lowest || ((current.unit_amount ?? 0) < (lowest.unit_amount ?? 0))) {
              return current
            }
            return lowest
-         }, null as { unit_amount?: number } | null)
+         }, null)
 }
 
 function parseFeatures(features?: string): string[] {

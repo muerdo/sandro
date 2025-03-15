@@ -15,37 +15,37 @@ const projects: Project[] = [{
   id: 1,
   title: "Plotagem Arquitetônica",
   category: "plotagem",
-  image: "https://images.unsplash.com/photo-1588412079929-790b9f593d8e?q=80&w=2574&auto=format&fit=crop",
+  image: "/img/plot.png",
   description: "Impressão de alta precisão para projetos arquitetônicos"
 }, {
   id: 2,
   title: "Adesivagem Veicular",
   category: "adesivos",
-  image: "https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=2671&auto=format&fit=crop",
+  image: "/img/1f1ce3cf-9e35-42c0-937b-10b913f7ae76.png",
   description: "Personalização completa de veículos"
 }, {
   id: 3,
   title: "Camisetas Personalizadas",
   category: "dtf",
-  image: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?q=80&w=2669&auto=format&fit=crop",
+  image: "/img/camisetass.jpeg",
   description: "Estampas DTF de alta qualidade"
 }, {
   id: 4,
   title: "Corte em Acrílico",
   category: "laser",
-  image: "https://picsum.photos/200",
+  image: "/img/laser.png",
   description: "Precisão em cortes a laser"
 }, {
   id: 5,
   title: "Banner Promocional",
   category: "plotagem",
-  image: "https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=2670&auto=format&fit=crop",
+  image: "/img/468e1f83-8fd1-44c4-a0f2-c887b6d73434.png",
   description: "Banners de alta qualidade para eventos"
 }, {
   id: 6,
   title: "Adesivos Decorativos",
   category: "adesivos",
-  image: "https://images.unsplash.com/photo-1600725935160-f67ee4f6084a?q=80&w=2670&auto=format&fit=crop",
+  image: "/img/adesivo.png",
   description: "Adesivos personalizados para decoração"
 }];
 export default function PortfolioGallery() {

@@ -94,8 +94,7 @@ export function useAdminDashboard() {
             change_amount,
             change_type,
             created_at,
-            notes,
-            profiles (username)
+            notes
           )
         `);
 

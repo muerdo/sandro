@@ -3,12 +3,12 @@ import { corsHeaders } from '../_shared/cors.js'
 
 // Deno runtime type declarations
 declare global {
-  const Deno: {
+  interface Deno {
     env: {
       get(key: string): string | undefined;
     };
     serve(handler: (req: Request) => Promise<Response>): void;
-  };
+  }
 }
 
 interface OrderUpdate {
@@ -24,8 +24,8 @@ interface OrderUpdate {
 }
 
 const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  process.env.SUPABASE_URL ?? '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
 );
 
 Deno.serve(async (req: Request) => {

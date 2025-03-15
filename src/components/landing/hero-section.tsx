@@ -15,7 +15,7 @@ export default function HeroSection() {
       className="min-h-[100svh] relative flex items-center justify-center bg-cover bg-center"
       style={{
         backgroundImage: `url(${process.env.NEXT_PUBLIC_CLIENT_HERO_IMAGE || 
-          'https://images.unsplash.com/photo-1588412079929-790b9f593d8e?q=80&w=2574&auto=format&fit=crop'
+          '/img/f2641af2-a4f1-4d08-9ac6-ac9f5de307c2.png'
         })`
       }}
     >

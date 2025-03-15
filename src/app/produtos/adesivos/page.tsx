@@ -16,12 +16,12 @@ const product = {
   media: [
     {
       type: 'image' as const,
-      url: "https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=2671&auto=format&fit=crop",
+      url: "/img/adesivo.png",
       alt: "Adesivo personalizado - Vista frontal"
     },
     {
       type: 'image' as const,
-      url: "https://images.unsplash.com/photo-1600725935160-f67ee4f6084a?q=80&w=2670&auto=format&fit=crop",
+      url: "/img/ads.jpeg",
       alt: "Adesivo personalizado - Aplicação"
     },
     {
