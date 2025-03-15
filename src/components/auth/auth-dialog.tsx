@@ -54,7 +54,7 @@ export default function AuthDialog({
             <div className="flex flex-col space-y-1.5 text-center sm:text-left">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">
-                  {isSignUp ? "Create an Account" : "Welcome Back"}
+                  {isSignUp ? "Crie uma conta" : "Bem vindo"}
                 </h2>
                 <button
                   onClick={onClose}
@@ -65,8 +65,8 @@ export default function AuthDialog({
               </div>
               <p className="text-sm text-muted-foreground">
                 {isSignUp
-                  ? "Sign up to access all features"
-                  : "Sign in to your account"}
+                  ? "Cadastre-se "
+                  : "Entre na sua conta"}
               </p>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -79,7 +79,7 @@ export default function AuthDialog({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  placeholder="m@example.com"
+                  placeholder="email@example.com"
                   required
                 />
               </div>
@@ -105,7 +105,7 @@ export default function AuthDialog({
                   type="submit"
                   className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground h-10 px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
                 >
-                  {isSignUp ? "Sign Up" : "Sign In"}
+                  {isSignUp ? "Cadastre-se" : "Entre"}
                 </motion.button>
                 <button
                   type="button"
@@ -113,8 +113,8 @@ export default function AuthDialog({
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {isSignUp
-                    ? "Already have an account? Sign in"
-                    : "Don't have an account? Sign up"}
+                    ? "Ja tem uma conta? Entre"
+                    : "Ainda não tem uma conta? Inscreva-se"}
                 </button>
               </div>
             </form>
