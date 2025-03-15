@@ -33,12 +33,7 @@ const navItems = [
     label: "Customers",
     icon: Users
   },
-  {
-    href: "/admin/database",
-    label: "Database",
-    icon: Database
-  },
-  {
+   {
     href: "/admin/settings",
     label: "Settings",
     icon: Settings
