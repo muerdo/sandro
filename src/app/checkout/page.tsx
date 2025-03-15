@@ -1,3 +1,4 @@
+// src/app/checkout/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -9,9 +10,9 @@ import { useRouter } from "next/navigation";
 import AddressForm from "@/components/checkout/address-form";
 import OrderSummary from "@/components/checkout/order-summary";
 import PixQRCode from "@/components/checkout/pix-qr-code";
-import { convertToStripeAddress } from "../shared/schema";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
+import BoletoForm from "@/components/checkout/boleto-form";
 
 // Initialize Stripe with the publishable key
 if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
@@ -20,7 +21,7 @@ if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
-type PaymentMethod = "card" | "pix";
+type PaymentMethod = "card" | "pix" | "boleto";
 
 interface ShippingAddress {
   full_name: string;
@@ -50,65 +51,13 @@ const PaymentMethods = ({ paymentMethod, setPaymentMethod }: { paymentMethod: Pa
         >
           PIX
         </button>
+        <button
+          onClick={() => setPaymentMethod("boleto")}
+          className={`px-4 py-2 rounded ${paymentMethod === "boleto" ? "bg-primary text-white" : "bg-gray-200"}`}
+        >
+          Boleto
+        </button>
       </div>
-    </div>
-  );
-};
-
-const CheckoutForm = ({ paymentMethod, items, total, clearCart, shippingAddress }: {
-  paymentMethod: PaymentMethod;
-  items: any[];
-  total: number;
-  clearCart: () => void;
-  shippingAddress: ShippingAddress;
-}) => {
-  const stripe = useStripe();
-  const elements = useElements();
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const createCheckoutSession = async () => {
-    setLoading(true);
-    setIsProcessing(true);
-
-    try {
-      if (!stripe || !elements) return;
-
-      // Confirme o pagamento usando o clientSecret
-      const result = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/checkout/success`,
-        },
-      });
-
-      if (result.error) {
-        toast.error(result.error.message);
-      } else {
-        clearCart();
-        router.push("/checkout/success");
-      }
-    } catch (error) {
-      console.error("Erro ao criar sessão de checkout:", error);
-      toast.error("Erro ao criar sessão de checkout");
-    } finally {
-      setLoading(false);
-      setIsProcessing(false);
-    }
-  };
-
-  return (
-    <div className="mt-8">
-      {paymentMethod === "pix" && <PixQRCode pixCode={""} amount={0} expiresAt={""} />}
-      {paymentMethod === "card" && <PaymentElement />}
-      <button
-        onClick={createCheckoutSession}
-        disabled={loading || isProcessing}
-        className="mt-6 w-full bg-primary hover:bg-primary-dark text-white font-bold py-3 px-6 rounded focus:outline-none focus:shadow-outline"
-      >
-        {loading ? "Processando..." : "Finalizar Compra"}
-      </button>
     </div>
   );
 };
@@ -127,35 +76,38 @@ export default function CheckoutPage() {
     postal_code: "",
     is_default: false,
   });
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [cardClientSecret, setCardClientSecret] = useState<string | null>(null);
+  const [boletoClientSecret, setBoletoClientSecret] = useState<string | null>(null);
 
-  // Busque o clientSecret ao carregar a página
+  // Busque os client_secrets ao carregar a página
   useEffect(() => {
-    const fetchClientSecret = async () => {
+    const fetchClientSecrets = async () => {
       try {
         const response = await fetch("/api/secret", {
-          method: "GET",
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
+          body: JSON.stringify({ amount: total }), // Envie o valor total do carrinho
         });
 
         if (!response.ok) {
-          throw new Error("Erro ao obter clientSecret");
+          throw new Error("Erro ao obter client_secrets");
         }
 
-        const { client_secret } = await response.json();
-        setClientSecret(client_secret);
+        const { card_client_secret, boleto_client_secret } = await response.json();
+        setCardClientSecret(card_client_secret);
+        setBoletoClientSecret(boleto_client_secret);
       } catch (error) {
-        console.error("Erro ao buscar clientSecret:", error);
+        console.error("Erro ao buscar client_secrets:", error);
         toast.error("Erro ao iniciar o pagamento");
       }
     };
 
-    fetchClientSecret();
-  }, []);
+    fetchClientSecrets();
+  }, [total]);
 
-  if (!clientSecret) {
+  if (!cardClientSecret || !boletoClientSecret) {
     return <div>Carregando...</div>;
   }
 
@@ -178,17 +130,70 @@ export default function CheckoutPage() {
         </div>
         <div className="mt-8">
           <PaymentMethods paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} />
-          <Elements stripe={stripePromise} options={{ clientSecret }}>
-            <CheckoutForm
-              paymentMethod={paymentMethod}
-              items={items}
-              total={total}
-              clearCart={clearCart}
-              shippingAddress={shippingAddress}
-            />
-          </Elements>
+          {paymentMethod === "boleto" && (
+            <BoletoForm clientSecret={boletoClientSecret} onSuccess={() => clearCart()} />
+          )}
+          {paymentMethod === "card" && (
+            <Elements stripe={stripePromise} options={{ clientSecret: cardClientSecret }}>
+              <CardPaymentForm clearCart={clearCart} />
+            </Elements>
+          )}
+          {paymentMethod === "pix" && (
+            <PixQRCode pixCode={""} amount={0} expiresAt={""} />
+          )}
         </div>
       </div>
     </div>
   );
 }
+
+const CardPaymentForm = ({ clearCart }: { clearCart: () => void }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    if (!stripe || !elements) {
+      toast.error("Stripe não carregado corretamente.");
+      return;
+    }
+
+    try {
+      const result = await stripe.confirmPayment({
+        elements, // Use a instância de `StripeElements` obtida pelo hook `useElements`
+        confirmParams: {
+          return_url: `${window.location.origin}/checkout/success`,
+        },
+      });
+
+      if (result.error) {
+        toast.error(result.error.message || "Erro ao processar o pagamento.");
+      } else {
+        clearCart();
+        router.push("/checkout/success");
+      }
+    } catch (error) {
+      console.error("Erro ao confirmar pagamento com cartão:", error);
+      toast.error("Erro ao processar o pagamento.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <PaymentElement />
+      <button
+        type="submit"
+        disabled={loading || !stripe || !elements}
+        className="mt-6 w-full bg-primary hover:bg-primary-dark text-white font-bold py-3 px-6 rounded focus:outline-none focus:shadow-outline"
+      >
+        {loading ? "Processando..." : "Finalizar Compra"}
+      </button>
+    </form>
+  );
+};
