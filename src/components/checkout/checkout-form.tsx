@@ -1,4 +1,3 @@
-// src/components/checkout/checkout-form.tsx
 "use client";
 
 import { useState } from "react";
@@ -7,8 +6,16 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import BoletoForm from "@/components/checkout/boleto-form";
 import { useCart } from "@/contexts/cart-context";
+import PixQRCode from "./pix-qr-code";
 
-const CheckoutForm = ({ paymentMethod, items, total, clearCart, shippingAddress, clientSecret }: {
+const CheckoutForm = ({
+  paymentMethod,
+  items,
+  total,
+  clearCart,
+  shippingAddress,
+  clientSecret,
+}: {
   paymentMethod: string;
   items: any[];
   total: number;

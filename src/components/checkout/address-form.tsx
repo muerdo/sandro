@@ -2,7 +2,8 @@
 
 import React from "react";
 
-interface ShippingAddress {
+// Exporte a interface ShippingAddress
+export interface ShippingAddress {
   full_name: string;
   email: string;
   phone: string;

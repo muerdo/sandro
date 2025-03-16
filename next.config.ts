@@ -1,4 +1,9 @@
 /** @type {import("next").NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
+  swcMinify: true,
+}
+module.exports = nextConfig
 const config = {
   images: {
     remotePatterns: [
@@ -15,7 +20,7 @@ const config = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  webpack: (config) => {
+  webpack: (/** @type {{ stats: { preset: string; colors: boolean; modules: boolean; reasons: boolean; errorDetails: boolean; }; }} */ config) => {
     config.stats = {
       preset: 'verbose',
       colors: true,

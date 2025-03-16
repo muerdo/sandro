@@ -1,43 +1,57 @@
+import { pgTable, text, serial, integer, boolean, decimal, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const paymentMethodSchema = z.enum(['credit_card', 'pix', 'bank_slip']);
-export type PaymentMethod = z.infer<typeof paymentMethodSchema>;
-
-export const shippingAddressSchema = z.object({
-  full_name: z.string().min(1, "Nome completo é obrigatório"),
-  email: z.string().email("Email inválido"),
-  phone: z.string().min(1, "Telefone é obrigatório"),
-  address: z.string().min(1, "Endereço é obrigatório"),
-  city: z.string().min(1, "Cidade é obrigatória"),
-  state: z.string().min(1, "Estado é obrigatório"),
-  postal_code: z.string().min(1, "CEP é obrigatório"),
-  is_default: z.boolean().default(false)
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
 });
 
-export type ShippingAddress = z.infer<typeof shippingAddressSchema>;
+export const pixTransactions = pgTable("pix_transactions", {
+  id: serial("id").primaryKey(),
+  transactionId: text("transaction_id").notNull().unique(),
+  txid: text("txid").notNull().unique(),
+  pixCode: text("pix_code").notNull(),
+  qrCode: text("qr_code"),
+  value: decimal("value", { precision: 10, scale: 2 }).notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("PENDING"),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  payerDetails: jsonb("payer_details"),
+});
 
-// Helper para compatibilidade com o Stripe
-export interface StripeShippingAddress {
-  name: string;
-  address: {
-    line1: string;
-    city: string;
-    state: string;
-    postal_code: string;
-    country: string;
-  }
-}
+export const orders = pgTable("orders", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+  status: text("status").notNull().default("pending"),
+  paymentMethod: text("payment_method").notNull(),
+  paymentId: text("payment_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  shippingAddress: jsonb("shipping_address").notNull(),
+  items: jsonb("items").notNull(),
+});
 
-// Função helper para converter entre os formatos
-export function convertToStripeAddress(address: ShippingAddress): StripeShippingAddress {
-  return {
-    name: address.full_name,
-    address: {
-      line1: address.address,
-      city: address.city,
-      state: address.state,
-      postal_code: address.postal_code,
-      country: 'BR'
-    }
-  };
-}
+export const insertUserSchema = createInsertSchema(users).pick({
+  username: true,
+  password: true,
+});
+
+export const insertPixTransactionSchema = createInsertSchema(pixTransactions)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+export const insertOrderSchema = createInsertSchema(orders)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type User = typeof users.$inferSelect;
+
+export type InsertPixTransaction = z.infer<typeof insertPixTransactionSchema>;
+export type PixTransaction = typeof pixTransactions.$inferSelect;
+
+export type InsertOrder = z.infer<typeof insertOrderSchema>;
+export type Order = typeof orders.$inferSelect;
