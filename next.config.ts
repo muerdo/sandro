@@ -1,5 +1,7 @@
-/** @type {import("next").NextConfig} */
-const nextConfig = {
+import type { NextConfig } from "next";
+import type { Configuration } from "webpack";
+
+const nextConfig: NextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   images: {
@@ -17,7 +19,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  webpack: (config: { stats: { preset: string; colors: boolean; modules: boolean; reasons: boolean; errorDetails: boolean; }; }, { }: any) => {
+  webpack: (config: Configuration) => {
     config.stats = {
       preset: "verbose",
       colors: true,
@@ -29,4 +31,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;
