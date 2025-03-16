@@ -92,6 +92,6 @@
     "@types/qrcode": "^1.5.5",
     "qrcode": "^1.5.4",
     "supabase": "^2.19.7",
-    "wouter": "^3.6.0"
+    "webpack": "^5.98.0"
   }
 }

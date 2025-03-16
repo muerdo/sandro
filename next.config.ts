@@ -2,15 +2,12 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-}
-module.exports = nextConfig
-const config = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: '*',
-        pathname: '**',
+        protocol: "https",
+        hostname: "*",
+        pathname: "**",
       },
     ],
   },
@@ -20,16 +17,16 @@ const config = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  webpack: (/** @type {{ stats: { preset: string; colors: boolean; modules: boolean; reasons: boolean; errorDetails: boolean; }; }} */ config) => {
+  webpack: (config: { stats: { preset: string; colors: boolean; modules: boolean; reasons: boolean; errorDetails: boolean; }; }, { }: any) => {
     config.stats = {
-      preset: 'verbose',
+      preset: "verbose",
       colors: true,
       modules: true,
       reasons: true,
-      errorDetails: true
+      errorDetails: true,
     };
     return config;
-  }
+  },
 };
 
-export default config;
+module.exports = nextConfig;

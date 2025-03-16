@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useCart } from "@/contexts/cart-context";
-import { useLocation } from "wouter";
+import { useRouter } from "next/navigation"; // Atualizado para next/navigation
 import { apiRequest } from "@/lib/api";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
@@ -16,6 +16,7 @@ import BoletoForm from "@/components/checkout/boleto-form";
 import { PaymentElement } from "@stripe/react-stripe-js";
 
 const stripePromise = loadStripe("pk_live_51R1IrVBcKc0JVEeWwclXaS1aZVJSqs0cBuLLyP5UpibhRnZLtYgFykO5nihNeNk0wXbQWgyw2gOIB9adXeyFdpwx00cTbqUWMP");
+
 type PaymentMethod = "card" | "pix" | "boleto";
 
 const PaymentMethods = ({
@@ -47,7 +48,7 @@ const PaymentMethods = ({
 export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
   const { items, total, clearCart } = useCart();
-  const [, navigate] = useLocation();
+  const router = useRouter(); // useRouter do next/navigation
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
     full_name: "",
     email: "",
@@ -127,7 +128,7 @@ export default function Checkout() {
           if (status === "PAID") {
             toast.success("Pagamento PIX confirmado!");
             clearCart();
-            navigate("/success");
+            router.push("/success"); // Use router.push do next/navigation
           }
         } catch (error) {
           console.error("Erro ao verificar status do PIX:", error);
@@ -136,7 +137,7 @@ export default function Checkout() {
 
       return () => clearInterval(interval);
     }
-  }, [paymentMethod, pixData, clearCart, navigate]);
+  }, [paymentMethod, pixData, clearCart, router]);
 
   if (loading) {
     return (
@@ -153,7 +154,7 @@ export default function Checkout() {
     <div className="min-h-screen bg-background py-12">
       <div className="container mx-auto px-4">
         <motion.button
-          onClick={() => navigate("/")}
+          onClick={() => router.push("/")} // Use router.push do next/navigation
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           className="mb-8 flex items-center gap-2 text-primary hover:opacity-80 transition-opacity"
