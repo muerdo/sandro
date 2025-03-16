@@ -22,13 +22,13 @@ export default function CatalogoPage() {
       id: "camiseta-personalizada",
       name: "Camiseta Personalizada",
       price: 49.9,
-      image: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?q=80&w=2669&auto=format&fit=crop",
+      image: "/img/camisetass.jpeg",
       category: "Vestuário",
       description: "Camisetas 100% algodão com impressão DTF",
       media: [
         {
           type: "image",
-          url: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?q=80&w=2669&auto=format&fit=crop",
+          url: "/img/camisetass.jpeg",
           alt: "Camiseta Personalizada",
         },
       ],
@@ -41,14 +41,14 @@ export default function CatalogoPage() {
     {
       id: "adesivo-personalizado",
       name: "Adesivo Personalizado",
-      price: 29.9,
-      image: "https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=2671&auto=format&fit=crop",
+      price: 25.,
+      image: "/img/add.jpeg",
       category: "Adesivos",
       description: "Adesivos de alta qualidade em vinil",
       media: [
         {
           type: "image",
-          url: "https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=2671&auto=format&fit=crop",
+          url: "/img/add.jpeg",
           alt: "Adesivo Personalizado",
         },
       ],
@@ -61,7 +61,7 @@ export default function CatalogoPage() {
       id: "banner-grande-formato",
       name: "Banner Grande Formato",
       price: 149.9,
-      image: "https://images.unsplash.com/photo-1588412079929-790b9f593d8e?q=80&w=2574&auto=format&fit=crop",
+      image: "/img/ads.jpeg",
       category: "Impressão",
       description: "Banners em lona com acabamento profissional",
       media: [
@@ -80,7 +80,7 @@ export default function CatalogoPage() {
       id: "caneca-personalizada",
       name: "Caneca Personalizada",
       price: 39.9,
-      image: "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=2670&auto=format&fit=crop",
+      image: "/img/canecas.png",
       category: "Presentes",
       description: "Canecas de cerâmica com impressão sublimática",
       media: [

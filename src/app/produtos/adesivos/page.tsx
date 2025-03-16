@@ -26,7 +26,7 @@ const product = {
     },
     {
       type: 'image' as const,
-      url: "https://images.unsplash.com/photo-1612538498456-e861df91d4d0?q=80&w=2574&auto=format&fit=crop",
+      url: "/img/add.jpeg",
       alt: "Adesivo personalizado - Detalhes"
     }
   ] satisfies ProductMedia[],
@@ -99,20 +99,20 @@ export default function AdesivosPage() {
 
           <div className="space-y-8">
             <div>
-              <h1 className="text-4xl font-bold mb-4">{product.name}</h1>
-              <p className="text-3xl font-semibold text-primary">
+              <h1 className="text-3xl sm:text-4xl font-bold mb-4">{product.name}</h1>
+              <p className="text-2xl sm:text-3xl font-semibold text-primary">
                 R$ {product.price.toFixed(2)}
               </p>
             </div>
 
-            <p className="text-muted-foreground text-lg">
+            <p className="text-muted-foreground text-base sm:text-lg">
               {product.description}
             </p>
 
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-medium mb-3">Tamanho</h3>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                   {product.customization.sizes.map((size) => (
                     <motion.button
                       key={size}
@@ -133,7 +133,7 @@ export default function AdesivosPage() {
 
               <div>
                 <h3 className="text-lg font-medium mb-3">Acabamento</h3>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                   {product.customization.types.map((type) => (
                     <motion.button
                       key={type}
@@ -155,7 +155,7 @@ export default function AdesivosPage() {
 
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Características</h3>
-              <ul className="grid grid-cols-2 gap-3">
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {product.features.map((feature) => (
                   <li key={feature} className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary" />
