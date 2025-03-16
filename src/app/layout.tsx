@@ -10,7 +10,7 @@ import { AuthProvider } from "@/contexts/auth-context";
 import CartSummary from "@/components/cart/cart-summary";
 import { StripeProvider } from "@/components/providers/stripe-provider";
 import Link from "next/link";
-import { VisibilityProvider } from "@/contexts/visibility-context"; // Importe o contexto
+import { VisibilityProvider } from "@/contexts/visibility-context";
 
 export const metadata: Metadata = {
   title: "Sandro Adesivos - Comunicação Visual Profissional",
@@ -40,7 +40,7 @@ export default function RootLayout({
                     </Link>
                   </nav>
                   <Footer />
-                  <CartSummary />
+                  <CartSummary /> {/* CartSummary sempre presente */}
                 </StripeProvider>
               </TransitionProvider>
             </VisibilityProvider>

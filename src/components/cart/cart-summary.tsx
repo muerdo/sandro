@@ -5,16 +5,17 @@ import { ShoppingCart, X, Plus, Minus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "@/contexts/cart-context";
 import { cn } from "@/lib/utils";
-import { useVisibility } from "@/contexts/visibility-context"; // Importe o contexto
+import { useVisibility } from "@/contexts/visibility-context";
 
 export default function CartSummary() {
   const [isOpen, setIsOpen] = useState(false);
   const { items, removeItem, updateQuantity, total, itemCount } = useCart();
-  const { isCartButtonVisible, setCartButtonVisible } = useVisibility(); // Use o contexto
+  const { isCartButtonVisible } = useVisibility(); // Controle de visibilidade
 
   return (
     <>
-      {isCartButtonVisible && ( // Renderize o botão apenas se isCartButtonVisible for true
+      {/* Botão do carrinho (visível apenas se isCartButtonVisible for true) */}
+      {isCartButtonVisible && (
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -29,6 +30,7 @@ export default function CartSummary() {
           )}
         </motion.button>
       )}
+
 
       <AnimatePresence>
         {isOpen && (

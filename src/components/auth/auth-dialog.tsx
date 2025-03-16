@@ -24,7 +24,7 @@ export default function AuthDialog({
   const { signIn, signUp } = useAuth();
   const { setCartButtonVisible } = useVisibility();
 
-  // Use useEffect para reagir a mudanças no estado isOpen
+  // Esconde o botão do carrinho quando o modal de login estiver aberto
   useEffect(() => {
     setCartButtonVisible(!isOpen);
   }, [isOpen, setCartButtonVisible]);
