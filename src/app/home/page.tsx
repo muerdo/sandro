@@ -10,13 +10,13 @@ export default function HomePage() {
       title: "Plotagem",
       icon: <Printer className="w-6 h-6" />,
       description: "Impressão em alta qualidade para grandes formatos",
-      image: "/img/plot.png",
+      image: "/img/ads.jpeg",
     },
     {
       title: "Adesivos",
       icon: <Palette className="w-6 h-6" />,
       description: "Adesivos personalizados para qualquer superfície",
-      image: "/img/adesivo.png",
+      image: "/img/add.jpeg",
     },
     {
       title: "DTF e Camisetas",
