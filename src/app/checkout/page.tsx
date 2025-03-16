@@ -18,11 +18,11 @@ import { PaymentElement } from "@stripe/react-stripe-js";
 const stripePromise = loadStripe("pk_live_51R1IrVBcKc0JVEeWwclXaS1aZVJSqs0cBuLLyP5UpibhRnZLtYgFykO5nihNeNk0wXbQWgyw2gOIB9adXeyFdpwx00cTbqUWMP");
 type PaymentMethod = "card" | "pix" | "boleto";
 
-const PaymentMethods = ({ 
-  paymentMethod, 
-  setPaymentMethod 
-}: { 
-  paymentMethod: PaymentMethod; 
+const PaymentMethods = ({
+  paymentMethod,
+  setPaymentMethod
+}: {
+  paymentMethod: PaymentMethod;
   setPaymentMethod: (method: PaymentMethod) => void;
 }) => {
   return (
@@ -33,9 +33,8 @@ const PaymentMethods = ({
           <button
             key={method}
             onClick={() => setPaymentMethod(method as PaymentMethod)}
-            className={`px-4 py-2 rounded ${
-              paymentMethod === method ? "bg-primary text-white" : "bg-gray-200"
-            }`}
+            className={`px-4 py-2 rounded ${paymentMethod === method ? "bg-primary text-white" : "bg-gray-200"
+              }`}
           >
             {method === "card" ? "Cartão de Crédito" : method.toUpperCase()}
           </button>
@@ -75,7 +74,7 @@ export default function Checkout() {
     const fetchPaymentData = async () => {
       try {
         setLoading(true);
-    
+
         // Obter segredos do Stripe (cartão e boleto)
         const secretsResponse = await apiRequest("POST", "/api/payment", {
           amount: total,
@@ -87,7 +86,7 @@ export default function Checkout() {
         const secretsData = await secretsResponse.json();
         setCardClientSecret(secretsData.card_client_secret || null);
         setBoletoClientSecret(secretsData.boleto_client_secret || null);
-    
+
         // Obter dados do PIX
         const pixResponse = await apiRequest("POST", "/api/payment", {
           amount: total,
@@ -97,7 +96,7 @@ export default function Checkout() {
           throw new Error("Erro ao gerar código PIX");
         }
         const pixData = await pixResponse.json();
-    
+
         setPixData({
           pixCode: pixData.pixCode,
           expiresAt: pixData.expiresAt,
@@ -171,7 +170,7 @@ export default function Checkout() {
         <PaymentMethods paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} />
 
         {paymentMethod === "pix" && pixData && (
-          <PixQRCode 
+          <PixQRCode
             pixCode={pixData.pixCode}
             amount={total}
             expiresAt={pixData.expiresAt}
