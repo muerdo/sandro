@@ -5,26 +5,30 @@ import { ShoppingCart, X, Plus, Minus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "@/contexts/cart-context";
 import { cn } from "@/lib/utils";
+import { useVisibility } from "@/contexts/visibility-context"; // Importe o contexto
 
 export default function CartSummary() {
   const [isOpen, setIsOpen] = useState(false);
   const { items, removeItem, updateQuantity, total, itemCount } = useCart();
+  const { isCartButtonVisible, setCartButtonVisible } = useVisibility(); // Use o contexto
 
   return (
     <>
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-8 right-8 bg-primary text-primary-foreground p-4 rounded-full shadow-lg flex items-center gap-2"
-      >
-        <ShoppingCart className="w-6 h-6" />
-        {itemCount > 0 && (
-          <span className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground w-6 h-6 rounded-full flex items-center justify-center text-sm font-medium">
-            {itemCount}
-          </span>
-        )}
-      </motion.button>
+      {isCartButtonVisible && ( // Renderize o botão apenas se isCartButtonVisible for true
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-8 right-8 bg-primary text-primary-foreground p-4 rounded-full shadow-lg flex items-center gap-2"
+        >
+          <ShoppingCart className="w-6 h-6" />
+          {itemCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground w-6 h-6 rounded-full flex items-center justify-center text-sm font-medium">
+              {itemCount}
+            </span>
+          )}
+        </motion.button>
+      )}
 
       <AnimatePresence>
         {isOpen && (

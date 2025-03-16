@@ -10,6 +10,7 @@ import Link from "next/link";
 export default function HeroSection() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const { user, signOut, isAdmin } = useAuth();
+
   return (
     <section 
       className="min-h-[100svh] relative flex items-center justify-center bg-cover bg-center"
@@ -43,7 +44,7 @@ export default function HeroSection() {
           >
             Comunicação visual profissional para sua marca brilhar
           </motion.p>
-          <div className="flex items-center gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row items-center gap-4 justify-center">
             <motion.button
               onClick={() => window.location.href = '/home'}
               whileHover={{ scale: 1.05 }}
@@ -84,7 +85,11 @@ export default function HeroSection() {
               </Link>
             )}
           </div>
-          <AuthDialog isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+          <AuthDialog 
+            isOpen={isAuthOpen} 
+            onClose={() => setIsAuthOpen(false)} 
+            className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg"
+          />
         </motion.div>
       </div>
     </section>
