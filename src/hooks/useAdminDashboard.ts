@@ -41,6 +41,42 @@ export function useAdminDashboard() {
     isAdmin: false
   });
 
+  // Função para fazer login do admin
+  const adminLogin = async (email: string, password: string) => {
+    try {
+      const { data: { user, session }, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      // Verifica se o usuário é um administrador
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user?.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      if (profile?.role !== 'admin') {
+        throw new Error('Not an admin user');
+      }
+
+      // Atualiza o estado e redireciona para o dashboard
+      setState(prev => ({
+        ...prev,
+        isAdmin: true
+      }));
+      router.push('/admin');
+    } catch (error) {
+      console.error('Admin login error:', error);
+      toast.error('Failed to login as admin');
+      throw error;
+    }
+  };
+
   const checkAdminStatus = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -64,9 +100,12 @@ export function useAdminDashboard() {
         ...prev,
         isAdmin: true
       }));
+
+      // Redireciona para o dashboard se for admin
+      router.push('/admin');
     } catch (error) {
       console.error('Admin check error:', error);
-      router.push('/');
+      router.push('/'); // Redireciona para a landing page se não for admin
       throw error;
     }
   };
@@ -168,6 +207,7 @@ export function useAdminDashboard() {
 
   return {
     ...state,
+    adminLogin, // Exporta a função de login do admin
     checkAdminStatus,
     fetchStats
   };

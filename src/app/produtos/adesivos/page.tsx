@@ -11,8 +11,8 @@ import type { ProductMedia } from "@/types/product";
 const product = {
   id: "adesivo-personalizado",
   name: "Adesivo Personalizado",
-  price: 29.90,
-  description: "Adesivos de alta qualidade com impressão digital em vinil. Ideal para personalização de veículos, decoração ou identidade visual.",
+  price: 25.00,
+  description: "Adesivos de alta qualidade com impressão digital em vinil. Arroba de Instagram, decoração ou identidade visual.",
   media: [
     {
       type: 'image' as const,
