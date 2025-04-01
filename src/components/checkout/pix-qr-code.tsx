@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import { apiRequest } from "@/lib/api";
+import { Button } from "@/components/ui/button";
 
 interface PixQRCodeProps {
   pixCode: string;
@@ -10,6 +11,7 @@ interface PixQRCodeProps {
   expiresAt: string;
   transactionId?: string;
   qrCodeImage?: string;
+  onConfirmPayment?: () => void; // Adicione essa prop
 }
 
 export default function PixQRCode({ 
@@ -17,7 +19,8 @@ export default function PixQRCode({
   amount, 
   expiresAt, 
   transactionId,
-  qrCodeImage
+  qrCodeImage,
+  onConfirmPayment, // Recebe a função de confirmação manual
 }: PixQRCodeProps) {
   const [countdown, setCountdown] = useState<string>("30:00");
   const [copied, setCopied] = useState<boolean>(false);
@@ -157,14 +160,12 @@ export default function PixQRCode({
           <div className="mb-6 flex flex-col items-center">
             <div className="w-48 h-48 border-2 border-primary p-2 rounded-md mb-4">
               {qrCodeImage ? (
-                // If we have a QR code image URL, use it
                 <img 
                   src={qrCodeImage} 
                   alt="QR Code PIX" 
                   className="w-full h-full"
                 />
               ) : pixCode ? (
-                // Generate QR code from the PIX code
                 <QRCodeSVG 
                   value={pixCode} 
                   size={176}
@@ -201,9 +202,19 @@ export default function PixQRCode({
                 {status === "COMPLETED" ? "Pagamento confirmado" : countdown}
               </div>
             </div>
+
+            {/* Botão de confirmação manual */}
+            {onConfirmPayment && (
+              <Button 
+                onClick={onConfirmPayment} 
+                className="mt-4"
+                disabled={status === "COMPLETED" || status === "EXPIRED"}
+              >
+                Confirmar Pagamento Manualmente
+              </Button>
+            )}
           </div>
         </div>
-        
         <div className="border-l-0 md:border-l border-gray-200 pl-0 md:pl-8">
           <h3 className="text-lg font-semibold mb-4">Informações do Pagamento</h3>
           

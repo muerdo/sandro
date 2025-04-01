@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { Product } from "@/types/product";
-
+export const dynamic = 'force-dynamic';
 export default function CatalogoPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -251,6 +251,7 @@ export default function CatalogoPage() {
                         name: product.name,
                         price: product.price,
                         image: product.media?.[0]?.url || "",
+                        customization: null
                       });
                     }}
                     whileHover={{ scale: 1.02 }}

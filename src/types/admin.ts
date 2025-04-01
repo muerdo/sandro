@@ -1,4 +1,6 @@
-export type OrderStatus = 'pending' | 'processing' | 'completed' | 'cancelled';
+import { PaymentMethod } from "@/types/index";
+export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 
 export interface OrderStats {
   total_orders: number;
@@ -16,7 +18,33 @@ export interface OrderStats {
     recentUpdates: InventoryUpdate[];
   };
 }
-
+export interface OrderCreate {
+  user_id: string;
+  status: OrderStatus;
+  total_amount: number;
+  payment_method: PaymentMethod | null;
+  payment_status: PaymentStatus;
+  items: OrderItem[];
+  shipping_address_id: string;
+  transaction_id?: string;
+}
+export interface OrderResponse {
+  id: string;
+  user_id: string;
+  status: OrderStatus;
+  total_amount: number;
+  payment_method: PaymentMethod | null;
+  payment_status: PaymentStatus;
+  items: OrderItem[];
+  shipping_address_id: string;
+  created_at: string;
+  updated_at: string;
+  shipping_address?: ShippingAddress;
+  profiles?: {
+    username: string;
+  };
+  transaction_id?: string;
+}
 export interface InventoryAlert {
   id: string;
   product_id: string;
@@ -54,17 +82,18 @@ export interface DashboardState {
   };
   isAdmin: boolean;
 }
-export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
-export type PaymentMethod = 'credit_card' | 'pix' | 'boleto';
 
 export interface OrderItem {
   product_id: string;
-  quantity: number;
+  name: string;
+  price: number;
   unit_price: number;
+  quantity: number;
   customization?: Record<string, any>;
 }
-
 export interface ShippingAddress {
+  id: string;
+  user_id: string;
   full_name: string;
   email: string;
   phone: string;
@@ -72,24 +101,27 @@ export interface ShippingAddress {
   city: string;
   state: string;
   postal_code: string;
+  is_default?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
-
 export interface Order {
   id: string;
   user_id: string;
   status: OrderStatus;
   total_amount: number;
-  payment_method: string;
-  payment_status: string;
-  items: any;
-  shipping_address: any;
+  payment_method: PaymentMethod | null;
+  payment_status: PaymentStatus;
+  items: OrderItem[];
+  shipping_address_id: string;
+  shipping_address?: ShippingAddress;
+  transaction_id?: string;
   created_at: string;
   updated_at: string;
   profiles?: {
     username: string;
   };
 }
-
 export interface Category {
   id: string;
   name: string;

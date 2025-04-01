@@ -1,53 +1,67 @@
-"use client";
-
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { toast } from "sonner";
-import type { Order, OrderStatus, PaymentStatus, PaymentMethod } from "@/types/admin";
+import type { Order } from "@/types/admin";
 
-export function useOrders() {
+export const useOrders = () => {
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const subscribeToOrders = useCallback(() => {
-    return supabase
-      .channel('orders')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'orders' 
-      }, () => {
-        fetchRecentOrders();
-      })
-      .subscribe();
-  }, []);
-
-  const fetchRecentOrders = async () => {
+  const fetchRecentOrders = useCallback(async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('orders')
         .select(`
-          *,
-          profiles (username)
+          id,
+          created_at,
+          total_amount,
+          status,
+          profiles:user_id (username)
         `)
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(10);
 
       if (error) throw error;
-      setRecentOrders(data?.map(order => ({
-        ...order,
-        status: order.status as OrderStatus,
-        payment_status: order.payment_status as PaymentStatus,
-        payment_method: order.payment_method as PaymentMethod
-      })) || []);
-    } catch (error) {
-      console.error('Error fetching recent orders:', error);
-      toast.error('Failed to load recent orders');
+      setRecentOrders(data || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch orders');
+      console.error('Error fetching orders:', err);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, []);
+
+  const subscribeToOrders = useCallback(() => {
+    const subscription = supabase
+      .channel('orders_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders'
+        },
+        (payload) => {
+          fetchRecentOrders(); // Atualiza a lista quando houver mudanças
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, [fetchRecentOrders]);
+
+  useEffect(() => {
+    fetchRecentOrders();
+  }, [fetchRecentOrders]);
 
   return {
     recentOrders,
-    subscribeToOrders,
-    fetchRecentOrders
+    loading,
+    error,
+    fetchRecentOrders,
+    subscribeToOrders
   };
-}
+};

@@ -55,19 +55,30 @@ export default function AdminDashboard() {
   const [productPerformance, setProductPerformance] = useState<any[]>([]);
   const [customerAcquisition, setCustomerAcquisition] = useState<any[]>([]);
   const [categoryDistribution, setCategoryDistribution] = useState<any[]>([]);
-  const { loading, stats, isAdmin, checkAdminStatus, fetchStats } = useAdminDashboard();
-  const { recentOrders, subscribeToOrders, fetchRecentOrders } = useOrders();
+  
+  const { loading: adminLoading, stats, isAdmin, checkAdminStatus, fetchStats } = useAdminDashboard();
+  const { recentOrders, loading: ordersLoading, subscribeToOrders, fetchRecentOrders } = useOrders();
 
   useEffect(() => {
     const initializeAdmin = async () => {
       try {
+        await checkAdminStatus();
+        
         if (isAdmin) {
-          subscribeToOrders();
+          // Inicia a subscrição de pedidos
+          const unsubscribe = subscribeToOrders();
+          
+          // Carrega os dados iniciais
           await Promise.all([
             fetchStats(),
             fetchAnalyticsData(),
             fetchRecentOrders()
           ]);
+
+          // Retorna a função de limpeza
+          return () => {
+            unsubscribe(); // Isso vai remover a subscrição quando o componente desmontar
+          };
         }
       } catch (error) {
         console.error('Error initializing admin dashboard:', error);
@@ -76,8 +87,7 @@ export default function AdminDashboard() {
     };
 
     initializeAdmin();
-  }, [isAdmin, fetchStats]);
-
+  }, [isAdmin]); 
   useEffect(() => {
     const initializeAdmin = async () => {
       try {
@@ -103,14 +113,16 @@ export default function AdminDashboard() {
     try {
       // Fetch sales data
       const { data: orders, error: ordersError } = await supabase
-        .from('orders')
-        .select(`
-          created_at,
-          total_amount,
-          items,
-          user_id
-        `)
-        .order('created_at', { ascending: false });
+      .from('orders')
+      .select(`
+        created_at,
+        total_amount,
+        items,
+        user_id,
+        profiles:user_id (full_name, avatar_url),
+        shipping_addresses:user_id (address, city, state, postal_code)
+      `)
+      .order('created_at', { ascending: false });
 
       if (ordersError) throw ordersError;
 
@@ -531,8 +543,7 @@ export default function AdminDashboard() {
                       {order.id.slice(0, 8)}...
                     </td>
                     <td className="py-3 px-4">
-                      {order.profiles?.username || 'Anonymous'}
-                    </td>
+                    {order.user_details?.full_name || order.user_details?.shipping_full_name || 'Anonymous'}                    </td>
                     <td className="py-3 px-4">
                       <span className={`px-2 py-1 rounded-full text-xs ${
                         order.status === 'completed' 

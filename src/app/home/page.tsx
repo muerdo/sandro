@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Printer, Palette, Shirt, Scissors, MessageCircle } from "lucide-react";
 import PortfolioGallery from "@/components/gallery/portfolio-gallery";
-
 export default function HomePage() {
   const services = [
     {

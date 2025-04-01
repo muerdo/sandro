@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/auth-context";
 import AuthDialog from "@/components/auth/auth-dialog";
 
 export type CartItem = {
+  customization: null;
   id: string;
   name: string;
   price: number;
@@ -28,38 +29,53 @@ const CartContext = createContext<CartContextType | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
-  const [isClient, setIsClient] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const { user } = useAuth();
 
+  // Carrega o carrinho do localStorage apenas uma vez no client-side
   useEffect(() => {
-    setIsClient(true);
-    const savedCart = localStorage.getItem("cart");
-    if (savedCart) {
-      setItems(JSON.parse(savedCart));
-    }
+    const loadCart = () => {
+      try {
+        const savedCart = localStorage.getItem("cart");
+        if (savedCart) {
+          const parsedCart = JSON.parse(savedCart);
+          if (Array.isArray(parsedCart)) {
+            setItems(parsedCart);
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao carregar carrinho:", error);
+        localStorage.removeItem("cart");
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+
+    loadCart();
   }, []);
 
+  // Persiste o carrinho no localStorage sempre que ele muda
   useEffect(() => {
-    if (isClient) {
+    if (isInitialized) {
       localStorage.setItem("cart", JSON.stringify(items));
     }
-  }, [items, isClient]);
+  }, [items, isInitialized]);
 
   const addItem = (newItem: Omit<CartItem, "quantity"> & { quantity?: number }) => {
     setItems(currentItems => {
       const existingItem = currentItems.find(item => item.id === newItem.id);
       const quantity = newItem.quantity || 1;
       
-      if (existingItem) {
-        return currentItems.map(item =>
-          item.id === newItem.id 
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        );
-      }
+      const updatedItems = existingItem
+        ? currentItems.map(item =>
+            item.id === newItem.id
+              ? { ...item, quantity: item.quantity + quantity }
+              : item
+          )
+        : [...currentItems, { ...newItem, quantity }];
       
-      return [...currentItems, { ...newItem, quantity }];
+      return updatedItems;
     });
   };
 
@@ -68,7 +84,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateQuantity = (id: string, quantity: number) => {
-    if (quantity < 1) return;
+    if (quantity < 1) {
+      removeItem(id);
+      return;
+    }
+    
     setItems(currentItems =>
       currentItems.map(item =>
         item.id === id ? { ...item, quantity } : item
@@ -78,6 +98,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = () => {
     setItems([]);
+    localStorage.removeItem("cart");
   };
 
   const total = items.reduce(

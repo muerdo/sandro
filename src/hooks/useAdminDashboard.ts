@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import type { OrderStats, ProductWithInventory } from "@/types/admin";
+import type { InventoryAlert, InventoryUpdate, OrderStats, ProductWithInventory } from "@/types/admin";
 
 interface DashboardState {
   loading: {
@@ -20,7 +20,7 @@ export function useAdminDashboard() {
   const [state, setState] = useState<DashboardState>({
     loading: {
       stats: true,
-      auth: true
+      auth: true,
     },
     stats: {
       total_orders: 0,
@@ -33,17 +33,19 @@ export function useAdminDashboard() {
       active_products: 0,
       low_stock_products: 0,
       out_of_stock_products: 0,
-      inventory: {
+      inventory: { // Agora só aqui
         alerts: [],
-        recentUpdates: []
-      }
+        recentUpdates: [],
+      },
     },
-    isAdmin: false
+    isAdmin: false,
   });
 
   // Função para fazer login do admin
   const adminLogin = async (email: string, password: string) => {
     try {
+      setState(prev => ({ ...prev, loading: { ...prev.loading, auth: true } }));
+      
       const { data: { user, session }, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -53,77 +55,88 @@ export function useAdminDashboard() {
 
       // Verifica se o usuário é um administrador
       const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user?.id)
+        .from("profiles")
+        .select("role")
+        .eq("id", user?.id)
         .single();
 
       if (profileError) throw profileError;
 
-      if (profile?.role !== 'admin') {
-        throw new Error('Not an admin user');
+      if (profile?.role !== "admin") {
+        throw new Error("Not an admin user");
       }
 
       // Atualiza o estado e redireciona para o dashboard
       setState(prev => ({
         ...prev,
-        isAdmin: true
+        isAdmin: true,
+        loading: { ...prev.loading, auth: false }
       }));
-      router.push('/admin');
+      
+      toast.success("Admin login successful");
+      return true;
     } catch (error) {
-      console.error('Admin login error:', error);
-      toast.error('Failed to login as admin');
-      throw error;
+      console.error("Admin login error:", error);
+      setState(prev => ({ ...prev, loading: { ...prev.loading, auth: false } }));
+      toast.error(error instanceof Error ? error.message : "Failed to login as admin");
+      return false;
     }
   };
 
-  const checkAdminStatus = async () => {
+  // Verifica o status de admin
+  const checkAdminStatus = useCallback(async () => {
     try {
+      setState(prev => ({ ...prev, loading: { ...prev.loading, auth: true } }));
+      
       const { data: { session } } = await supabase.auth.getSession();
+  
       if (!session?.user) {
-        throw new Error('No user found');
+        router.push("/login");
+        return false;
       }
-
+  
       const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', session.user.id)
+        .from("profiles")
+        .select("role")
+        .eq("id", session.user.id)
         .single();
-
+  
       if (error) throw error;
-
-      if (profile?.role !== 'admin') {
-        throw new Error('Not an admin user');
+  
+      if (profile?.role !== "admin") {
+        throw new Error("Not an admin user");
       }
-
+  
       setState(prev => ({
         ...prev,
-        isAdmin: true
+        isAdmin: true,
+        loading: { ...prev.loading, auth: false }
       }));
-
-      // Redireciona para o dashboard se for admin
-      router.push('/admin');
+      
+      return true;
     } catch (error) {
-      console.error('Admin check error:', error);
-      router.push('/'); // Redireciona para a landing page se não for admin
-      throw error;
+      console.error("Admin check error:", error);
+      setState(prev => ({
+        ...prev,
+        isAdmin: false,
+        loading: { ...prev.loading, auth: false }
+      }));
+      router.push("/");
+      return false;
     }
-  };
-
-  const fetchStats = async () => {
+  }, [router]);
+  
+  const fetchStats = useCallback(async () => {
     try {
-      const { data: orders, error: ordersError } = await supabase
-        .from('orders')
-        .select(`
-          status,
-          total_amount,
-          user_id,
-          created_at
-        `);
-
-      const { data: products, error: productsError } = await supabase
-        .from('products')
-        .select(`
+      setState(prev => ({ ...prev, loading: { ...prev.loading, stats: true } }));
+      
+      const [
+        { data: orders, error: ordersError },
+        { data: products, error: productsError },
+        { data: customers, error: customersError }
+      ] = await Promise.all([
+        supabase.from("orders").select("status, total_amount, user_id, created_at"),
+        supabase.from("products").select(`
           *,
           inventory_history (
             id,
@@ -135,80 +148,113 @@ export function useAdminDashboard() {
             created_at,
             notes
           )
-        `);
-
+        `),
+        supabase.from("profiles").select("id")
+      ]);
+  
       if (ordersError) throw ordersError;
       if (productsError) throw productsError;
-
-      const uniqueCustomers = new Set(orders?.map(order => order.user_id) || []);
+      if (customersError) throw customersError;
+  
+      const uniqueCustomers = new Set(orders?.map((order) => order.user_id) || []);
       const totalRevenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
       const averageOrderValue = orders?.length ? totalRevenue / orders.length : 0;
-
-      // Process products data with type safety
+  
       const processedProducts = (products as unknown as ProductWithInventory[]) || [];
-      const activeProducts = processedProducts.filter(p => p.status === 'active');
-      const lowStockProducts = processedProducts.filter(p => 
-        p.stock <= (p.low_stock_threshold || 10)
+      const activeProducts = processedProducts.filter((p) => p.status === "active");
+      const lowStockProducts = processedProducts.filter((p) => 
+        p.stock !== null && p.stock <= (p.low_stock_threshold || 10)
       );
-      const outOfStockProducts = processedProducts.filter(p => 
-        p.stock === 0
+      const outOfStockProducts = processedProducts.filter((p) => 
+        p.stock !== null && p.stock === 0
       );
-
+  
+      // Correção aplicada aqui
+      const inventoryAlerts: InventoryAlert[] = processedProducts
+        .filter(p => p.stock !== null && (p.stock === 0 || p.stock <= (p.low_stock_threshold || 10)))
+        .map(p => ({
+          id: p.id,
+          product_id: p.id,
+          alert_type: p.stock === 0 ? 'out_of_stock' : 'low_stock',
+          created_at: new Date().toISOString(),
+          product: {
+            name: p.name
+          }
+        }));
+  
+      const recentInventoryUpdates: InventoryUpdate[] = processedProducts
+        .flatMap(p => 
+          p.inventory_history?.map(ih => ({
+            ...ih,
+            product_name: p.name
+          })) || []
+        )
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 5);
+  
       setState(prev => ({
         ...prev,
         stats: {
           total_orders: orders?.length || 0,
-          pending_orders: orders?.filter(order => order.status === 'pending').length || 0,
-          completed_orders: orders?.filter(order => order.status === 'completed').length || 0,
+          pending_orders: orders?.filter((order) => order.status === "pending").length || 0,
+          completed_orders: orders?.filter((order) => order.status === "completed").length || 0,
           total_revenue: totalRevenue,
-          total_customers: uniqueCustomers.size,
+          total_customers: customers?.length || 0,
           average_order_value: averageOrderValue,
           total_products: processedProducts.length,
           active_products: activeProducts.length,
           low_stock_products: lowStockProducts.length,
           out_of_stock_products: outOfStockProducts.length,
           inventory: {
-            alerts: [],
-            recentUpdates: []
-          }
+            alerts: inventoryAlerts,
+            recentUpdates: recentInventoryUpdates,
+          },
         },
         loading: {
           ...prev.loading,
-          stats: false
-        }
+          stats: false,
+        },
       }));
     } catch (error) {
-      console.error('Error fetching stats:', error);
-      toast.error('Failed to load dashboard statistics');
+      console.error("Error fetching stats:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to load dashboard statistics");
+      setState(prev => ({
+        ...prev,
+        loading: {
+          ...prev.loading,
+          stats: false,
+        },
+      }));
     }
-  };
-
+  }, []);
+  
+  // Inicialização do dashboard
   useEffect(() => {
+    let mounted = true;
+
     const initialize = async () => {
       try {
-        await checkAdminStatus();
-        await fetchStats();
+        const isAdmin = await checkAdminStatus();
+        if (isAdmin && mounted) {
+          await fetchStats();
+        }
       } catch (error) {
-        console.error('Error initializing dashboard:', error);
-        toast.error('Failed to initialize dashboard');
-      } finally {
-        setState(prev => ({
-          ...prev,
-          loading: {
-            ...prev.loading,
-            auth: false
-          }
-        }));
+        console.error("Error initializing dashboard:", error);
+        toast.error(error instanceof Error ? error.message : "Failed to initialize dashboard");
       }
     };
 
     initialize();
-  }, []);
+
+    return () => {
+      mounted = false;
+    };
+  }, [checkAdminStatus, fetchStats]);
 
   return {
     ...state,
-    adminLogin, // Exporta a função de login do admin
+    adminLogin,
     checkAdminStatus,
-    fetchStats
+    fetchStats,
   };
 }

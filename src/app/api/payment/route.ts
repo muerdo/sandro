@@ -1,6 +1,5 @@
 // app/api/payment/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { NextApiRequest, NextApiResponse } from "next";
 import { v4 as uuidv4 } from "uuid";
 import QRCode from "qrcode";
 import { generatePixCode } from "@/app/api/payment/pix/pix";
@@ -9,29 +8,28 @@ import { InsertPixTransaction } from "@/app/shared/schema";
 import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "", {
-  apiVersion: "2025-02-24.acacia",
+  apiVersion: "2025-02-24.acacia", // Use a versão correta da API do Stripe
 });
-
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Método não permitido" });
-  }}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { amount, type } = body;
 
-    if (!amount || typeof amount !== "number") {
+    // Validação dos campos
+    if (!amount || typeof amount !== "number" || amount <= 0) {
       return NextResponse.json(
         { message: "Valor inválido ou ausente" },
         { status: 400 }
       );
     }
-    
+
+    if (!type || typeof type !== "string") {
+      return NextResponse.json(
+        { message: "Tipo de pagamento inválido ou ausente" },
+        { status: 400 }
+      );
+    }
 
     if (type === "pix") {
       // Lógica para gerar PIX
@@ -41,7 +39,7 @@ export async function POST(request: NextRequest) {
       const pixData = generatePixCode({
         merchantName: "55.696.475 SANDRO DOS SAN",
         merchantCity: "SAO PAULO",
-        txid:"Uxg4Z67ACQVApAlcqzou2",
+        txid: "Uxg4Z67ACQVApAlcqzou2",
         amount,
         postalCode: "05409000",
         description: "Compra na Loja",

@@ -29,12 +29,12 @@ export default function OrcamentoPage() {
     e.preventDefault();
     
     const message = encodeURIComponent(
-      `*Novo Pedido de Orçamento*\n\n` +
-      `*Serviço:* ${servico}\n` +
-      `*Nome:* ${formData.nome}\n` +
-      `*Email:* ${formData.email}\n` +
-      `*Telefone:* ${formData.telefone}\n\n` +
-      `*Mensagem:*\n${formData.mensagem}`
+      `*Novo Pedido de Orçamento*  ` +
+      `*Serviço:* ${servico} ` +
+      `*Nome:* ${formData.nome} ` +
+      `*Email:* ${formData.email} ` +
+      `*Telefone:* ${formData.telefone}  ` +
+      `*Mensagem:* ${formData.mensagem}`
     );
 
     window.location.href = `https://whatsa.me/5599985068943/?t=${message}`;
