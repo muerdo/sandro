@@ -1,9 +1,9 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import type { 
-  ShippingAddress, 
-  OrderItem, 
-  OrderCreate, 
+import type {
+  ShippingAddress,
+  OrderItem,
+  OrderCreate,
   OrderResponse,
   PaymentMethod,
   PaymentStatus,
@@ -13,12 +13,12 @@ import { useCart } from "@/contexts/cart-context";
 import { toast } from "sonner";
 
 // Tipo para conversão segura com Supabase
-type Json = 
-  | string 
-  | number 
-  | boolean 
-  | null 
-  | { [key: string]: Json | undefined } 
+type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
   | Json[];
 
 // Tipo explícito para pedido no formato Supabase
@@ -94,7 +94,7 @@ export const useCheckout = () => {
 
       if (supabaseError) throw supabaseError;
       if (!data) throw new Error("Endereço não foi salvo");
-      
+
       return data;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erro ao salvar endereço";
@@ -165,10 +165,19 @@ if (!data) throw new Error("Pedido não foi criado");
 
       // Converter items de volta para OrderItem[]
       const orderResponse: OrderResponse = {
-        ...data,
+        id: (data as any).id,
+        status: data.status,
+        total_amount: data.total_amount,
+        payment_method: data.payment_method,
+        payment_status: data.payment_status,
+        shipping_address_id: data.shipping_address_id,  // Using correct column name
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        transaction_id: data.transaction_id,
         items: data.items as OrderItem[],
-        shipping_address: data.shipping_address as ShippingAddress | undefined,
-        profiles: data.profiles ? { username: data.profiles.username } : undefined
+        shipping_address_details: data.shipping_address as ShippingAddress | undefined,  // Renamed to avoid conflict
+        profiles: data.profiles ? { username: data.profiles.username } : undefined,
+        user_id: data.user_id || ""  // Added proper user_id reference
       };
 
       setCurrentOrder(orderResponse);
@@ -192,7 +201,7 @@ if (!data) throw new Error("Pedido não foi criado");
           payment_status: 'processing'
         })
         .eq('id', orderId);
-  
+
       if (error) throw error;
       return true;
     } catch (err) {
@@ -205,7 +214,8 @@ if (!data) throw new Error("Pedido não foi criado");
    */
   const completeCheckout = useCallback(async (
     address: Omit<ShippingAddress, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
-    paymentMethod: PaymentMethod
+    paymentMethod: PaymentMethod,
+    shouldClearCart: boolean = false // Parâmetro opcional para controlar se o carrinho deve ser limpo
   ): Promise<{
     order: OrderResponse;
     address: ShippingAddress;
@@ -213,13 +223,19 @@ if (!data) throw new Error("Pedido não foi criado");
     try {
       const savedAddress = await saveShippingAddress(address);
       const order = await createPendingOrder(savedAddress.id, paymentMethod);
+
+      // Só limpa o carrinho se explicitamente solicitado
+      if (shouldClearCart) {
+        clearCart();
+      }
+
       return { order, address: savedAddress };
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erro ao finalizar checkout";
       console.error("Checkout error:", err);
       throw new Error(message);
     }
-  }, [saveShippingAddress, createPendingOrder]);
+  }, [saveShippingAddress, createPendingOrder, clearCart]);
 
   return {
     currentOrder,

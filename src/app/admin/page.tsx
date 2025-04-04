@@ -26,10 +26,10 @@ import {
 } from 'recharts';
 import { format } from 'date-fns';
 import { toast } from "sonner";
-import { 
-  Package2, 
-  ShoppingCart, 
-  CreditCard, 
+import {
+  Package2,
+  ShoppingCart,
+  CreditCard,
   TrendingUp,
   AlertCircle,
   Users,
@@ -55,30 +55,28 @@ export default function AdminDashboard() {
   const [productPerformance, setProductPerformance] = useState<any[]>([]);
   const [customerAcquisition, setCustomerAcquisition] = useState<any[]>([]);
   const [categoryDistribution, setCategoryDistribution] = useState<any[]>([]);
-  
+
   const { loading: adminLoading, stats, isAdmin, checkAdminStatus, fetchStats } = useAdminDashboard();
   const { recentOrders, loading: ordersLoading, subscribeToOrders, fetchRecentOrders } = useOrders();
 
   useEffect(() => {
     const initializeAdmin = async () => {
       try {
+        // Verifica se já carregamos os dados nesta sessão
+        const dashboardLoaded = sessionStorage.getItem('admin_dashboard_loaded');
+
         await checkAdminStatus();
-        
+
         if (isAdmin) {
-          // Inicia a subscrição de pedidos
-          const unsubscribe = subscribeToOrders();
-          
-          // Carrega os dados iniciais
+          // Carrega os dados iniciais apenas uma vez
           await Promise.all([
             fetchStats(),
             fetchAnalyticsData(),
             fetchRecentOrders()
           ]);
 
-          // Retorna a função de limpeza
-          return () => {
-            unsubscribe(); // Isso vai remover a subscrição quando o componente desmontar
-          };
+          // Marca que já carregamos os dados
+          sessionStorage.setItem('admin_dashboard_loaded', 'true');
         }
       } catch (error) {
         console.error('Error initializing admin dashboard:', error);
@@ -87,27 +85,7 @@ export default function AdminDashboard() {
     };
 
     initializeAdmin();
-  }, [isAdmin]); 
-  useEffect(() => {
-    const initializeAdmin = async () => {
-      try {
-        await checkAdminStatus();
-        if (isAdmin) {
-          subscribeToOrders();
-          await Promise.all([
-            fetchStats(),
-            fetchAnalyticsData(),
-            fetchRecentOrders()
-          ]);
-        }
-      } catch (error) {
-        console.error('Error initializing admin dashboard:', error);
-        toast.error('Failed to load dashboard');
-      }
-    };
-
-    initializeAdmin();
-  }, [isAdmin, fetchStats]);
+  }, [isAdmin]); // Dependemos apenas do status de admin
 
   const fetchAnalyticsData = async () => {
     try {
@@ -134,7 +112,7 @@ export default function AdminDashboard() {
       }).reverse();
 
       const salesData = last7Days.map(date => {
-        const dayOrders = orders?.filter(order => 
+        const dayOrders = orders?.filter(order =>
           format(new Date(order.created_at), 'MMM dd') === date
         ) || [];
         return {
@@ -168,7 +146,7 @@ export default function AdminDashboard() {
       // Process customer acquisition
       const customersByMonth: Record<string, number> = {};
       const uniqueCustomers = new Set<string>();
-      
+
       orders?.forEach(order => {
         const monthYear = format(new Date(order.created_at), 'MMM yyyy');
         if (!uniqueCustomers.has(order.user_id)) {
@@ -231,10 +209,18 @@ export default function AdminDashboard() {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={fetchAnalyticsData}
+            onClick={async () => {
+              toast.info('Atualizando dados...');
+              await Promise.all([
+                fetchStats(),
+                fetchAnalyticsData(),
+                fetchRecentOrders()
+              ]);
+              toast.success('Dados atualizados com sucesso!');
+            }}
             className="bg-primary text-primary-foreground px-4 py-2 rounded-lg flex items-center gap-2"
           >
-            Refresh Analytics
+            Refresh Dashboard
             <TrendingUp className="w-4 h-4" />
           </motion.button>
         </div>
@@ -356,14 +342,14 @@ export default function AdminDashboard() {
             <h2 className="text-xl font-semibold mb-6">Inventory Alerts</h2>
             <div className="space-y-4">
               {stats.inventory?.alerts?.map((alert) => (
-                <div 
+                <div
                   key={alert.id}
                   className="flex items-center justify-between p-4 bg-background rounded-lg"
                 >
                   <div className="flex items-center gap-4">
                     <div className={`p-2 rounded-full ${
-                      alert.alert_type === 'out_of_stock' 
-                        ? 'bg-destructive/10 text-destructive' 
+                      alert.alert_type === 'out_of_stock'
+                        ? 'bg-destructive/10 text-destructive'
                         : 'bg-orange-500/10 text-orange-500'
                     }`}>
                       <AlertCircle className="w-4 h-4" />
@@ -371,8 +357,8 @@ export default function AdminDashboard() {
                     <div>
                       <p className="font-medium">{alert.product.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {alert.alert_type === 'out_of_stock' 
-                          ? 'Out of Stock' 
+                        {alert.alert_type === 'out_of_stock'
+                          ? 'Out of Stock'
                           : 'Low Stock Alert'}
                       </p>
                     </div>
@@ -546,7 +532,7 @@ export default function AdminDashboard() {
                     {order.user_details?.full_name || order.user_details?.shipping_full_name || 'Anonymous'}                    </td>
                     <td className="py-3 px-4">
                       <span className={`px-2 py-1 rounded-full text-xs ${
-                        order.status === 'completed' 
+                        order.status === 'completed'
                           ? 'bg-green-500/10 text-green-500'
                           : order.status === 'pending'
                           ? 'bg-orange-500/10 text-orange-500'

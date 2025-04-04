@@ -363,6 +363,65 @@ export type Database = {
           },
         ]
       }
+      pending_checkouts: {
+        Row: {
+          id: string
+          user_id: string
+          cart_items: Json
+          shipping_address: Json
+          payment_method: string
+          total_amount: number
+          pix_transaction_id: string
+          pix_code: string
+          pix_qr_code: string
+          pix_expires_at: string
+          status: string
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          cart_items: Json
+          shipping_address: Json
+          payment_method: string
+          total_amount: number
+          pix_transaction_id: string
+          pix_code: string
+          pix_qr_code: string
+          pix_expires_at: string
+          status: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          cart_items?: Json
+          shipping_address?: Json
+          payment_method?: string
+          total_amount?: number
+          pix_transaction_id?: string
+          pix_code?: string
+          pix_qr_code?: string
+          pix_expires_at?: string
+          status?: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_checkouts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

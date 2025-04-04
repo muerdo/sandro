@@ -18,7 +18,12 @@ import { useCheckout } from "@/hooks/useCheckout";
 import { supabase } from "@/lib/supabase";
 import { PaymentMethod } from "@/types";
 import type { Database } from "@/types/supabase";
-import AddressForm, { ShippingAddress } from "@/components/checkout/address-form";
+// Importar apenas o tipo ShippingAddress
+import type { ShippingAddress } from "@/components/checkout/address-form";
+// Importar o componente AddressForm separadamente
+import AddressForm from "@/components/checkout/address-form";
+
+// import { sendOrderNotification } from "@/lib/whatsapp-notification";
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 
@@ -64,7 +69,7 @@ export default function Checkout() {
     qrCodeImage: string;
   } | null>(null);
   const [loading, setLoading] = useState(true);
-  const { completeCheckout, loading: checkoutLoading } = useCheckout();
+  const { completeCheckout, loading: checkoutLoading, clearCart } = useCheckout();
 
   // Limpeza de cache ao sair
   useEffect(() => {
@@ -116,14 +121,26 @@ export default function Checkout() {
     fetchDefaultAddress();
   }, []);
 
-const createOrder = async (): Promise<Database["public"]["Tables"]["orders"]["Row"]> => {
+  const createOrder = async (): Promise<Database["public"]["Tables"]["orders"]["Row"]> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Usuário não autenticado");
     if (!shippingAddress) throw new Error("Endereço de entrega não fornecido");
 
+    // Extrair notas dos itens do carrinho
+    const itemsWithNotes = items.map(item => {
+      // Verificar se há notas para este item
+      if (item.notes) {
+        return {
+          ...item,
+          notes: item.notes // Manter as notas do item
+        };
+      }
+      return item;
+    });
+
     const orderData: Database["public"]["Tables"]["orders"]["Insert"] = {
       user_id: user.id,
-      items: items,
+      items: itemsWithNotes, // Usar os itens com notas
       total_amount: total,
       shipping_address: JSON.parse(JSON.stringify(shippingAddress)),
       payment_method: paymentMethod,
@@ -139,8 +156,67 @@ const createOrder = async (): Promise<Database["public"]["Tables"]["orders"]["Ro
       .single();
 
     if (error) throw error;
+
+    // Enviar notificação WhatsApp após criar o pedido
+    try {
+      const notifyResponse = await fetch('/api/whatsapp/notify-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id })
+      });
+
+      if (notifyResponse.ok) {
+        console.log("Notificação WhatsApp enviada para o pedido:", order.id);
+      } else {
+        const notifyError = await notifyResponse.json();
+        console.error("Erro ao enviar notificação WhatsApp:", notifyError);
+      }
+    } catch (notifyError) {
+      console.error("Erro ao enviar notificação WhatsApp:", notifyError);
+      // Não interrompemos o fluxo principal se a notificação falhar
+    }
+
     return order as unknown as Database["public"]["Tables"]["orders"]["Row"];
   };
+  // Função para salvar checkout pendente com PIX
+  const savePendingCheckout = async (pixTransactionId: string, pixCode: string, pixQrCode: string, pixExpiresAt: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+      if (!shippingAddress) throw new Error("Endereço de entrega não fornecido");
+
+      // Salvar o checkout pendente no Supabase
+      // Usando uma solução temporária para contornar o problema de tipagem
+      // @ts-ignore - A tabela pending_checkouts existe no banco de dados
+      const { data, error } = await supabase
+        .from('pending_checkouts')
+        .insert({
+          user_id: user.id,
+          cart_items: JSON.stringify(items),
+          shipping_address: JSON.stringify(shippingAddress),
+          payment_method: paymentMethod,
+          total_amount: total,
+          pix_transaction_id: pixTransactionId,
+          pix_code: pixCode,
+          pix_qr_code: pixQrCode,
+          pix_expires_at: pixExpiresAt,
+          status: "pending",
+          notes: `Checkout com PIX iniciado em ${new Date().toLocaleString()}`
+        })
+        .select();
+
+      if (error) {
+        console.error("Erro ao salvar checkout pendente:", error);
+        // Não interromper o fluxo principal se falhar
+      } else {
+        console.log("Checkout pendente salvo com sucesso:", data);
+      }
+    } catch (error) {
+      console.error("Erro ao salvar checkout pendente:", error);
+      // Não interromper o fluxo principal se falhar
+    }
+  };
+
   const handleConfirmPayment = async () => {
     try {
       if (!shippingAddress) {
@@ -155,6 +231,17 @@ const createOrder = async (): Promise<Database["public"]["Tables"]["orders"]["Ro
           if (!pixData?.transactionId) {
             throw new Error("ID da transação PIX não encontrado");
           }
+
+          // Salvar o checkout pendente antes de redirecionar
+          if (pixData.pixCode && pixData.qrCodeImage && pixData.expiresAt) {
+            await savePendingCheckout(
+              pixData.transactionId,
+              pixData.pixCode,
+              pixData.qrCodeImage,
+              pixData.expiresAt
+            );
+          }
+
           await supabase
             .from("orders")
             .update({
@@ -175,7 +262,7 @@ const createOrder = async (): Promise<Database["public"]["Tables"]["orders"]["Ro
           router.push(`/checkout/pending?order_id=${order.id}`);
           break;
 
-        case "credit_card":
+        case "credit_card": {
           const { order: completedOrder } = await completeCheckout(shippingAddress, paymentMethod);
           await supabase
             .from("orders")
@@ -185,6 +272,7 @@ const createOrder = async (): Promise<Database["public"]["Tables"]["orders"]["Ro
             .eq("id", completedOrder.id);
           router.push(`/checkout/pending?order_id=${completedOrder.id}`);
           break;
+        }
       }
     } catch (error) {
       console.error("Erro no checkout:", error);
@@ -195,17 +283,62 @@ const createOrder = async (): Promise<Database["public"]["Tables"]["orders"]["Ro
   const startPixStatusCheck = (orderId: string, transactionId: string) => {
     const interval = setInterval(async () => {
       try {
-        const response = await apiRequest("GET", `/api/payment/pix/status/${transactionId}`);
-        if (!response.ok) throw new Error("Erro ao verificar status do PIX");
-        const { status } = await response.json();
+        // Usar a Edge Function do Supabase para verificar o status
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const response = await apiRequest(
+          "GET",
+          `${supabaseUrl}/functions/v1/pix-payment-status?transactionId=${transactionId}&action=check`
+        );
 
-        if (status === "PAID") {
+        if (!response.ok) throw new Error("Erro ao verificar status do PIX");
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(`Erro na resposta da Edge Function: ${data.message}`);
+        }
+
+        if (data.status === "PAID") {
           clearInterval(interval);
+
+          // Atualizar o pedido para pago
           await supabase
             .from("orders")
             .update({ payment_status: "paid", status: "processing" })
             .eq("id", orderId);
+
+          // Atualizar o checkout pendente para pago
+          try {
+            // @ts-ignore - A tabela pending_checkouts existe no banco de dados
+            await supabase
+              .from("pending_checkouts")
+              .update({
+                status: "paid",
+                notes: `${new Date().toLocaleString()}: Pagamento PIX confirmado automaticamente.`,
+                updated_at: new Date().toISOString()
+              })
+              .eq("pix_transaction_id", transactionId);
+          } catch (pendingError) {
+            console.error("Erro ao atualizar checkout pendente:", pendingError);
+            // Não interromper o fluxo principal se falhar
+          }
+
+          // Enviar notificação de confirmação de pagamento
+          try {
+            await fetch('/api/whatsapp/notify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                orderId: orderId,
+                status: 'paid'
+              })
+            });
+          } catch (notificationError) {
+            console.error("Erro ao enviar notificação de pagamento:", notificationError);
+          }
+
           toast.success("Pagamento PIX confirmado!");
+          clearCart(); // Limpa o carrinho apenas após confirmação de pagamento
           router.push("/success");
         }
       } catch (error) {
@@ -272,6 +405,8 @@ const createOrder = async (): Promise<Database["public"]["Tables"]["orders"]["Ro
     }
   }, [total, router]);
 
+
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -287,13 +422,13 @@ const createOrder = async (): Promise<Database["public"]["Tables"]["orders"]["Ro
     <div className="min-h-screen bg-background py-12">
       <div className="container mx-auto px-4">
         <motion.button
-          onClick={() => router.push("/checkout")}
+          onClick={() => router.push("/produtos")}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           className="mb-8 flex items-center gap-2 text-primary hover:opacity-80 transition-opacity"
         >
           <ArrowLeft className="w-4 h-4" />
-          Voltar para o Carrinho
+          Voltar para os Produtos
         </motion.button>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -328,6 +463,7 @@ const createOrder = async (): Promise<Database["public"]["Tables"]["orders"]["Ro
                 <BoletoForm
                   clientSecret={boletoClientSecret}
                   onSuccess={() => {
+                    clearCart(); // Limpa o carrinho apenas após confirmação de pagamento
                     router.push("/success");
                   }}
                 />

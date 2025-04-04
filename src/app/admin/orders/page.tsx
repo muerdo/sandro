@@ -9,16 +9,12 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import {
   AlertCircle,
-  CheckCircle2,
-  XCircle,
-  Clock,
   Search,
   Filter,
   ArrowUpDown,
   MessageCircle,
   Eye,
   X,
-  type LucideIcon,
 } from "lucide-react";
 import type { Database } from "@/types/supabase";
 
@@ -41,13 +37,15 @@ interface OrderItem {
   quantity: number;
   image: string;
   customization: null;
+  notes?: string; // Adicionando campo de notas opcional
 }
 
 // Tipo ajustado para Order
-type Order = Database["public"]["Tables"]["orders"]["Row"] & {
+type Order = Omit<Database["public"]["Tables"]["orders"]["Row"], 'shipping_address' | 'items'> & {
   profiles?: { username: string | null };
   shipping_address: ShippingAddress | null; // Substitui Json | null
   items: OrderItem[]; // Substitui Json
+  transaction_id?: string; // Tornando opcional para compatibilidade
 };
 
 type SortField = "created_at" | "total_amount" | "status";
@@ -117,7 +115,41 @@ export default function OrdersManagement() {
 
       if (error) throw error;
 
-      setOrders(data || []);
+      // Mapear os dados para o formato correto
+      const mappedOrders = (data || []).map(order => {
+        // Converter shipping_address de Json para ShippingAddress
+        let shippingAddress: ShippingAddress | null = null;
+        if (order.shipping_address) {
+          try {
+            shippingAddress = typeof order.shipping_address === 'string'
+              ? JSON.parse(order.shipping_address as string)
+              : order.shipping_address as unknown as ShippingAddress;
+          } catch (e) {
+            console.error('Error parsing shipping address:', e);
+          }
+        }
+
+        // Converter items de Json para OrderItem[]
+        let orderItems: OrderItem[] = [];
+        if (order.items) {
+          try {
+            orderItems = typeof order.items === 'string'
+              ? JSON.parse(order.items as string)
+              : order.items as unknown as OrderItem[];
+          } catch (e) {
+            console.error('Error parsing order items:', e);
+          }
+        }
+
+        // Retornar o pedido mapeado
+        return {
+          ...order,
+          shipping_address: shippingAddress,
+          items: orderItems,
+        } as Order;
+      });
+
+      setOrders(mappedOrders);
       toast.success("Orders loaded successfully");
     } catch (error) {
       console.error("Error fetching orders:", error);
@@ -173,11 +205,21 @@ export default function OrdersManagement() {
 
   // Efeito para buscar pedidos ao carregar a página
   useEffect(() => {
+    // Verifica se já carregamos os dados nesta sessão
+    const ordersLoaded = sessionStorage.getItem('admin_orders_loaded');
+
+    // Verifica o status de admin apenas uma vez
     checkAdminStatus();
-    if (isAdmin) {
+
+    // Se for admin e ainda não carregamos os dados, carrega-os
+    if (isAdmin && !ordersLoaded) {
+      // Carrega os pedidos apenas uma vez
       fetchOrders();
+
+      // Marca que já carregamos os dados
+      sessionStorage.setItem('admin_orders_loaded', 'true');
     }
-  }, [checkAdminStatus, isAdmin, fetchOrders]);
+  }, [checkAdminStatus, isAdmin]); // Dependemos apenas do status de admin
 
   if (!isAdmin) {
     return (
@@ -196,7 +238,21 @@ export default function OrdersManagement() {
   return (
     <main className="min-h-screen bg-background py-12">
       <div className="container mx-auto px-4">
-        <h1 className="text-4xl font-bold mb-8">Orders Management</h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-4xl font-bold">Orders Management</h1>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => {
+              toast.info('Atualizando pedidos...');
+              fetchOrders();
+            }}
+            className="bg-primary text-primary-foreground px-4 py-2 rounded-lg flex items-center gap-2"
+          >
+            <ArrowUpDown className="w-4 h-4" />
+            Refresh Orders
+          </motion.button>
+        </div>
 
         {/* Filtros e Ordenação */}
         <div className="space-y-4 mb-8">
@@ -377,12 +433,23 @@ export default function OrdersManagement() {
                         </motion.button>
                         {order.shipping_address?.phone && (
                           <motion.a
-                            href={`https://wa.me/${order.shipping_address.phone}?text=Olá! Sobre o pedido ${order.id.slice(0, 8)}...`}
+                            href={`https://wa.me/${order.shipping_address.phone}?text=${encodeURIComponent(
+                              `Olá ${order.shipping_address.full_name || ''}!\n\n` +
+                              `Sobre seu pedido #${order.id.slice(0, 8)}:\n` +
+                              `Status: ${order.status.toUpperCase()}\n` +
+                              `Pagamento: ${order.payment_status.toUpperCase()}\n` +
+                              `Total: R$ ${order.total_amount.toFixed(2)}\n\n` +
+                              (order.payment_status === 'pending' ?
+                                `Para finalizar seu pedido, acesse o link de pagamento: https://checkout.stripe.com/pay/${order.id}\n\n` :
+                                `Obrigado por comprar conosco!\n\n`) +
+                              `Equipe de Suporte`
+                            )}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             className="p-2 bg-[#25D366]/10 text-[#25D366] rounded-lg"
+                            title="Enviar mensagem com detalhes do pedido"
                           >
                             <MessageCircle className="w-4 h-4" />
                           </motion.a>
@@ -474,8 +541,15 @@ const OrderDetailsModal = ({
           <strong>Items:</strong>
           <ul className="list-disc pl-5">
             {order.items.map((item) => (
-              <li key={item.id}>
-                {item.name} - {item.quantity} x R$ {item.price.toFixed(2)}
+              <li key={item.id} className="mb-2">
+                <div>
+                  <span className="font-medium">{item.name}</span> - {item.quantity} x R$ {item.price.toFixed(2)}
+                </div>
+                {item.notes && (
+                  <div className="mt-1 text-sm bg-primary/5 p-2 rounded-md">
+                    <span className="font-medium">Instruções especiais:</span> {item.notes}
+                  </div>
+                )}
               </li>
             ))}
           </ul>

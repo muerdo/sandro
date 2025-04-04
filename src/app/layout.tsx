@@ -5,6 +5,7 @@ import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
 import TransitionProvider from "@/components/providers/transition-provider";
 import Footer from "@/components/footer";
+import SiteHeader from "@/components/site-header";
 import { CartProvider } from "@/contexts/cart-context";
 import { AuthProvider } from "@/contexts/auth-context";
 import CartSummary from "@/components/cart/cart-summary";
@@ -26,10 +27,11 @@ export default function RootLayout({
       <body className="min-h-screen bg-background antialiased flex flex-col overflow-x-hidden">
         <AuthProvider>
           <CartProvider>
-            <VisibilityProvider> {/* Envolva com VisibilityProvider */}
+            <VisibilityProvider>
               <TransitionProvider>
                 <StripeProvider>
-                  <div className="flex-1">
+                  <div className="flex-1 flex flex-col">
+                    <SiteHeader />
                     {children}
                   </div>
                   <nav className="fixed bottom-24 right-8 z-40">
@@ -40,7 +42,7 @@ export default function RootLayout({
                     </Link>
                   </nav>
                   <Footer />
-                  <CartSummary /> {/* CartSummary sempre presente */}
+                  <CartSummary />
                 </StripeProvider>
               </TransitionProvider>
             </VisibilityProvider>

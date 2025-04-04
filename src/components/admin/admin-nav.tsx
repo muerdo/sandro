@@ -9,7 +9,9 @@ import {
   ShoppingCart,
   Users,
   Settings,
-  Database
+  Database,
+  MessageSquare,
+  AlertCircle
 } from "lucide-react";
 
 const navItems = [
@@ -33,7 +35,17 @@ const navItems = [
     label: "Customers",
     icon: Users
   },
-   {
+  {
+    href: "/admin/pending-checkouts",
+    label: "Pending Checkouts",
+    icon: AlertCircle
+  },
+  {
+    href: "/admin/whatsapp", // Nova rota para WhatsApp
+    label: "WhatsApp",
+    icon: MessageSquare
+  },
+  {
     href: "/admin/settings",
     label: "Settings",
     icon: Settings
@@ -65,6 +77,7 @@ export default function AdminNav() {
           </Link>
         );
       })}
+
     </nav>
   );
 }

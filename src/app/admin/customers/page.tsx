@@ -104,26 +104,61 @@ export default function ProfilesManagement() {
     }
   };
 
-  // Atualiza um perfil
+  // Atualiza um perfil (auth.users + public.profiles)
   const handleUpdateProfile = async () => {
     if (!isEditingProfile) return;
 
     try {
       setLoading((prev) => ({ ...prev, action: true }));
+
+      // Obter o perfil atual para comparar com as alterações
+      const { data: currentProfile, error: fetchError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", isEditingProfile)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      if (!currentProfile) {
+        throw new Error("Profile not found");
+      }
+
+      // 1. Atualizar o usuário no auth.users
+      const { error: updateAuthError } = await supabase.auth.admin.updateUserById(
+        isEditingProfile,
+        {
+          email: editProfileForm.email !== currentProfile.email ? editProfileForm.email : undefined,
+          user_metadata: {
+            full_name: editProfileForm.full_name || currentProfile.full_name || '',
+            username: editProfileForm.username || currentProfile.username || '',
+          },
+          app_metadata: {
+            role: editProfileForm.role || currentProfile.role || 'customer'
+          }
+        }
+      );
+
+      if (updateAuthError) throw updateAuthError;
+
+      // 2. Atualizar o perfil no public.profiles
       const { error } = await supabase
         .from("profiles")
-        .update(editProfileForm)
+        .update({
+          ...editProfileForm,
+          updated_at: new Date().toISOString()
+        })
         .eq("id", isEditingProfile);
 
       if (error) throw error;
 
-      toast.success("Profile updated successfully");
+      toast.success("User and profile updated successfully");
       setIsEditingProfile(null);
       setEditProfileForm({});
       fetchProfilesWithAddresses();
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast.error("Failed to update profile");
+      toast.error(`Failed to update profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading((prev) => ({ ...prev, action: false }));
     }
@@ -135,9 +170,40 @@ export default function ProfilesManagement() {
 
     try {
       setLoading((prev) => ({ ...prev, action: true }));
+
+      // Obter o endereço atual para verificar mudanças
+      const { data: currentAddress, error: fetchError } = await supabase
+        .from("shipping_addresses")
+        .select("*")
+        .eq("id", isEditingAddress)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      if (!currentAddress) {
+        throw new Error("Address not found");
+      }
+
+      // Se o endereço for definido como padrão e não era antes, atualizar outros endereços do usuário
+      if (editAddressForm.is_default && !currentAddress.is_default) {
+        const { error: updateError } = await supabase
+          .from('shipping_addresses')
+          .update({ is_default: false })
+          .eq('user_id', currentAddress.user_id);
+
+        if (updateError) {
+          console.error('Error updating existing addresses:', updateError);
+          // Continuar mesmo se houver erro
+        }
+      }
+
+      // Atualizar o endereço
       const { error } = await supabase
         .from("shipping_addresses")
-        .update(editAddressForm)
+        .update({
+          ...editAddressForm,
+          updated_at: new Date().toISOString()
+        })
         .eq("id", isEditingAddress);
 
       if (error) throw error;
@@ -148,43 +214,297 @@ export default function ProfilesManagement() {
       fetchProfilesWithAddresses();
     } catch (error) {
       console.error("Error updating address:", error);
-      toast.error("Failed to update address");
+      toast.error(`Failed to update address: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading((prev) => ({ ...prev, action: false }));
     }
   };
 
-  // Exclui um perfil ou endereço
+  // Exclui um perfil (auth.users + public.profiles) ou endereço
   const handleDelete = async () => {
     if (!itemToDelete) return;
 
     try {
       setLoading((prev) => ({ ...prev, action: true }));
-      const { error } = await supabase
-        .from(itemToDelete.type === "profile" ? "profiles" : "shipping_addresses")
-        .delete()
-        .eq("id", itemToDelete.id);
 
-      if (error) throw error;
+      if (itemToDelete.type === "profile") {
+        // 1. Excluir endereços associados ao perfil
+        const { error: addressesError } = await supabase
+          .from("shipping_addresses")
+          .delete()
+          .eq("user_id", itemToDelete.id);
 
-      toast.success(`${itemToDelete.type === "profile" ? "Profile" : "Address"} deleted successfully`);
+        if (addressesError) {
+          console.error("Error deleting associated addresses:", addressesError);
+          // Continuar mesmo se houver erro ao excluir endereços
+        }
+
+        // 2. Excluir o perfil do public.profiles
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .delete()
+          .eq("id", itemToDelete.id);
+
+        if (profileError) throw profileError;
+
+        // 3. Excluir o usuário do auth.users
+        const { error: authError } = await supabase.auth.admin.deleteUser(itemToDelete.id);
+
+        if (authError) {
+          console.error("Error deleting user from auth.users:", authError);
+          // Continuar mesmo se houver erro ao excluir do auth.users
+        }
+
+        toast.success("User, profile and associated addresses deleted successfully");
+      } else {
+        // Excluir apenas o endereço
+        const { error } = await supabase
+          .from("shipping_addresses")
+          .delete()
+          .eq("id", itemToDelete.id);
+
+        if (error) throw error;
+
+        toast.success("Address deleted successfully");
+      }
+
       setShowDeleteConfirm(false);
       setItemToDelete(null);
       fetchProfilesWithAddresses();
     } catch (error) {
       console.error("Error deleting item:", error);
-      toast.error(`Failed to delete ${itemToDelete.type}`);
+      toast.error(`Failed to delete ${itemToDelete.type}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading((prev) => ({ ...prev, action: false }));
     }
   };
 
-  useEffect(() => {
-    checkAdminStatus();
-    if (isAdmin) {
+  // Estado para controlar a criação de novo perfil
+  const [isCreatingProfile, setIsCreatingProfile] = useState(false);
+  const [newProfileForm, setNewProfileForm] = useState<Partial<Profile>>({
+    username: '',
+    full_name: '',
+    email: '',
+    role: 'customer'
+  });
+
+  // Estado para controlar a criação de novo endereço
+  const [isCreatingAddress, setIsCreatingAddress] = useState(false);
+  const [selectedProfileForAddress, setSelectedProfileForAddress] = useState<string | null>(null);
+  const [newAddressForm, setNewAddressForm] = useState<Partial<ShippingAddress>>({
+    full_name: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    postal_code: '',
+    is_default: false
+  });
+
+  // Cria um novo perfil (auth.users + public.profiles)
+  const handleCreateProfile = async () => {
+    try {
+      setLoading(prev => ({ ...prev, action: true }));
+
+      // Validar dados
+      if (!newProfileForm.email) {
+        toast.error('Email is required');
+        return;
+      }
+
+      // Gerar uma senha aleatória para o usuário
+      const generateRandomPassword = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+        let password = '';
+        for (let i = 0; i < 12; i++) {
+          password += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return password;
+      };
+
+      const randomPassword = generateRandomPassword();
+
+      // Verificar se o email já existe no auth.users
+      const { data: authUser, error: authCheckError } = await supabase.auth.admin.getUserByEmail(newProfileForm.email);
+
+      if (authCheckError && authCheckError.message !== 'User not found') {
+        throw authCheckError;
+      }
+
+      if (authUser) {
+        toast.error('A user with this email already exists');
+        return;
+      }
+
+      // Verificar se o email já existe em profiles
+      const { data: existingProfiles, error: checkError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', newProfileForm.email);
+
+      if (checkError) throw checkError;
+
+      if (existingProfiles && existingProfiles.length > 0) {
+        toast.error('A profile with this email already exists');
+        return;
+      }
+
+      // 1. Criar usuário no auth.users
+      const { data: newUser, error: createUserError } = await supabase.auth.admin.createUser({
+        email: newProfileForm.email,
+        password: randomPassword,
+        email_confirm: true, // Confirmar email automaticamente
+        user_metadata: {
+          full_name: newProfileForm.full_name || '',
+          username: newProfileForm.username || '',
+        },
+        app_metadata: {
+          role: newProfileForm.role || 'customer'
+        }
+      });
+
+      if (createUserError) throw createUserError;
+
+      if (!newUser || !newUser.user) {
+        throw new Error('Failed to create user in auth.users');
+      }
+
+      const userId = newUser.user.id;
+
+      // 2. Criar perfil no public.profiles
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId, // Usar o mesmo ID do auth.users
+          username: newProfileForm.username || '',
+          full_name: newProfileForm.full_name || '',
+          email: newProfileForm.email,
+          role: newProfileForm.role || 'customer',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select();
+
+      if (error) {
+        // Se falhar ao criar o perfil, tentar excluir o usuário criado no auth.users
+        await supabase.auth.admin.deleteUser(userId);
+        throw error;
+      }
+
+      toast.success('User and profile created successfully');
+      setIsCreatingProfile(false);
+      setNewProfileForm({
+        username: '',
+        full_name: '',
+        email: '',
+        role: 'customer'
+      });
       fetchProfilesWithAddresses();
+    } catch (error) {
+      console.error('Error creating profile:', error);
+      toast.error(`Failed to create profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setLoading(prev => ({ ...prev, action: false }));
     }
-  }, [user, isAdmin]);
+  };
+
+  // Cria um novo endereço associado a um perfil
+  const handleCreateAddress = async () => {
+    if (!selectedProfileForAddress) return;
+
+    try {
+      setLoading(prev => ({ ...prev, action: true }));
+
+      // Validar dados
+      if (!newAddressForm.address) {
+        toast.error('Address is required');
+        return;
+      }
+
+      // Verificar se o perfil existe
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', selectedProfileForAddress)
+        .single();
+
+      if (profileError) throw profileError;
+
+      if (!profile) {
+        toast.error('Selected profile does not exist');
+        return;
+      }
+
+      // Se o endereço for definido como padrão, atualizar outros endereços do usuário
+      if (newAddressForm.is_default) {
+        const { error: updateError } = await supabase
+          .from('shipping_addresses')
+          .update({ is_default: false })
+          .eq('user_id', selectedProfileForAddress);
+
+        if (updateError) {
+          console.error('Error updating existing addresses:', updateError);
+          // Continuar mesmo se houver erro
+        }
+      }
+
+      // Preencher automaticamente o nome e email se não fornecidos
+      const addressData = {
+        ...newAddressForm,
+        full_name: newAddressForm.full_name || profile.full_name || '',
+        email: newAddressForm.email || profile.email || '',
+        id: crypto.randomUUID(),
+        user_id: selectedProfileForAddress,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Criar endereço
+      const { data, error } = await supabase
+        .from('shipping_addresses')
+        .insert(addressData)
+        .select();
+
+      if (error) throw error;
+
+      toast.success('Address created successfully');
+      setIsCreatingAddress(false);
+      setSelectedProfileForAddress(null);
+      setNewAddressForm({
+        full_name: '',
+        email: '',
+        phone: '',
+        address: '',
+        city: '',
+        state: '',
+        postal_code: '',
+        is_default: false
+      });
+      fetchProfilesWithAddresses();
+    } catch (error) {
+      console.error('Error creating address:', error);
+      toast.error(`Failed to create address: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setLoading(prev => ({ ...prev, action: false }));
+    }
+  };
+
+  useEffect(() => {
+    // Verifica se já carregamos os dados nesta sessão
+    const customersLoaded = sessionStorage.getItem('admin_customers_loaded');
+
+    // Verifica o status de admin apenas uma vez
+    checkAdminStatus();
+
+    // Se for admin e ainda não carregamos os dados, carrega-os
+    if (isAdmin && !customersLoaded) {
+      fetchProfilesWithAddresses();
+
+      // Marca que já carregamos os dados
+      sessionStorage.setItem('admin_customers_loaded', 'true');
+    }
+  }, [isAdmin]); // Dependemos apenas do status de admin
 
   if (!isAdmin) {
     return (
@@ -203,7 +523,32 @@ export default function ProfilesManagement() {
   return (
     <main className="min-h-screen bg-background py-12">
       <div className="container mx-auto px-4">
-        <h1 className="text-4xl font-bold mb-8">Profiles & Addresses Management</h1>
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
+          <h1 className="text-3xl md:text-4xl font-bold">Profiles & Addresses Management</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => {
+                toast.info('Atualizando perfis...');
+                fetchProfilesWithAddresses();
+              }}
+              className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg flex items-center gap-2"
+            >
+              <User className="w-4 h-4" />
+              Refresh Profiles
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setIsCreatingProfile(true)}
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-lg flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Profile
+            </motion.button>
+          </div>
+        </div>
 
         {/* Lista de Perfis e Endereços */}
         <div className="space-y-12">
@@ -311,7 +656,21 @@ export default function ProfilesManagement() {
 
               {/* Endereços Associados */}
               <div className="space-y-4">
-                <h4 className="text-lg font-semibold">Shipping Addresses</h4>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-lg font-semibold">Shipping Addresses</h4>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      setSelectedProfileForAddress(profile.id);
+                      setIsCreatingAddress(true);
+                    }}
+                    className="p-2 bg-primary/10 text-primary rounded-lg flex items-center gap-1 text-sm"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Add Address
+                  </motion.button>
+                </div>
                 {profile.shipping_addresses.length > 0 ? (
                   profile.shipping_addresses.map((address) => (
                     <motion.div
@@ -505,6 +864,231 @@ export default function ProfilesManagement() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Formulário para criar novo perfil */}
+      {isCreatingProfile && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-card p-6 rounded-lg shadow-lg max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Create New Profile</h2>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setIsCreatingProfile(false)}
+                className="p-1 rounded-full hover:bg-muted"
+              >
+                <X className="w-5 h-5" />
+              </motion.button>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium mb-1">Email *</label>
+                <input
+                  type="email"
+                  value={newProfileForm.email || ''}
+                  onChange={(e) => setNewProfileForm({ ...newProfileForm, email: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Username</label>
+                <input
+                  type="text"
+                  value={newProfileForm.username || ''}
+                  onChange={(e) => setNewProfileForm({ ...newProfileForm, username: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Full Name</label>
+                <input
+                  type="text"
+                  value={newProfileForm.full_name || ''}
+                  onChange={(e) => setNewProfileForm({ ...newProfileForm, full_name: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Role</label>
+                <select
+                  value={newProfileForm.role || 'customer'}
+                  onChange={(e) => setNewProfileForm({ ...newProfileForm, role: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                >
+                  <option value="customer">Customer</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-4">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setIsCreatingProfile(false)}
+                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg"
+              >
+                Cancel
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleCreateProfile}
+                disabled={loading.action || !newProfileForm.email}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg flex items-center gap-2"
+              >
+                {loading.action ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    Create Profile
+                  </>
+                )}
+              </motion.button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Formulário para criar novo endereço */}
+      {isCreatingAddress && selectedProfileForAddress && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-card p-6 rounded-lg shadow-lg max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Add New Address</h2>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => {
+                  setIsCreatingAddress(false);
+                  setSelectedProfileForAddress(null);
+                }}
+                className="p-1 rounded-full hover:bg-muted"
+              >
+                <X className="w-5 h-5" />
+              </motion.button>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium mb-1">Full Name</label>
+                <input
+                  type="text"
+                  value={newAddressForm.full_name || ''}
+                  onChange={(e) => setNewAddressForm({ ...newAddressForm, full_name: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Email</label>
+                <input
+                  type="email"
+                  value={newAddressForm.email || ''}
+                  onChange={(e) => setNewAddressForm({ ...newAddressForm, email: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Phone</label>
+                <input
+                  type="tel"
+                  value={newAddressForm.phone || ''}
+                  onChange={(e) => setNewAddressForm({ ...newAddressForm, phone: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Address *</label>
+                <input
+                  type="text"
+                  value={newAddressForm.address || ''}
+                  onChange={(e) => setNewAddressForm({ ...newAddressForm, address: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">City</label>
+                  <input
+                    type="text"
+                    value={newAddressForm.city || ''}
+                    onChange={(e) => setNewAddressForm({ ...newAddressForm, city: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">State</label>
+                  <input
+                    type="text"
+                    value={newAddressForm.state || ''}
+                    onChange={(e) => setNewAddressForm({ ...newAddressForm, state: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Postal Code</label>
+                <input
+                  type="text"
+                  value={newAddressForm.postal_code || ''}
+                  onChange={(e) => setNewAddressForm({ ...newAddressForm, postal_code: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="is_default"
+                  checked={newAddressForm.is_default || false}
+                  onChange={(e) => setNewAddressForm({ ...newAddressForm, is_default: e.target.checked })}
+                  className="mr-2"
+                />
+                <label htmlFor="is_default" className="text-sm">Set as default address</label>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-4">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  setIsCreatingAddress(false);
+                  setSelectedProfileForAddress(null);
+                }}
+                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg"
+              >
+                Cancel
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleCreateAddress}
+                disabled={loading.action || !newAddressForm.address}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg flex items-center gap-2"
+              >
+                {loading.action ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    Add Address
+                  </>
+                )}
+              </motion.button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -17,17 +17,25 @@ export default function AuthDialog({
   onClose,
   className,
 }: AuthDialogProps) {
+  // Garantir que o modal seja exibido no centro da tela e com z-index adequado
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const { signIn, signUp } = useAuth();
-  const { setCartButtonVisible } = useVisibility();
 
-  // Esconde o botão do carrinho quando o modal de login estiver aberto
+  let visibilityContext: { isCartButtonVisible: boolean; setCartButtonVisible: (visible: boolean) => void } | undefined;
+  try {
+    visibilityContext = useVisibility();
+  } catch (error) {
+    console.warn("VisibilityContext não está disponível, ignorando");
+  }
+
   useEffect(() => {
-    setCartButtonVisible(!isOpen);
-  }, [isOpen, setCartButtonVisible]);
+    if (visibilityContext?.setCartButtonVisible) {
+      visibilityContext.setCartButtonVisible(!isOpen);
+    }
+  }, [isOpen, visibilityContext]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,12 +44,15 @@ export default function AuthDialog({
     try {
       if (isSignUp) {
         await signUp(email, password);
+        console.log("Cadastro realizado com sucesso");
       } else {
         await signIn(email, password);
+        console.log("Login realizado com sucesso");
       }
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      console.error("Erro de autenticação:", err);
+      setError(err instanceof Error ? err.message : "Ocorreu um erro durante a autenticação");
     }
   };
 
@@ -55,7 +66,7 @@ export default function AuthDialog({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
           />
 
           {/* Modal de autenticação */}
@@ -63,9 +74,11 @@ export default function AuthDialog({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed inset-0 z-50 flex justify-center items-center p-4"
+            className="fixed inset-0 z-[101] flex items-center justify-center p-4"
           >
-            <div className={`w-full max-w-md bg-background border rounded-lg shadow-lg p-6 ${className}`}>
+            <div
+              className={`w-full max-w-md bg-background border rounded-lg shadow-lg p-6 overflow-y-auto max-h-[90vh] ${className}`}
+            >
               {/* Cabeçalho do modal */}
               <div className="flex flex-col space-y-1.5 text-center sm:text-left">
                 <div className="flex items-center justify-between">
@@ -80,9 +93,7 @@ export default function AuthDialog({
                   </button>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {isSignUp
-                    ? "Cadastre-se "
-                    : "Entre na sua conta"}
+                  {isSignUp ? "Cadastre-se" : "Entre na sua conta"}
                 </p>
               </div>
 
@@ -131,7 +142,7 @@ export default function AuthDialog({
                     className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {isSignUp
-                      ? "Ja tem uma conta? Entre"
+                      ? "Já tem uma conta? Entre"
                       : "Ainda não tem uma conta? Inscreva-se"}
                   </button>
                 </div>

@@ -54,6 +54,17 @@ export const useShippingAddress = () => {
       // Garante que o perfil existe antes de prosseguir
       await ensureProfileExists(user.id, user.email || "");
 
+      // Busca o perfil do usuário para obter informações adicionais
+      const { data: userProfile, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError && profileError.code !== "PGRST116") {
+        throw profileError;
+      }
+
       // Verifica se já existe um endereço padrão
       const { data: existingAddress, error: fetchError } = await supabase
         .from("shipping_addresses")
@@ -67,6 +78,29 @@ export const useShippingAddress = () => {
       }
 
       if (existingAddress) {
+        // Se o endereço existente não tem email ou telefone, mas o perfil tem, atualize-o
+        if (userProfile && (!existingAddress.email || !existingAddress.phone)) {
+          const updatedAddress = {
+            ...existingAddress,
+            email: existingAddress.email || userProfile.email || user.email || "",
+            phone: existingAddress.phone || userProfile.phone || "",
+            full_name: existingAddress.full_name || userProfile.full_name || "",
+          };
+
+          // Atualiza o endereço com as informações do perfil
+          const { data: updated, error: updateError } = await supabase
+            .from("shipping_addresses")
+            .update(updatedAddress)
+            .eq("id", existingAddress.id)
+            .select()
+            .single();
+
+          if (updateError) throw updateError;
+
+          setShippingAddress(updated);
+          return updated;
+        }
+
         setShippingAddress(existingAddress);
         return existingAddress;
       }
@@ -75,9 +109,9 @@ export const useShippingAddress = () => {
       const newAddress: ShippingAddress = {
         id: crypto.randomUUID(),
         user_id: user.id,
-        full_name: "",
+        full_name: userProfile?.full_name || "",
         email: user.email || "",
-        phone: "",
+        phone: userProfile?.phone || "",
         address: "",
         city: "",
         state: "",
@@ -191,8 +225,9 @@ export const useShippingAddress = () => {
   };
 
   useEffect(() => {
+    // Busca o endereço do usuário quando o hook é inicializado
     getOrCreateShippingAddress();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     shippingAddress,

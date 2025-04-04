@@ -14,10 +14,10 @@ interface PixQRCodeProps {
   onConfirmPayment?: () => void; // Adicione essa prop
 }
 
-export default function PixQRCode({ 
-  pixCode, 
-  amount, 
-  expiresAt, 
+export default function PixQRCode({
+  pixCode,
+  amount,
+  expiresAt,
   transactionId,
   qrCodeImage,
   onConfirmPayment, // Recebe a função de confirmação manual
@@ -31,29 +31,29 @@ export default function PixQRCode({
   // Calculate countdown from expiresAt
   useEffect(() => {
     if (!expiresAt) return;
-    
+
     const calculateTimeLeft = () => {
       const now = new Date().getTime();
       const expiryTime = new Date(expiresAt).getTime();
       const diff = expiryTime - now;
-      
+
       if (diff <= 0) {
         setExpired(true);
         setCountdown("Expirado");
         return;
       }
-      
+
       // Convert to minutes and seconds
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-      
+
       return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     };
-    
+
     // Update countdown immediately
     const timeLeft = calculateTimeLeft();
     if (timeLeft) setCountdown(timeLeft);
-    
+
     // Then update every second
     const timer = setInterval(() => {
       const timeLeft = calculateTimeLeft();
@@ -63,57 +63,96 @@ export default function PixQRCode({
         clearInterval(timer);
       }
     }, 1000);
-    
+
     return () => clearInterval(timer);
   }, [expiresAt]);
 
   // Check payment status periodically if we have a transaction ID
   useEffect(() => {
     if (!transactionId) return;
-    
+
+    // Variável para controlar se o componente está montado
+    let isMounted = true;
+
     const checkStatus = async () => {
       try {
-        const response = await apiRequest("GET", `/api/payment/pix/${transactionId}`);
+        // Usar a Edge Function do Supabase para verificar o status
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const response = await apiRequest(
+          "GET",
+          `${supabaseUrl}/functions/v1/pix-payment-status?transactionId=${transactionId}&action=check`
+        );
+
+        // Verificar se o componente ainda está montado antes de atualizar o estado
+        if (!isMounted) return false;
+
+        // Verificar se a resposta foi bem-sucedida
+        if (!response.ok) {
+          console.error(`Erro ao buscar status: ${response.status} ${response.statusText}`);
+          return false;
+        }
+
         const data = await response.json();
-        
+
+        // Verificar novamente se o componente ainda está montado
+        if (!isMounted) return false;
+
+        // Verificar se a resposta foi bem-sucedida
+        if (!data.success) {
+          console.error(`Erro na resposta da Edge Function: ${data.message}`);
+          return false;
+        }
+
         setStatus(data.status);
-        
-        if (data.status === "COMPLETED") {
+
+        if (data.status === "PAID") {
           // Stop checking if payment is completed
           toast.success("Pagamento PIX recebido com sucesso!");
           return true;
         }
-        
+
         return false;
       } catch (error) {
         console.error("Error checking PIX status:", error);
         return false;
       }
     };
-    
+
     // Check immediately
-    checkStatus();
-    
-    // Then check every 5 seconds
+    let initialCheckCompleted = false;
+    checkStatus().then(completed => {
+      initialCheckCompleted = completed;
+    });
+
+    // Then check every 5 seconds, mas apenas se o primeiro check não completou
     const interval = setInterval(async () => {
+      if (initialCheckCompleted) {
+        clearInterval(interval);
+        return;
+      }
+
       const completed = await checkStatus();
       if (completed) {
         clearInterval(interval);
       }
     }, 5000);
-    
-    return () => clearInterval(interval);
-  }, [transactionId]);
+
+    // Limpar o intervalo e marcar o componente como desmontado quando ele for desmontado
+    return () => {
+      clearInterval(interval);
+      isMounted = false;
+    };
+  }, [transactionId]); // Apenas transactionId como dependência
 
   // Handle copy to clipboard
   const handleCopyPix = () => {
     if (!pixCode) return;
-    
+
     navigator.clipboard.writeText(pixCode)
       .then(() => {
         setCopied(true);
         toast.success("Código PIX copiado!");
-        
+
         // Reset copy status after 2 seconds
         setTimeout(() => {
           setCopied(false);
@@ -128,16 +167,32 @@ export default function PixQRCode({
   // Handle manual refresh of status
   const handleRefreshStatus = async () => {
     if (!transactionId || refreshing) return;
-    
+
     setRefreshing(true);
-    
+
     try {
-      const response = await apiRequest("GET", `/api/payment/pix/${transactionId}`);
+      // Usar a Edge Function do Supabase para verificar o status
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const response = await apiRequest(
+        "GET",
+        `${supabaseUrl}/functions/v1/pix-payment-status?transactionId=${transactionId}&action=check`
+      );
+
+      // Verificar se a resposta foi bem-sucedida
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar status: ${response.status} ${response.statusText}`);
+      }
+
       const data = await response.json();
-      
+
+      // Verificar se a resposta foi bem-sucedida
+      if (!data.success) {
+        throw new Error(`Erro na resposta da Edge Function: ${data.message}`);
+      }
+
       setStatus(data.status);
-      
-      if (data.status === "COMPLETED") {
+
+      if (data.status === "PAID") {
         toast.success("Pagamento PIX recebido com sucesso!");
       } else {
         toast.info("Status atualizado!");
@@ -156,18 +211,18 @@ export default function PixQRCode({
         <div>
           <h3 className="text-lg font-semibold mb-4">Pagamento via PIX</h3>
           <p className="text-gray-600 mb-6">Escaneie o QR Code ou copie o código PIX para pagar</p>
-          
+
           <div className="mb-6 flex flex-col items-center">
             <div className="w-48 h-48 border-2 border-primary p-2 rounded-md mb-4">
               {qrCodeImage ? (
-                <img 
-                  src={qrCodeImage} 
-                  alt="QR Code PIX" 
+                <img
+                  src={qrCodeImage}
+                  alt="QR Code PIX"
                   className="w-full h-full"
                 />
               ) : pixCode ? (
-                <QRCodeSVG 
-                  value={pixCode} 
+                <QRCodeSVG
+                  value={pixCode}
                   size={176}
                   level="H"
                   className="w-full h-full"
@@ -178,7 +233,7 @@ export default function PixQRCode({
                 </div>
               )}
             </div>
-            
+
             <div className="bg-gray-100 p-3 rounded w-full mb-3 relative">
               <p className="text-xs text-gray-600 mb-1">Código PIX</p>
               {pixCode ? (
@@ -186,8 +241,8 @@ export default function PixQRCode({
               ) : (
                 <p className="text-sm text-gray-400">Carregando código PIX...</p>
               )}
-              
-              <button 
+
+              <button
                 className="absolute right-2 top-1/2 transform -translate-y-1/2 text-primary hover:text-primary-dark"
                 onClick={handleCopyPix}
                 disabled={!pixCode || expired || status === "EXPIRED" || status === "COMPLETED"}
@@ -195,7 +250,7 @@ export default function PixQRCode({
                 {copied ? "✓" : "📋"}
               </button>
             </div>
-            
+
             <div className="mt-2 text-center">
               <div className="text-sm text-gray-600 mb-1">Válido por:</div>
               <div className={`text-lg font-semibold ${expired || status === "EXPIRED" ? "text-red-500" : ""}`}>
@@ -205,8 +260,8 @@ export default function PixQRCode({
 
             {/* Botão de confirmação manual */}
             {onConfirmPayment && (
-              <Button 
-                onClick={onConfirmPayment} 
+              <Button
+                onClick={onConfirmPayment}
                 className="mt-4"
                 disabled={status === "COMPLETED" || status === "EXPIRED"}
               >
@@ -217,14 +272,14 @@ export default function PixQRCode({
         </div>
         <div className="border-l-0 md:border-l border-gray-200 pl-0 md:pl-8">
           <h3 className="text-lg font-semibold mb-4">Informações do Pagamento</h3>
-          
+
           <div className="space-y-3 mb-6">
             <div>
               <p className="text-sm text-gray-600">Valor</p>
               <p className="font-medium">
-                {new Intl.NumberFormat('pt-BR', { 
-                  style: 'currency', 
-                  currency: 'BRL' 
+                {new Intl.NumberFormat('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL'
                 }).format(amount)}
               </p>
             </div>
@@ -241,7 +296,7 @@ export default function PixQRCode({
               <p className="font-medium">59f7435a-b326-4cc2-9f68-f1b6be3c6d10</p>
             </div>
           </div>
-          
+
           <div className="bg-gray-100 p-4 rounded-lg border border-gray-200">
             <h4 className="text-sm font-medium mb-2">Como pagar:</h4>
             <ol className="text-sm text-gray-600 space-y-2 pl-5 list-decimal">
@@ -271,7 +326,7 @@ export default function PixQRCode({
                   <span>Aguardando pagamento...</span>
                 </div>
                 {transactionId && (
-                  <button 
+                  <button
                     onClick={handleRefreshStatus}
                     disabled={refreshing}
                     className="text-blue-600 hover:text-blue-800 disabled:opacity-50"

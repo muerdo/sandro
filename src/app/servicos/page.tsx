@@ -4,8 +4,10 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Printer, Palette, Shirt, Scissors, MessageCircle } from "lucide-react";
 import SearchFilters, { FilterOptions } from "@/components/search/search-filters";
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 
 export default function ServicosPage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilters, setActiveFilters] = useState<FilterOptions>({
     category: null,
@@ -64,11 +66,11 @@ export default function ServicosPage() {
       const matchesSearch = service.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           service.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           service.details.some(detail => detail.toLowerCase().includes(searchQuery.toLowerCase()));
-      
+
       const matchesCategory = !activeFilters.category || service.title === activeFilters.category;
-      
+
       const hasAttributes = activeFilters.attributes.length === 0 ||
-                          activeFilters.attributes.some(attr => 
+                          activeFilters.attributes.some(attr =>
                             service.details.some(detail => detail.toLowerCase().includes(attr.toLowerCase()))
                           );
 
@@ -97,7 +99,7 @@ export default function ServicosPage() {
           Nossos Serviços
         </motion.h1>
 
-        <SearchFilters 
+        <SearchFilters
           onSearch={setSearchQuery}
           onFilter={setActiveFilters}
         />
@@ -137,7 +139,7 @@ export default function ServicosPage() {
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => window.location.href = '/produtos'}
+                        onClick={() => router.push('/produtos')}
                         className="flex-1 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                       >
                         Ver Catálogo

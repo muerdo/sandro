@@ -1,16 +1,27 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingCart, X, Plus, Minus, Trash2 } from "lucide-react";
+import { ShoppingCart, X, Plus, Minus, Trash2, Package } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "@/contexts/cart-context";
 import { cn } from "@/lib/utils";
 import { useVisibility } from "@/contexts/visibility-context";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function CartSummary() {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const { items, removeItem, updateQuantity, total, itemCount } = useCart();
-  const { isCartButtonVisible } = useVisibility(); // Controle de visibilidade
+
+  // Tenta usar o contexto de visibilidade, mas não falha se não estiver disponível
+  let isCartButtonVisible = true; // Valor padrão
+  try {
+    const visibilityContext = useVisibility();
+    isCartButtonVisible = visibilityContext.isCartButtonVisible;
+  } catch (error) {
+    console.warn("VisibilityContext não está disponível, usando valor padrão");
+  }
 
   return (
     <>
@@ -115,6 +126,37 @@ export default function CartSummary() {
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
+
+                          {/* Botões para compra em lote */}
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <button
+                              onClick={() => {
+                                updateQuantity(item.id, 100);
+                              }}
+                              className="text-xs px-2 py-1 rounded bg-primary/10 text-primary flex items-center gap-1 hover:bg-primary/20 transition-colors"
+                            >
+                              <Package className="w-3 h-3" />
+                              Lote 100 un.
+                            </button>
+                            <button
+                              onClick={() => {
+                                updateQuantity(item.id, 500);
+                              }}
+                              className="text-xs px-2 py-1 rounded bg-primary/10 text-primary flex items-center gap-1 hover:bg-primary/20 transition-colors"
+                            >
+                              <Package className="w-3 h-3" />
+                              Lote 500 un.
+                            </button>
+                            <button
+                              onClick={() => {
+                                updateQuantity(item.id, 1000);
+                              }}
+                              className="text-xs px-2 py-1 rounded bg-primary/10 text-primary flex items-center gap-1 hover:bg-primary/20 transition-colors"
+                            >
+                              <Package className="w-3 h-3" />
+                              Lote 1000 un.
+                            </button>
+                          </div>
                         </div>
                       </motion.div>
                     ))}
@@ -124,17 +166,33 @@ export default function CartSummary() {
                       <span>Total</span>
                       <span>R$ {total.toFixed(2)}</span>
                     </div>
-                    <motion.button
-                      onClick={() => {
-                        setIsOpen(false);
-                        window.location.href = '/checkout';
-                      }}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium"
-                    >
-                      Finalizar Compra
-                    </motion.button>
+                    <div className="space-y-3">
+                      <motion.button
+                        onClick={() => {
+                          setIsOpen(false);
+                          // Usar router.push em vez de window.location para evitar recarregar a página
+                          // e potencialmente perder o estado do carrinho
+                          router.push('/checkout');
+                        }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium"
+                      >
+                        Finalizar Compra
+                      </motion.button>
+
+                      <button
+                        onClick={() => {
+                          if (window.confirm('Tem certeza que deseja limpar o carrinho?')) {
+                            removeItem(items.map(item => item.id));
+                            toast.success('Carrinho limpo com sucesso!');
+                          }
+                        }}
+                        className="w-full text-sm text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        Limpar carrinho
+                      </button>
+                    </div>
                   </div>
                 </>
               )}

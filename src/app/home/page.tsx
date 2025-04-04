@@ -3,7 +3,9 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Printer, Palette, Shirt, Scissors, MessageCircle } from "lucide-react";
 import PortfolioGallery from "@/components/gallery/portfolio-gallery";
+import { useRouter } from "next/navigation";
 export default function HomePage() {
+  const router = useRouter();
   const services = [
     {
       title: "Plotagem",
@@ -51,12 +53,12 @@ export default function HomePage() {
               plotagem, adesivos e personalização.
             </p>
             <motion.button
-              onClick={() => (window.location.href = "/produtos")}
+              onClick={() => router.push('/produtos')}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="bg-primary text-white px-8 py-3 rounded-full font-medium hover:bg-primary/90 transition-colors flex items-center gap-2 mx-auto"
             >
-              Explorar Serviços
+              Explorar Produtos
               <ArrowRight className="w-4 h-4" />
             </motion.button>
           </motion.div>

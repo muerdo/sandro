@@ -1,0 +1,13 @@
+{
+  "name": "pix-webhook",
+  "version": "1.0.0",
+  "description": "Edge Function para receber webhooks de pagamento PIX",
+  "memory": 256,
+  "timeout": 10,
+  "verify_jwt": false,
+  "env": {
+    "SUPABASE_URL": "env",
+    "SUPABASE_SERVICE_ROLE_KEY": "env",
+    "WEBHOOK_SECRET": "env"
+  }
+}

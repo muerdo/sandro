@@ -1,3 +1,8 @@
+export interface CustomizationOption {
+  name: string;
+  values: string[];
+}
+
 export interface ProductCustomizationOptions {
   initialSize?: string;
   initialColor?: string;
@@ -5,6 +10,7 @@ export interface ProductCustomizationOptions {
   sizes?: string[];
   colors?: string[];
   types?: string[];
+  options?: CustomizationOption[];
 }
 
 export interface ProductMedia {
@@ -28,6 +34,12 @@ export interface ProductCustomizationState extends ProductCustomization {
   setSelectedMedia: (media: ProductMedia) => void;
 }
 
+export interface ProductBulkPricing {
+  min_quantity: number;
+  price: number;
+  description?: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -44,10 +56,15 @@ export interface Product {
     category?: string;
     features?: string;
     customization?: string;
+    bulk_pricing?: string;
   };
   prices?: Array<{
     id: string;
     unit_amount: number;
+    metadata?: {
+      min_quantity?: string;
+      bulk_tier?: string;
+    };
   }>;
   image?: string;
   low_stock_threshold: number;
@@ -58,4 +75,5 @@ export interface Product {
   };
   images?: string[];
   notes?: string;
+  bulk_pricing?: ProductBulkPricing[];
 }

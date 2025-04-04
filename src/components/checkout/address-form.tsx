@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { IMaskInput } from "react-imask";
 import { toast } from "sonner";
 import { useShippingAddress } from "@/hooks/useShippingAddress";
+import { supabase } from "@/lib/supabase";
 
 // Tipo ShippingAddress exportado diretamente aqui
 export interface ShippingAddress {
@@ -92,22 +93,37 @@ const AddressForm: React.FC<AddressFormProps> = ({
   // Carrega o endereço inicial do hook useShippingAddress, se disponível
   useEffect(() => {
     if (shippingAddress) {
-      setFormData({
-        id: shippingAddress.id || "",
-        user_id: shippingAddress.user_id || "",
-        full_name: shippingAddress.full_name || "",
-        email: shippingAddress.email || "",
-        phone: shippingAddress.phone || "",
-        address: shippingAddress.address || "",
-        city: shippingAddress.city || "",
-        state: shippingAddress.state || "",
-        postal_code: shippingAddress.postal_code || "",
-        is_default: shippingAddress.is_default || false,
-        created_at: shippingAddress.created_at || null,
-        updated_at: shippingAddress.updated_at || null,
-      });
+      console.log("Endereço carregado do Supabase:", shippingAddress);
+
+      // Manter os dados do formulário se já foram preenchidos pelo usuário
+      // Apenas preencher campos vazios com dados do Supabase
+      setFormData(prevData => ({
+        id: prevData.id || shippingAddress.id || "",
+        user_id: prevData.user_id || shippingAddress.user_id || "",
+        full_name: prevData.full_name || shippingAddress.full_name || "",
+        email: prevData.email || shippingAddress.email || "",
+        phone: prevData.phone || shippingAddress.phone || "",
+        address: prevData.address || shippingAddress.address || "",
+        city: prevData.city || shippingAddress.city || "",
+        state: prevData.state || shippingAddress.state || "",
+        postal_code: prevData.postal_code || shippingAddress.postal_code || "",
+        is_default: prevData.is_default || shippingAddress.is_default || false,
+        created_at: prevData.created_at || shippingAddress.created_at || null,
+        updated_at: prevData.updated_at || shippingAddress.updated_at || null,
+      }));
+
+      // Limpa os erros para os campos preenchidos
+      const updatedErrors = { ...errors };
+      if (shippingAddress.full_name) updatedErrors.full_name = "";
+      if (shippingAddress.email) updatedErrors.email = "";
+      if (shippingAddress.phone) updatedErrors.phone = "";
+      if (shippingAddress.address) updatedErrors.address = "";
+      if (shippingAddress.city) updatedErrors.city = "";
+      if (shippingAddress.state) updatedErrors.state = "";
+      if (shippingAddress.postal_code) updatedErrors.postal_code = "";
+      setErrors(updatedErrors);
     }
-  }, [shippingAddress]);
+  }, [shippingAddress, setErrors, errors]);
 
   // Busca cidades quando o estado muda
   useEffect(() => {
@@ -146,8 +162,10 @@ const AddressForm: React.FC<AddressFormProps> = ({
     }
 
     const phoneDigits = formData.phone.replace(/\D/g, "");
-    if (phoneDigits.length < 10 || phoneDigits.length > 11) {
-      newErrors.phone = "Telefone inválido. Deve conter DDD + 8 ou 9 dígitos";
+
+    // Só valida se o campo estiver preenchido (não vazio) mas não tiver 10 ou 11 dígitos
+    if (phoneDigits && (phoneDigits.length < 10 || phoneDigits.length > 11)) {
+        newErrors.phone = "Telefone inválido. Deve conter DDD + 8 ou 9 dígitos";
     }
 
     const cepDigits = formData.postal_code.replace(/\D/g, "");
@@ -168,6 +186,14 @@ const AddressForm: React.FC<AddressFormProps> = ({
     setIsLoading(true);
 
     try {
+      // Verificar se o usuário está autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Você precisa estar logado para salvar o endereço");
+        return;
+      }
+
+      // Preparar dados do endereço
       const addressData = {
         full_name: formData.full_name,
         email: formData.email,
@@ -176,13 +202,70 @@ const AddressForm: React.FC<AddressFormProps> = ({
         city: formData.city,
         state: formData.state,
         postal_code: formData.postal_code,
+        user_id: user.id,
+        updated_at: new Date().toISOString(),
+        is_default: true
       };
 
-      const updatedAddress = await updateShippingAddress(addressData);
+      // Verificar se já existe um endereço padrão
+      if (addressData.is_default) {
+        // Atualizar outros endereços para não serem padrão
+        const { error: updateError } = await supabase
+          .from("shipping_addresses")
+          .update({ is_default: false })
+          .eq("user_id", user.id)
+          .neq("id", formData.id || 'new-address');
+
+        if (updateError) {
+          console.error("Erro ao atualizar endereços existentes:", updateError);
+          // Continuar mesmo com erro
+        }
+      }
+
+      let updatedAddress;
+
+      if (formData.id) {
+        // Atualizar endereço existente
+        const { data, error } = await supabase
+          .from("shipping_addresses")
+          .update(addressData)
+          .eq("id", formData.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        updatedAddress = data;
+      } else {
+        // Criar novo endereço
+        const newAddress = {
+          ...addressData,
+          id: crypto.randomUUID(),
+          created_at: new Date().toISOString(),
+          is_default: true // Primeiro endereço é sempre padrão
+        };
+
+        const { data, error } = await supabase
+          .from("shipping_addresses")
+          .insert([newAddress])
+          .select()
+          .single();
+
+        if (error) throw error;
+        updatedAddress = data;
+      }
+
       if (updatedAddress) {
-        setFormData(updatedAddress); // Atualiza o estado local com o retorno
-        setShippingAddress(updatedAddress); // Atualiza o estado pai
+        // Atualizar o hook de endereço
+        await updateShippingAddress(updatedAddress);
+
+        // Atualizar estados locais
+        setFormData(updatedAddress);
+        setShippingAddress(updatedAddress);
+
         toast.success("Endereço salvo com sucesso!");
+
+        // Registrar no console para debug
+        console.log("Endereço salvo no Supabase:", updatedAddress);
       }
     } catch (error) {
       console.error("Erro ao salvar endereço:", error);
@@ -227,11 +310,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
     validateField(name, value);
   };
 
-  const handlePhoneChange = (value: string) => {
-    const formattedValue = formatPhone(value);
-    setFormData((prev) => ({ ...prev, phone: formattedValue }));
-    validateField("phone", formattedValue);
-  };
+  // O telefone é formatado diretamente pelo IMaskInput via onAccept
 
   const handleCEPChange = (value: string) => {
     const formattedValue = formatCEP(value);
@@ -267,8 +346,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
   const validatePhone = (value: string): string => {
     const digits = value.replace(/\D/g, '');
     if (!digits) return "Telefone é obrigatório";
-    if (!digits.startsWith('55')) return "Deve incluir o código do Brasil (55)";
-    if (digits.length !== 13) return "Telefone inválido (DDD + 9 dígitos)";
+    if (digits.length < 10 || digits.length > 11) return "Telefone inválido (DDD + 8 ou 9 dígitos)";
     return "";
   };
 
@@ -277,13 +355,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
     return !digits ? "CEP é obrigatório" : digits.length === 8 ? "" : "CEP inválido";
   };
 
-  const formatPhone = (value: string): string => {
-    const digits = value.replace(/\D/g, "");
-    if (digits.length <= 2) return `+55 ${digits}`;
-    if (digits.length <= 6) return `+55 (${digits.slice(0, 2)}) ${digits.slice(2)}`;
-    if (digits.length <= 10) return `+55 (${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
-    return `+55 (${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
-  };
+  // Função de formatação de telefone não é necessária, pois o IMaskInput já faz isso
 
   const formatCEP = (value: string): string => {
     const digits = value.replace(/\D/g, "");
@@ -324,23 +396,17 @@ const AddressForm: React.FC<AddressFormProps> = ({
       <div className="form-group">
   <label className="block text-sm font-medium mb-1">Telefone (WhatsApp)</label>
   <IMaskInput
-    mask="+55 (00) 00000-0000"
-    definitions={{
-      '0': /[0-9]/
-    }}
-    name="phone"
-    value={formData.phone}
-    onAccept={(value) => {
-      // Remove todos os caracteres não numéricos e formata
-      const digits = value.replace(/\D/g, '');
-      const formatted = digits.length > 0 ? `+${digits}` : '';
-      setFormData(prev => ({ ...prev, phone: formatted }));
-    }}
-    placeholder="+55 (00) 00000-0000"
-    className="w-full p-2 border rounded"
-    disabled={shippingLoading}
-  />
-  {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
+  mask="+55 (00) 00000-0000"
+  name="phone"
+  value={formData.phone}
+  onAccept={(value) => {
+    setFormData(prev => ({ ...prev, phone: value }));
+    validateField("phone", value);
+  }}
+  placeholder="+55 (00) 00000-0000"
+  className="w-full p-2 border rounded"
+  disabled={shippingLoading}
+/>
 </div>
 
       <div className="form-group">

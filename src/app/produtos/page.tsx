@@ -7,11 +7,13 @@ import { useAuth } from "@/contexts/auth-context";
 import ProductCard from "@/components/products/product-card";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { Product } from "@/types/product";
 export const dynamic = 'force-dynamic';
 export default function CatalogoPage() {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -97,73 +99,207 @@ export default function CatalogoPage() {
     },
   ];
 
+  // Função para mapear produtos do Supabase para o formato esperado
+  const mapSupabaseProducts = (products) => {
+    return products.map(product => {
+      // Verifica se o produto tem imagens
+      let productMedia = [];
+
+      // Se o produto tem um array de imagens
+      if (Array.isArray(product.images) && product.images.length > 0) {
+        productMedia = product.images.map(url => ({
+          type: 'image',
+          url,
+          alt: product.name
+        }));
+      }
+      // Se o produto tem uma imagem única
+      else if (product.image) {
+        productMedia = [{
+          type: 'image',
+          url: product.image,
+          alt: product.name
+        }];
+      }
+      // Imagem padrão se não houver nenhuma
+      else {
+        productMedia = [{
+          type: 'image',
+          url: '/img/placeholder-product.jpg',
+          alt: product.name
+        }];
+      }
+
+      // Processa as features
+      let features = [];
+      if (Array.isArray(product.features)) {
+        features = product.features;
+      } else if (typeof product.features === 'string') {
+        try {
+          features = JSON.parse(product.features);
+        } catch {
+          features = product.features.split(',').map(f => f.trim());
+        }
+      }
+
+      // Retorna o produto mapeado
+      return {
+        id: product.id,
+        name: product.name || "Produto sem nome",
+        description: product.description || "",
+        price: typeof product.price === 'number' ? product.price : 0,
+        category: product.category || "Outros",
+        image: productMedia[0]?.url || "/img/placeholder-product.jpg",
+        media: productMedia,
+        features: features,
+        stock: product.stock || 999,
+        status: product.status || "active",
+        stripeId: null,
+        low_stock_threshold: product.low_stock_threshold || 10,
+      };
+    });
+  };
+
   useEffect(() => {
-    const fetchStripeProducts = async () => {
+    const fetchAllProducts = async () => {
       try {
         setLoading(true);
-        const { data: stripeData, error } = await supabase.functions.invoke("get-stripe-products");
+
+        // 1. Primeiro, buscar produtos do Supabase
+        console.log('Fetching products from Supabase...');
+        const { data: supabaseProducts, error: supabaseError } = await supabase
+          .from('products')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (supabaseError) {
+          console.error("Error fetching Supabase products:", supabaseError);
+          toast.error("Failed to load products from database");
+        } else {
+          console.log(`Fetched ${supabaseProducts?.length || 0} products from Supabase`);
+        }
+
+        // 2. Depois, buscar produtos do Stripe
+        const { data: { session } } = await supabase.auth.getSession();
+
+        // Adiciona o token de sessão para autorização
+        const { data: stripeData, error } = await supabase.functions.invoke("get-stripe-products", {
+          body: {
+            sessionToken: session?.access_token
+          }
+        });
+
         if (error) {
           console.error("Error fetching Stripe products:", error);
           toast.error("Failed to load Stripe products");
-          setProducts(defaultProducts); // Fallback to default products
+
+          // Se temos produtos do Supabase, usamos eles + os produtos padrão
+          if (supabaseProducts && supabaseProducts.length > 0) {
+            const mappedSupabaseProducts = mapSupabaseProducts(supabaseProducts);
+            setProducts([...defaultProducts, ...mappedSupabaseProducts]);
+          } else {
+            setProducts(defaultProducts); // Fallback to default products
+          }
           return;
         }
+
+        // Log para debug
+        console.log("Raw Stripe products data:", stripeData);
 
         // Transform Stripe products to match our format
         const stripeProducts = Array.isArray(stripeData)
           ? stripeData
               .map((product: any) => {
-                // Get all active prices
-                const activePrices = product.prices?.filter((price: any) => price.active) || [];
-
-                // Find default price or lowest price
-                const defaultPrice =
-                  activePrices.find((price: any) => price.metadata?.default) ||
-                  activePrices.reduce((lowest: any, current: any) => {
-                    if (!lowest || current.unit_amount < lowest.unit_amount) {
-                      return current;
-                    }
-                    return lowest;
-                  }, null);
-
-                // Skip products without valid prices
-                if (!defaultPrice?.unit_amount) {
-                  console.error(`No valid price found for product ${product.id}`);
+                // Verifica se o produto tem os dados necessários
+                if (!product || !product.id) {
+                  console.warn("Invalid product data:", product);
                   return null;
                 }
+
+                // Determina o preço do produto
+                let productPrice = 0;
+
+                // Se o produto já tem um preço definido, use-o
+                if (typeof product.price === 'number') {
+                  productPrice = product.price;
+                }
+                // Caso contrário, tente extrair o preço dos preços disponíveis
+                else if (Array.isArray(product.prices) && product.prices.length > 0) {
+                  // Get all active prices
+                  const activePrices = product.prices.filter((price: any) => price.active) || [];
+
+                  // Find default price or lowest price
+                  const defaultPrice =
+                    activePrices.find((price: any) => price.metadata?.default) ||
+                    activePrices.reduce((lowest: any, current: any) => {
+                      if (!lowest || current.unit_amount < lowest.unit_amount) {
+                        return current;
+                      }
+                      return lowest;
+                    }, null);
+
+                  if (defaultPrice?.unit_amount) {
+                    productPrice = defaultPrice.unit_amount / 100;
+                  }
+                }
+
+                // Imagem padrão caso não haja imagem
+                const defaultImage = "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9";
+                const productImage = product.image || (product.images && product.images[0]) || defaultImage;
 
                 return {
                   id: `stripe-${product.id}`,
                   name: product.name || "Untitled Product",
                   description: product.description || "",
-                  price: defaultPrice.unit_amount / 100,
-                  category: product.metadata?.category || "Outros",
-                  image: product.images?.[0] || "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9",
+                  price: productPrice,
+                  category: product.metadata?.category || product.category || "Outros",
+                  image: productImage,
                   media: [
                     {
                       type: "image" as const,
-                      url: product.images?.[0] || "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9",
+                      url: productImage,
                       alt: product.name || "Product Image",
                     },
                   ],
-                  features: product.metadata?.features?.split(",") || [],
-                  customization: product.metadata?.customization
-                    ? JSON.parse(product.metadata.customization)
-                    : undefined,
-                  stock: 999,
+                  features: product.features ||
+                           (product.metadata?.features ?
+                             (typeof product.metadata.features === 'string' ?
+                               product.metadata.features.split(",").map((f: string) => f.trim()) :
+                               product.metadata.features) :
+                             []),
+                  customization: product.customization ||
+                                (product.metadata?.customization ?
+                                  (typeof product.metadata.customization === 'string' ?
+                                    JSON.parse(product.metadata.customization) :
+                                    product.metadata.customization) :
+                                  undefined),
+                  stock: product.stock || 999,
                   status: "active" as const,
                   stripeId: product.id,
-                  low_stock_threshold: 10,
+                  low_stock_threshold: product.low_stock_threshold || 10,
                 };
               })
               .filter(Boolean)
           : [];
 
-        const allProducts = [...defaultProducts];
-        if (stripeProducts.length > 0) {
-          allProducts.push(...stripeProducts);
+        console.log("Transformed Stripe products:", stripeProducts);
+
+        // Combinar todos os produtos
+        let allProducts = [...defaultProducts];
+
+        // Adicionar produtos do Supabase se existirem
+        if (supabaseProducts && supabaseProducts.length > 0) {
+          const mappedSupabaseProducts = mapSupabaseProducts(supabaseProducts);
+          console.log(`Mapped ${mappedSupabaseProducts.length} Supabase products`);
+          allProducts = [...allProducts, ...mappedSupabaseProducts];
         }
 
+        // Adicionar produtos do Stripe se existirem
+        if (stripeProducts.length > 0) {
+          allProducts = [...allProducts, ...stripeProducts];
+        }
+
+        console.log(`Total products: ${allProducts.length}`);
         setProducts(allProducts);
         toast.success("Products loaded successfully");
       } catch (error) {
@@ -174,7 +310,7 @@ export default function CatalogoPage() {
       }
     };
 
-    fetchStripeProducts();
+    fetchAllProducts();
   }, []);
 
   return (
@@ -185,7 +321,7 @@ export default function CatalogoPage() {
       {/* Conteúdo da página */}
       <div className="container mx-auto px-4 relative z-10">
         <motion.button
-          onClick={() => (window.location.href = "/servicos")}
+          onClick={() => router.push('/servicos')}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           className="mb-8 flex items-center gap-2 text-white hover:opacity-80 transition-opacity"

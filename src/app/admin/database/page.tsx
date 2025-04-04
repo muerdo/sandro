@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { 
+import {
   Database,
   Table,
   AlertCircle,
@@ -51,7 +51,7 @@ export default function DatabaseManagement() {
   const { user } = useAuth();
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
-  const { 
+  const {
     tables,
     loading,
     selectedTable,
@@ -64,17 +64,16 @@ export default function DatabaseManagement() {
     toggleSystemTables
   } = useDatabaseTables();
 
-  useEffect(() => {
-    checkAdminStatus();
-    if (isAdmin) {
-      fetchTables();
-    }
-  }, [isAdmin]);
-
   const checkAdminStatus = async () => {
     if (!user) {
       router.push('/');
       return;
+    }
+
+    // Verifica se já verificamos o status de admin nesta sessão
+    const adminStatusChecked = sessionStorage.getItem('admin_database_status_checked');
+    if (adminStatusChecked === 'true' && isAdmin) {
+      return; // Já verificamos e é admin
     }
 
     const { data: profile } = await supabase
@@ -89,24 +88,26 @@ export default function DatabaseManagement() {
     }
 
     setIsAdmin(true);
+    sessionStorage.setItem('admin_database_status_checked', 'true');
   };
 
-
-  const initializeDatabase = async () => {
-    try {
-      await checkAdminStatus();
-      if (isAdmin) {
-        await fetchTables();
-      }
-    } catch (error) {
-      console.error('Error initializing database:', error);
-      toast.error('Failed to initialize database management');
-    }
-  };
-
+  // Efeito para inicializar a página apenas uma vez
   useEffect(() => {
+    const initializeDatabase = async () => {
+      try {
+        await checkAdminStatus();
+        if (isAdmin) {
+          // Carrega as tabelas apenas uma vez
+          await fetchTables();
+        }
+      } catch (error) {
+        console.error('Error initializing database:', error);
+        toast.error('Failed to initialize database management');
+      }
+    };
+
     initializeDatabase();
-  }, [isAdmin]);
+  }, [isAdmin]); // Dependemos apenas do status de admin
 
   const handleTableSelect = async (tableName: TableName) => {
     try {
