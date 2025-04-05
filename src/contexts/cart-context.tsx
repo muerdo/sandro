@@ -253,7 +253,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     >
       {children}
       {showAuthDialog && (
-        <div className="fixed inset-0 z-[100]">
+        <div className="fixed inset-0 z-[1]">
           <AuthDialog
             isOpen={showAuthDialog}
             onClose={() => setShowAuthDialog(false)}
