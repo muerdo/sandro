@@ -11,7 +11,9 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { Product } from "@/types/product";
+// Forçar revalidação da página para garantir que as alterações sejam refletidas
 export const dynamic = 'force-dynamic';
+
 export default function CatalogoPage() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
@@ -338,19 +340,34 @@ export default function CatalogoPage() {
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-r-transparent" />
             </div>
           )}
-          {products.map((product) => (
+          {products.map((product, index) => (
             <motion.div
-              key={product.id}
+              key={`${product.id}-${index}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-white/10 backdrop-blur-sm rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
             >
               <div className="relative aspect-square">
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
+                {/* Verificar se o produto tem mídia do tipo vídeo */}
+                {product.media?.some(m => m.type === 'video') ? (
+                  <div className="relative w-full h-full">
+                    <video
+                      src={product.media.find(m => m.type === 'video')?.url || product.image}
+                      className="w-full h-full object-cover"
+                      muted
+                      autoPlay
+                      loop
+                      playsInline
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                  </div>
+                ) : (
+                  <img
+                    src={product.media?.[0]?.url || product.image}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4">
                   <p className="text-white/80 text-sm">{product.category}</p>

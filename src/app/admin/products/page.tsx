@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
+import { uploadMultipleMediaWithSignedUrl } from "@/lib/signed-upload";
+import StorageSelector from "@/components/admin/storage-selector";
+import { generateProductId } from "@/lib/slug-utils";
 import {
   Plus,
   Pencil,
@@ -18,7 +21,10 @@ import {
   Tag,
   ListPlus,
   ArrowUpDown,
-  RefreshCw
+  RefreshCw,
+  Upload,
+  Video,
+  Play
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -59,6 +65,8 @@ export default function ProductsManagement() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [showStorageSelector, setShowStorageSelector] = useState(false);
+  const [currentEditMode, setCurrentEditMode] = useState<'new' | 'edit'>('new');
 
   const handleProductAction = async (action: 'create' | 'update' | 'delete', productData?: any) => {
     try {
@@ -323,19 +331,51 @@ export default function ProductsManagement() {
 
   const handleAddCategory = async () => {
     try {
+      if (!newCategory.name || newCategory.name.trim() === '') {
+        toast.error('Por favor, informe um nome para a categoria');
+        return;
+      }
+
       setLoading(prev => ({ ...prev, action: true }));
+
+      // Gerar slug para a categoria
+      const categorySlug = newCategory.name.toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '');
+
+      console.log('Adicionando nova categoria:', { ...newCategory, slug: categorySlug });
+
+      // Verificar se a categoria já existe
+      const { data: existingCategory, error: checkError } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('slug', categorySlug)
+        .single();
+
+      if (!checkError && existingCategory) {
+        toast.error(`A categoria '${newCategory.name}' já existe`);
+        return;
+      }
+
+      // Inserir a nova categoria
       const { error } = await supabase
         .from('categories')
-        .insert([newCategory]);
+        .insert([{
+          ...newCategory,
+          slug: categorySlug,
+          created_at: new Date().toISOString()
+        }]);
 
       if (error) throw error;
 
       setIsAddingCategory(false);
       setNewCategory({ name: '', description: '' });
-      toast.success('Category added successfully');
+      toast.success(`Categoria '${newCategory.name}' adicionada com sucesso!`);
     } catch (error) {
       console.error('Error adding category:', error);
-      toast.error('Failed to add category');
+      toast.error('Falha ao adicionar categoria');
     } finally {
       setLoading(prev => ({ ...prev, action: false }));
     }
@@ -498,6 +538,86 @@ export default function ProductsManagement() {
     setProductImages(product.images || []);
   };
 
+  // Estado para armazenar informações de mídia (imagens e vídeos)
+  const [productMedia, setProductMedia] = useState<Array<{url: string, type: 'image' | 'video', thumbnail?: string}>>([]);
+
+  // Função para adicionar imagens/vídeos ao produto em edição
+  const handleEditMediaUpload = async (files: File[]) => {
+    if (files.length === 0) return;
+
+    try {
+      setLoading(prev => ({ ...prev, action: true }));
+      toast.info(`Fazendo upload de ${files.length} arquivo(s)...`);
+
+      // Upload media files to Supabase Storage using signed URLs
+      const mediaResults = await uploadMultipleMediaWithSignedUrl(files);
+
+      // Extract just the URLs for backward compatibility
+      const imageUrls = mediaResults.map(media => media.url);
+
+      // Update state with new media information
+      setProductMedia(prev => [...prev, ...mediaResults]);
+      setProductImages(prev => [...prev, ...imageUrls]);
+      setEditForm(prev => ({
+        ...prev,
+        images: [...(prev.images || []), ...imageUrls],
+        // Add media information if it exists in the product structure
+        media: [...(prev.media || []), ...mediaResults.map(m => ({
+          type: m.type,
+          url: m.url,
+          alt: editForm.name || 'Product image',
+          thumbnail: m.thumbnail
+        }))]
+      }));
+
+      toast.success(`${files.length} arquivo(s) carregado(s) com sucesso!`);
+    } catch (error) {
+      console.error('Error uploading media:', error);
+      toast.error(`Erro ao fazer upload dos arquivos: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+    } finally {
+      setLoading(prev => ({ ...prev, action: false }));
+    }
+  };
+
+  // Função para abrir o seletor de imagens do storage para edição
+  const openStorageSelectorForEdit = () => {
+    setCurrentEditMode('edit');
+    setShowStorageSelector(true);
+  };
+
+  // Função para abrir o seletor de imagens do storage para novo produto
+  const openStorageSelectorForNew = () => {
+    setCurrentEditMode('new');
+    setShowStorageSelector(true);
+  };
+
+  // Função para lidar com a seleção de imagens do storage
+  const handleStorageSelection = (selectedMedia: Array<{url: string, type: 'image' | 'video', alt?: string, thumbnail?: string}>) => {
+    // Extract just the URLs for backward compatibility
+    const imageUrls = selectedMedia.map(media => media.url);
+
+    if (currentEditMode === 'edit') {
+      // Update state for edit form
+      setProductMedia(prev => [...prev, ...selectedMedia]);
+      setProductImages(prev => [...prev, ...imageUrls]);
+      setEditForm(prev => ({
+        ...prev,
+        images: [...(prev.images || []), ...imageUrls],
+        media: [...(prev.media || []), ...selectedMedia]
+      }));
+    } else {
+      // Update state for new product
+      setProductImages(prev => [...prev, ...imageUrls]);
+      setNewProduct(prev => ({
+        ...prev,
+        images: [...(prev.images || []), ...imageUrls],
+        media: [...(prev.media || []), ...selectedMedia]
+      }));
+    }
+
+    toast.success(`${selectedMedia.length} arquivo(s) adicionado(s) com sucesso!`);
+  };
+
   const fetchStockHistory = async (productId: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -552,6 +672,20 @@ export default function ProductsManagement() {
       const stock = typeof editForm.stock === 'number' ? editForm.stock :
                    typeof editForm.stock === 'string' ? parseInt(editForm.stock) : 0;
 
+      // Processar mídia e imagens
+      let productMedia = [];
+      if (editForm.media && editForm.media.length > 0) {
+        productMedia = editForm.media;
+        console.log('Usando mídia do produto em edição:', productMedia);
+      } else if (editForm.images && editForm.images.length > 0) {
+        productMedia = editForm.images.map(url => ({
+          type: 'image' as const,
+          url,
+          alt: editForm.name || 'Imagem do produto'
+        }));
+        console.log('Convertendo imagens para mídia em edição:', productMedia);
+      }
+
       // Preparar dados do produto
       const updates = {
         name: editForm.name,
@@ -561,6 +695,7 @@ export default function ProductsManagement() {
         stock: stock,
         status: 'active',
         images: editForm.images || [],
+        media: productMedia,
         features: editForm.features || [],
         customization: editForm.customization || null,
         low_stock_threshold: editForm.low_stock_threshold || 10,
@@ -604,7 +739,19 @@ export default function ProductsManagement() {
       }
 
       setLoading(prev => ({ ...prev, action: true }));
-      console.log('Excluindo produto do Supabase:', id);
+
+      // Obter informações do produto antes de excluí-lo (para logs)
+      const { data: productData, error: fetchError } = await supabase
+        .from('products')
+        .select('id, name, category')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) {
+        console.warn('Não foi possível obter informações do produto antes da exclusão:', fetchError);
+      } else {
+        console.log('Excluindo produto:', productData);
+      }
 
       // Excluir produto do Supabase
       const { error } = await supabase
@@ -617,9 +764,19 @@ export default function ProductsManagement() {
         throw error;
       }
 
-      console.log('Produto excluído com sucesso');
+      console.log('Produto excluído com sucesso, ID:', id);
       toast.success('Produto excluído com sucesso!');
+
+      // Atualizar a lista de produtos no estado local
+      setProducts(prev => prev.filter(p => p.id !== id));
+
+      // Forçar recarregamento da lista de produtos do banco de dados
       fetchProducts();
+
+      // Adicionar um pequeno atraso para garantir que a página seja revalidada
+      setTimeout(() => {
+        router.refresh();
+      }, 500);
     } catch (error) {
       console.error('Erro ao excluir produto:', error);
       toast.error(`Falha ao excluir produto: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
@@ -654,9 +811,27 @@ export default function ProductsManagement() {
       const stock = typeof newProduct.stock === 'number' ? newProduct.stock :
                    typeof newProduct.stock === 'string' ? parseInt(newProduct.stock) : 0;
 
+      // Processar mídia e imagens
+      let productMedia = [];
+      if (newProduct.media && newProduct.media.length > 0) {
+        productMedia = newProduct.media;
+        console.log('Usando mídia do produto:', productMedia);
+      } else if (newProduct.images && newProduct.images.length > 0) {
+        productMedia = newProduct.images.map(url => ({
+          type: 'image' as const,
+          url,
+          alt: newProduct.name || 'Imagem do produto'
+        }));
+        console.log('Convertendo imagens para mídia:', productMedia);
+      }
+
+      // Gerar um ID padronizado para o produto baseado na categoria
+      const productId = generateProductId(newProduct.category || 'Outros', newProduct.name);
+      console.log('ID padronizado gerado para o novo produto:', productId);
+
       // Preparar dados do produto
       const productData = {
-        id: crypto.randomUUID(),
+        id: productId, // Garantir que o ID seja salvo
         name: newProduct.name,
         description: newProduct.description || '',
         price: price,
@@ -664,6 +839,7 @@ export default function ProductsManagement() {
         stock: stock,
         status: 'active',
         images: newProduct.images || [],
+        media: productMedia,
         features: newProduct.features || [],
         customization: newProduct.customization || null,
         low_stock_threshold: 10,
@@ -715,9 +891,9 @@ export default function ProductsManagement() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <AlertCircle className="w-12 h-12 text-destructive mx-auto" />
-          <h1 className="text-2xl font-bold">Access Denied</h1>
+          <h1 className="text-2xl font-bold">Opa! Pera lá, muita calma ladrão...</h1>
           <p className="text-muted-foreground">
-            You don't have permission to access this page.
+            Você não pode ver essa página.
           </p>
         </div>
       </div>
@@ -728,7 +904,7 @@ export default function ProductsManagement() {
     <main className="min-h-screen bg-background py-12">
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
-          <h1 className="text-3xl md:text-4xl font-bold">Products Management</h1>
+          <h1 className="text-3xl md:text-4xl font-bold">Gerenciar Produtos</h1>
           <div className="flex flex-wrap items-center gap-3">
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -764,12 +940,12 @@ export default function ProductsManagement() {
               {loading.sync ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  Syncing...
+                  Sincronizando...
                 </>
               ) : (
                 <>
                   <ArrowUpDown className="w-4 h-4" />
-                  Sync with Stripe
+                  Sincronizar com Stripe
                 </>
               )}
             </motion.button>
@@ -780,7 +956,7 @@ export default function ProductsManagement() {
               className="bg-primary text-primary-foreground px-3 md:px-4 py-2 rounded-lg flex items-center gap-2 text-sm md:text-base"
             >
               <Plus className="w-4 h-4" />
-              Add Product
+              Add Produto
             </motion.button>
           </div>
         </div>
@@ -790,13 +966,13 @@ export default function ProductsManagement() {
           {loading.products ? (
             <div className="flex items-center justify-center py-12">
               <div className="w-8 h-8 border-4 border-t-transparent border-primary rounded-full animate-spin"></div>
-              <span className="ml-3 text-lg">Loading products...</span>
+              <span className="ml-3 text-lg">Carregando Produtos...</span>
             </div>
           ) : products.length === 0 ? (
             <div className="bg-card rounded-xl p-8 text-center">
               <Package2 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-xl font-medium mb-2">No products found</h3>
-              <p className="text-muted-foreground mb-6">Start by adding a product or syncing with Stripe.</p>
+              <h3 className="text-xl font-medium mb-2">Nenhum produto encontrado</h3>
+              <p className="text-muted-foreground mb-6">Comece Adicionando Produtos Pela Stripe.</p>
               <div className="flex flex-wrap justify-center gap-3">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
@@ -805,7 +981,7 @@ export default function ProductsManagement() {
                   className="bg-primary text-primary-foreground px-4 py-2 rounded-lg flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
-                  Add Product
+                  Add Produto
                 </motion.button>
                 <motion.button
                   whileHover={{ scale: 1.02 }}
@@ -814,7 +990,7 @@ export default function ProductsManagement() {
                   className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg flex items-center gap-2"
                 >
                   <ArrowUpDown className="w-4 h-4" />
-                  Sync with Stripe
+                  Sincronizar com Stripe
                 </motion.button>
               </div>
             </div>
@@ -883,7 +1059,7 @@ export default function ProductsManagement() {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Stock</label>
+                      <label className="block text-sm font-medium mb-1">Inventario</label>
                       <input
                         type="number"
                         value={editForm.stock || 0}
@@ -893,14 +1069,14 @@ export default function ProductsManagement() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Category</label>
+                    <label className="block text-sm font-medium mb-1">Categoria</label>
                     <div className="flex gap-2">
                       <select
                         value={editForm.category || ''}
                         onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
                         className="flex-1 bg-background px-3 py-1 rounded-lg border"
                       >
-                        <option value="">Select a category</option>
+                        <option value="">Escolha a Categoria</option>
                         {categories.map((category) => (
                           <option key={category.id} value={category.name}>
                             {category.name}
@@ -920,13 +1096,86 @@ export default function ProductsManagement() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Description</label>
+                    <label className="block text-sm font-medium mb-1">Descrição</label>
                     <textarea
                       value={editForm.description || ''}
                       onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                       className="w-full bg-background px-3 py-1 rounded-lg border"
                       rows={3}
                     />
+                  </div>
+
+                  {/* Product Images */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Imagens do Produto</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-2">
+                      {productImages.map((image, index) => (
+                        <div key={index} className="relative aspect-square">
+                          {/* Verificar se é um vídeo baseado na extensão do arquivo */}
+                          {image.match(/\.(mp4|webm|mov)$/i) ? (
+                            <div className="relative w-full h-full">
+                              <video
+                                src={image}
+                                className="w-full h-full object-cover rounded-lg"
+                                controls
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <Play className="w-8 h-8 text-white opacity-70" />
+                              </div>
+                            </div>
+                          ) : (
+                            <img
+                              src={image}
+                              alt={`Product media ${index + 1}`}
+                              className="w-full h-full object-cover rounded-lg"
+                            />
+                          )}
+                          <button
+                            onClick={() => {
+                              setProductImages(images => images.filter((_, i) => i !== index));
+                              setEditForm(prev => ({
+                                ...prev,
+                                images: prev.images?.filter((_, i) => i !== index) || [],
+                                media: prev.media?.filter((_, i) => i !== index) || []
+                              }));
+                            }}
+                            className="absolute -top-1 -right-1 p-1 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <label
+                      htmlFor="edit-product-image-upload"
+                      className="flex items-center justify-center gap-2 bg-secondary text-secondary-foreground px-3 py-2 rounded-lg border-2 border-dashed border-muted-foreground/20 cursor-pointer hover:bg-secondary/80 transition-colors mb-2"
+                    >
+                      <Upload className="w-4 h-4" />
+                      <span>Adicionar imagens ou vídeos</span>
+                      <input
+                        id="edit-product-image-upload"
+                        type="file"
+                        accept="image/*,video/*"
+                        multiple
+                        className="hidden"
+                        onChange={async (e) => {
+                          const files = Array.from(e.target.files || []);
+                          if (files.length === 0) return;
+                          await handleEditMediaUpload(files);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+
+                    {/* Botão para abrir o seletor de imagens */}
+                    <div className="text-center mb-2">
+                      <button
+                        onClick={openStorageSelectorForEdit}
+                        className="text-primary hover:underline text-sm"
+                      >
+                        Usar imagens já existentes no storage
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -982,7 +1231,7 @@ export default function ProductsManagement() {
           <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50">
             <div className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 rounded-lg">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">Create New Product</h2>
+                <h2 className="text-xl font-semibold">Criar novo produto</h2>
                 <button
                   onClick={() => setIsCreating(false)}
                   className="p-2 hover:bg-secondary rounded-lg transition-colors"
@@ -993,18 +1242,38 @@ export default function ProductsManagement() {
               <div className="space-y-6">
                 {/* Product Images */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">Product Images</label>
+                  <label className="block text-sm font-medium mb-2">Imagem do Produto</label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4">
                     {productImages.map((image, index) => (
                       <div key={index} className="relative aspect-square">
-                        <img
-                          src={image}
-                          alt={`Product image ${index + 1}`}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
+                        {/* Verificar se é um vídeo baseado na extensão do arquivo */}
+                        {image.match(/\.(mp4|webm|mov)$/i) ? (
+                          <div className="relative w-full h-full">
+                            <video
+                              src={image}
+                              className="w-full h-full object-cover rounded-lg"
+                              controls
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                              <Play className="w-8 h-8 text-white opacity-70" />
+                            </div>
+                          </div>
+                        ) : (
+                          <img
+                            src={image}
+                            alt={`Product media ${index + 1}`}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                        )}
                         <button
                           onClick={() => {
                             setProductImages(images => images.filter((_, i) => i !== index));
+                            // Update newProduct.images and media as well
+                            setNewProduct(prev => ({
+                              ...prev,
+                              images: prev.images?.filter((_, i) => i !== index) || [],
+                              media: prev.media?.filter((_, i) => i !== index) || []
+                            }));
                           }}
                           className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90"
                         >
@@ -1013,39 +1282,119 @@ export default function ProductsManagement() {
                       </div>
                     ))}
                   </div>
-                  <div className="flex items-center gap-4">
-                    <input
-                      type="url"
-                      placeholder="Enter image URL"
-                      className="flex-1 bg-background px-3 py-2 rounded-lg border"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          const input = e.currentTarget;
+                  <div className="flex flex-col gap-4">
+                    {/* File Upload */}
+                    <div className="flex items-center gap-4">
+                      <label
+                        htmlFor="product-image-upload"
+                        className="flex-1 flex items-center justify-center gap-2 bg-secondary text-secondary-foreground px-4 py-6 rounded-lg border-2 border-dashed border-muted-foreground/20 cursor-pointer hover:bg-secondary/80 transition-colors"
+                      >
+                        <Upload className="w-5 h-5" />
+                        <span>Clique para fazer upload de imagens ou vídeos</span>
+                        <input
+                          id="product-image-upload"
+                          type="file"
+                          accept="image/*,video/*"
+                          multiple
+                          className="hidden"
+                          onChange={async (e) => {
+                            const files = Array.from(e.target.files || []);
+                            if (files.length === 0) return;
+
+                            try {
+                              setLoading(prev => ({ ...prev, action: true }));
+                              toast.info(`Fazendo upload de ${files.length} arquivo(s)...`);
+
+                              // Upload media files to Supabase Storage using signed URLs
+                              const mediaResults = await uploadMultipleMediaWithSignedUrl(files);
+
+                              // Extract just the URLs for backward compatibility
+                              const imageUrls = mediaResults.map(media => media.url);
+
+                              // Update state with new media information
+                              setProductImages(prev => [...prev, ...imageUrls]);
+                              setNewProduct(prev => ({
+                                ...prev,
+                                images: [...(prev.images || []), ...imageUrls],
+                                // Add media information if supported
+                                media: [...(prev.media || []), ...mediaResults.map(m => ({
+                                  type: m.type,
+                                  url: m.url,
+                                  alt: newProduct.name || 'Product image',
+                                  thumbnail: m.thumbnail
+                                }))]
+                              }));
+
+                              toast.success(`${files.length} arquivo(s) carregado(s) com sucesso!`);
+
+                              // Clear the input
+                              e.target.value = '';
+                            } catch (error) {
+                              console.error('Error uploading media:', error);
+                              toast.error(`Erro ao fazer upload dos arquivos: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+                            } finally {
+                              setLoading(prev => ({ ...prev, action: false }));
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+
+                    {/* Botão para abrir o seletor de imagens */}
+                    <div className="text-center">
+                      <button
+                        onClick={openStorageSelectorForNew}
+                        className="text-primary hover:underline text-sm"
+                      >
+                        Usar imagens já existentes no storage
+                      </button>
+                    </div>
+
+                    {/* URL Input (as fallback) */}
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="url"
+                        placeholder="Ou insira a URL da imagem"
+                        className="flex-1 bg-background px-3 py-2 rounded-lg border"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const input = e.currentTarget;
+                            if (input.value) {
+                              const newUrl = input.value;
+                              setProductImages(images => [...images, newUrl]);
+                              setNewProduct(prev => ({
+                                ...prev,
+                                images: [...(prev.images || []), newUrl]
+                              }));
+                              input.value = '';
+                            }
+                          }
+                        }}
+                      />
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg font-medium"
+                        onClick={() => {
+                          const input = document.querySelector('input[type="url"]') as HTMLInputElement;
                           if (input.value) {
-                            setProductImages(images => [...images, input.value]);
+                            const newUrl = input.value;
+                            setProductImages(images => [...images, newUrl]);
+                            setNewProduct(prev => ({
+                              ...prev,
+                              images: [...(prev.images || []), newUrl]
+                            }));
                             input.value = '';
                           }
-                        }
-                      }}
-                    />
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg font-medium"
-                      onClick={() => {
-                        const input = document.querySelector('input[type="url"]') as HTMLInputElement;
-                        if (input.value) {
-                          setProductImages(images => [...images, input.value]);
-                          input.value = '';
-                        }
-                      }}
-                    >
-                      Add Image
-                    </motion.button>
+                        }}
+                      >
+                        Add URL
+                      </motion.button>
+                    </div>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Name</label>
+                  <label className="block text-sm font-medium mb-1">Nome</label>
                   <input
                     type="text"
                     value={newProduct.name}
@@ -1055,7 +1404,7 @@ export default function ProductsManagement() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Price</label>
+                    <label className="block text-sm font-medium mb-1">Preço</label>
                     <input
                       type="number"
                       value={newProduct.price}
@@ -1064,7 +1413,7 @@ export default function ProductsManagement() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Stock</label>
+                    <label className="block text-sm font-medium mb-1">Inventário</label>
                     <input
                       type="number"
                       value={newProduct.stock}
@@ -1074,7 +1423,7 @@ export default function ProductsManagement() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Description</label>
+                  <label className="block text-sm font-medium mb-1">Descrição</label>
                   <textarea
                     value={newProduct.description}
                     onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
@@ -1083,14 +1432,14 @@ export default function ProductsManagement() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Category</label>
+                  <label className="block text-sm font-medium mb-1">Categoria</label>
                   <div className="flex gap-2">
                     <select
                       value={newProduct.category}
                       onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
                       className="flex-1 bg-background px-3 py-2 rounded-lg border"
                     >
-                      <option value="">Select a category</option>
+                      <option value="">Escolha a Categoria</option>
                       {categories.map((category) => (
                         <option key={category.id} value={category.name}>
                           {category.name}
@@ -1132,7 +1481,7 @@ export default function ProductsManagement() {
             className="bg-card p-6 rounded-xl shadow-lg w-full max-w-md"
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold">Add New Category</h3>
+              <h3 className="text-xl font-semibold">Criar Nova Categoria</h3>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -1144,7 +1493,7 @@ export default function ProductsManagement() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Category Name</label>
+                <label className="block text-sm font-medium mb-1">Nome da Categoria</label>
                 <input
                   type="text"
                   value={newCategory.name}
@@ -1153,7 +1502,7 @@ export default function ProductsManagement() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
+                <label className="block text-sm font-medium mb-1">Descrição</label>
                 <textarea
                   value={newCategory.description}
                   onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
@@ -1193,6 +1542,14 @@ export default function ProductsManagement() {
             </div>
           </motion.div>
         </div>
+      )}
+      {/* Seletor de imagens do storage */}
+      {showStorageSelector && (
+        <StorageSelector
+          onSelect={handleStorageSelection}
+          onClose={() => setShowStorageSelector(false)}
+          maxSelection={10}
+        />
       )}
     </main>
   );
