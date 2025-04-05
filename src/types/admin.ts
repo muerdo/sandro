@@ -131,6 +131,13 @@ export interface Category {
   updated_at?: string;
 }
 
+export interface ProductMedia {
+  type: 'image' | 'video';
+  url: string;
+  alt?: string;
+  thumbnail?: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -146,6 +153,7 @@ export interface Product {
   status: string;
   low_stock_threshold: number;
   inventory_history?: InventoryUpdate[];
+  media?: ProductMedia[];
 }
 
 export interface ProductWithInventory extends Product {

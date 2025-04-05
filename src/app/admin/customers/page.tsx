@@ -129,6 +129,7 @@ export default function ProfilesManagement() {
         isEditingProfile,
         {
           email: editProfileForm.email !== currentProfile.email ? editProfileForm.email : undefined,
+          emailConfirm: true,
           user_metadata: {
             full_name: editProfileForm.full_name || currentProfile.full_name || '',
             username: editProfileForm.username || currentProfile.username || '',
