@@ -47,7 +47,7 @@ export default function SiteHeader() {
           {/* User Actions */}
           <div className="flex items-center gap-4">
             {/* Cart Button */}
-            <Link href="/cart" className="relative">
+            <Link href="/checkout" className="relative">
               <ShoppingCart className="h-6 w-6" />
               {items.length > 0 && (
                 <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
