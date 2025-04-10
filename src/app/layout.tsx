@@ -24,6 +24,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt-BR" className={`${GeistSans.variable}`}>
+      <meta name="google-site-verification" content="KRN3Pnw1PTmJaGx9IiRuI1QoceDmR2OH4gRozx3s0dk" />
       <body className="min-h-screen bg-background antialiased flex flex-col overflow-x-hidden">
         <AuthProvider>
           <CartProvider>
