@@ -1,0 +1,14 @@
+# *
+User-agent: *
+Allow: /
+
+# *
+User-agent: *
+Disallow: /admin
+Disallow: /api
+
+# Host
+Host: https://www.sandroadesivos.com.br
+
+# Sitemaps
+Sitemap: https://www.sandroadesivos.com.br/sitemap.xml

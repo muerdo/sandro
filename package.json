@@ -9,14 +9,15 @@
     "dev": "next dev --turbo",
     "lint": "eslint",
     "lint:fix": "eslint . --fix",
-    "preview": "next build && next start",
+    "preview": "next build && next-sitemap && next start",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "test": "jest",
     "test:types": "tsc --noEmit --pretty",
-    "test:all": "pnpm run test && pnpm run test:types"
+    "test:all": "pnpm run test && pnpm run test:types",
+    "sitemap": "next-sitemap"
   },
   "dependencies": {
     "@brazilian-utils/brazilian-utils": "1.0.0-rc.12",
