@@ -43,16 +43,28 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
       return;
     }
 
+    // Construir nome do produto com personalizações
+    let productName = product.name;
+    let customizations = '';
+
+    if (selectedSize) {
+      customizations += `Tamanho: ${selectedSize}`;
+    }
+
+    if (selectedColor) {
+      customizations += customizations ? `, Cor: ${selectedColor}` : `Cor: ${selectedColor}`;
+    }
+
     const cartItem = {
-      id: product.id,
-      name: product.name,
+      id: `${product.id}${selectedSize ? `-${selectedSize}` : ''}${selectedColor ? `-${selectedColor}` : ''}`,
+      name: `${productName}${customizations ? ` (${customizations})` : ''}`,
       price: product.price,
       image: selectedMedia?.url || product.image || '',
       quantity,
       customization: {
-        size: selectedSize,
-        color: selectedColor,
-        notes: orderNotes
+        size: selectedSize || '',
+        color: selectedColor || '',
+        notes: orderNotes.trim() || ''
       }
     };
 
@@ -82,8 +94,48 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     );
   }
 
+  // Schema.org para SEO
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": product.name,
+    "image": product.media?.map(m => m.url) || [product.image],
+    "description": product.description,
+    "sku": product.id,
+    "brand": {
+      "@type": "Brand",
+      "name": "Sandro Adesivos"
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": `https://www.sandroadesivos.com.br/produtos/${product.id}`,
+      "priceCurrency": "BRL",
+      "price": product.price,
+      "priceValidUntil": new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+      "availability": "https://schema.org/InStock",
+      "seller": {
+        "@type": "Organization",
+        "name": "Sandro Adesivos",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "RUA SEBASTIAO BATISTA DOS SANTOS",
+          "addressLocality": "Açailândia",
+          "addressRegion": "MA",
+          "postalCode": "65930-000",
+          "addressCountry": "BR"
+        },
+        "telephone": "+55 99 98506-8943"
+      }
+    }
+  };
+
   return (
     <main className="min-h-screen bg-background py-12">
+      {/* Schema.org JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+      />
       <div className="container mx-auto px-4">
         <motion.button
           onClick={() => router.push('/produtos')}

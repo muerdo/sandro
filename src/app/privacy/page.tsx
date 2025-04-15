@@ -4,11 +4,39 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+// Nota: Metadados são definidos em um arquivo separado para componentes Server
+
 export default function PrivacyPolicyPage() {
   const router = useRouter();
 
+  // Schema.org para SEO
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Política de Privacidade - Sandro Adesivos",
+    "description": "Política de privacidade da Sandro Adesivos. Saiba como tratamos seus dados pessoais e protegemos sua privacidade.",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Sandro Adesivos",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "RUA SEBASTIAO BATISTA DOS SANTOS",
+        "addressLocality": "Açailândia",
+        "addressRegion": "MA",
+        "postalCode": "65930-000",
+        "addressCountry": "BR"
+      },
+      "telephone": "+55 99 98506-8943"
+    }
+  };
+
   return (
     <main className="min-h-screen bg-background py-12">
+      {/* Schema.org JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+      />
       <div className="container mx-auto px-4 max-w-4xl">
         <motion.button
           onClick={() => router.back()}

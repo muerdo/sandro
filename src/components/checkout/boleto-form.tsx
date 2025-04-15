@@ -2,13 +2,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useStripe } from "@stripe/react-stripe-js";
 import { toast } from "sonner";
 import { IMaskInput } from "react-imask";
+import abacatepay from "@/hooks/abacatepay";
 
 interface BoletoFormProps {
-  clientSecret: string;
-  onSuccess: () => void;
+  amount: number;
+  orderId: string;
+  onSuccess: (paymentId: string) => void;
 }
 
 // Lista de estados (UFs) do Brasil
@@ -42,8 +43,7 @@ const estados = [
   { uf: "TO", nome: "Tocantins" },
 ];
 
-export default function BoletoForm({ clientSecret, onSuccess }: BoletoFormProps) {
-  const stripe = useStripe();
+export default function BoletoForm({ amount, orderId, onSuccess }: BoletoFormProps) {
   const [name, setName] = useState("");
   const [taxId, setTaxId] = useState("");
   const [email, setEmail] = useState("");
@@ -130,40 +130,39 @@ export default function BoletoForm({ clientSecret, onSuccess }: BoletoFormProps)
       return;
     }
 
-    if (!stripe) {
-      toast.error("Stripe não carregado corretamente.");
-      return;
-    }
-
     try {
-      const result = await stripe.confirmBoletoPayment(clientSecret, {
-        payment_method: {
-          boleto: {
-            tax_id: taxId.replace(/\D/g, ""), // Remove caracteres não numéricos
-          },
-          billing_details: {
-            name,
-            email,
-            address: {
-              line1: address,
-              city,
-              state,
-              postal_code: postalCode.replace(/\D/g, ""), // Remove caracteres não numéricos
-              country: "BR",
-            },
-          },
-        },
-      });
+      // Criar cliente no AbacatePay
+      const customerData = {
+        name,
+        email,
+        tax_id: taxId.replace(/\D/g, ""),
+        address: {
+          street: address,
+          city,
+          state,
+          postal_code: postalCode.replace(/\D/g, ""),
+          country: "BR"
+        }
+      };
 
-      if (result.error) {
-        setErrors({ form: result.error.message || "Erro ao processar o boleto." });
-        toast.error(result.error.message || "Erro ao processar o boleto.");
-      } else {
-        toast.success("Boleto gerado com sucesso!");
-        onSuccess();
-      }
+      const customer = await abacatepay.createCustomer(customerData);
+
+      // Criar cobrança de boleto
+      const boletoData = {
+        amount,
+        payment_method: "boleto",
+        customer_id: customer.id,
+        order_id: orderId,
+        description: `Pedido #${orderId}`,
+        due_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 3 dias para vencimento
+      };
+
+      const billing = await abacatepay.createBilling(boletoData);
+
+      toast.success("Boleto gerado com sucesso!");
+      onSuccess(billing.id);
     } catch (error) {
-      console.error("Erro ao confirmar pagamento com boleto:", error);
+      console.error("Erro ao gerar boleto:", error);
       setErrors({ form: "Erro ao processar o boleto." });
       toast.error("Erro ao processar o boleto.");
     } finally {
@@ -310,6 +309,10 @@ export default function BoletoForm({ clientSecret, onSuccess }: BoletoFormProps)
       >
         {loading ? "Processando..." : "Gerar Boleto"}
       </button>
+
+      <p className="text-xs text-gray-500 mt-2">
+        Seus dados de pagamento são processados com segurança pelo AbacatePay.
+      </p>
     </form>
   );
 }

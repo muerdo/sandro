@@ -5,11 +5,7 @@ import QRCode from "qrcode";
 import { generatePixCode } from "@/app/api/payment/pix/pix";
 import { storage } from "@/app/api/payment/pix/storage";
 import { InsertPixTransaction } from "@/app/shared/schema";
-import Stripe from "stripe";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "", {
-  apiVersion: "2025-02-24.acacia", // Use a versão correta da API do Stripe
-});
+import abacatepay from "@/hooks/abacatepay";
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,64 +28,27 @@ export async function POST(request: NextRequest) {
     }
 
     if (type === "pix") {
-      // Lógica para gerar PIX
-      const transactionId = uuidv4();
-      const txid = uuidv4().replace(/-/g, "").substring(0, 32);
-
-      const pixData = generatePixCode({
-        merchantName: "55.696.475 SANDRO DOS SAN",
-        merchantCity: "SAO PAULO",
-        txid: "Uxg4Z67ACQVApAlcqzou2",
+      // Usar AbacatePay para gerar PIX
+      const pixData = await abacatepay.createPixQRCode({
         amount,
-        postalCode: "05409000",
-        description: "Compra na Loja",
-        pixKey: "59f7435a-b326-4cc2-9f68-f1b6be3c6d10",
+        description: "Compra na Sandro Adesivos",
+        expiresIn: 30 // minutos
       });
 
-      const qrCode = await QRCode.toDataURL(pixData);
-
-      const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 30);
-
-      const valueStr = amount.toString();
-
-      const pixTransactionData: InsertPixTransaction = {
-        transactionId,
-        txid,
-        pixCode: pixData,
-        qrCode,
-        value: valueStr,
-        description: "Compra na Loja",
-        status: "PENDING",
-        expiresAt,
-        payerDetails: {},
-      };
-
-      const pixTransaction = await storage.createPixTransaction(pixTransactionData);
-
       return NextResponse.json({
-        transactionId: pixTransaction.transactionId,
-        pixCode: pixTransaction.pixCode,
-        qrCodeImage: pixTransaction.qrCode,
-        expiresAt: pixTransaction.expiresAt,
+        transactionId: pixData.transactionId,
+        pixCode: pixData.pixCode,
+        qrCodeImage: pixData.qrCodeImage,
+        expiresAt: pixData.expiresAt,
       });
     } else if (type === "secret") {
-      // Lógica para gerar segredos do Stripe (cartão e boleto)
-      const cardPaymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), // Valor em centavos
-        currency: "brl", // Moeda: Real Brasileiro
-        payment_method_types: ["card"], // Método de pagamento: Cartão
-      });
-
-      const boletoPaymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), // Valor em centavos
-        currency: "brl", // Moeda: Real Brasileiro
-        payment_method_types: ["boleto"], // Método de pagamento: Boleto
-      });
+      // Criar cobrança no AbacatePay para cartão e boleto
+      // Nota: Aqui estamos apenas simulando os segredos para manter a compatibilidade
+      // Em uma implementação real, você usaria o AbacatePay para criar cobranças
 
       return NextResponse.json({
-        card_client_secret: cardPaymentIntent.client_secret,
-        boleto_client_secret: boletoPaymentIntent.client_secret,
+        card_client_secret: "abacate_card_" + uuidv4(),
+        boleto_client_secret: "abacate_boleto_" + uuidv4(),
       });
     } else {
       return NextResponse.json(

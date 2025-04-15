@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { useProductCustomization } from "@/hooks/useProductCustomization";
 import ProductImages from "@/components/products/product-images";
 import type { ProductMedia } from "@/types/product";
+// Nota: Metadados são definidos em um arquivo separado para componentes Server
 
 const product = {
   id: "adesivo-personalizado",
@@ -47,7 +48,7 @@ const product = {
 export default function AdesivosPage() {
   const { user } = useAuth();
   const { addItem, setShowAuthDialog } = useCart();
-  
+
   const {
     selectedSize,
     setSelectedSize,
@@ -67,17 +68,60 @@ export default function AdesivosPage() {
       setShowAuthDialog(true);
       return;
     }
-    
+
     addItem({
       id: `${product.id}-${selectedSize}-${selectedType}`,
       name: `${product.name} - ${selectedType} ${selectedSize}`,
       price: product.price,
-      image: product.media[0].url
+      image: product.media[0].url,
+      customization: {
+        size: selectedSize,
+        color: selectedType,
+        notes: ''
+      }
     });
+  };
+
+  // Schema.org para SEO
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": product.name,
+    "image": product.media.map(m => m.url),
+    "description": product.description,
+    "brand": {
+      "@type": "Brand",
+      "name": "Sandro Adesivos"
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": "https://www.sandroadesivos.com.br/produtos/adesivos",
+      "priceCurrency": "BRL",
+      "price": product.price,
+      "priceValidUntil": new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+      "availability": "https://schema.org/InStock",
+      "seller": {
+        "@type": "Organization",
+        "name": "Sandro Adesivos",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "RUA SEBASTIAO BATISTA DOS SANTOS",
+          "addressLocality": "Açailândia",
+          "addressRegion": "MA",
+          "postalCode": "65930-000",
+          "addressCountry": "BR"
+        }
+      }
+    }
   };
 
   return (
     <main className="min-h-screen bg-background py-12">
+      {/* Schema.org JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+      />
       <div className="container mx-auto px-4">
         <motion.button
           onClick={() => window.location.href = '/servicos'}

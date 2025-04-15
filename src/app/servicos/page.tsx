@@ -6,6 +6,8 @@ import SearchFilters, { FilterOptions } from "@/components/search/search-filters
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 
+// Nota: Metadados são definidos em um arquivo separado para componentes Server
+
 export default function ServicosPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
@@ -78,8 +80,42 @@ export default function ServicosPage() {
     });
   }, [services, searchQuery, activeFilters]);
 
+  // Schema.org para SEO
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "itemListElement": services.map((service, index) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "item": {
+        "@type": "Service",
+        "name": service.title,
+        "description": service.description,
+        "provider": {
+          "@type": "Organization",
+          "name": "Sandro Adesivos",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "RUA SEBASTIAO BATISTA DOS SANTOS",
+            "addressLocality": "Açailândia",
+            "addressRegion": "MA",
+            "postalCode": "65930-000",
+            "addressCountry": "BR"
+          },
+          "telephone": "+55 99 98506-8943"
+        }
+      }
+    })),
+    "numberOfItems": services.length
+  };
+
   return (
     <main className="min-h-screen bg-background py-12">
+      {/* Schema.org JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+      />
       <div className="container mx-auto px-4 space-y-8">
         <motion.button
           onClick={() => window.location.href = '/'}

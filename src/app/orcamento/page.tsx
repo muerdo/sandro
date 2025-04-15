@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Send } from "lucide-react";
 import { useEffect, useState } from "react";
 
+// Nota: Metadados são definidos em um arquivo separado para componentes Server
+
 export default function OrcamentoPage() {
   const [servico, setServico] = useState<string>("");
   const [formData, setFormData] = useState({
@@ -27,7 +29,7 @@ export default function OrcamentoPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const message = encodeURIComponent(
       `*Novo Pedido de Orçamento*  ` +
       `*Serviço:* ${servico} ` +
@@ -40,8 +42,34 @@ export default function OrcamentoPage() {
     window.location.href = `https://whatsa.me/5599985068943/?t=${message}`;
   };
 
+  // Schema.org para SEO
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "name": `Orçamento de ${servico || 'Serviços de Comunicação Visual'}`,
+    "description": "Solicite um orçamento personalizado para serviços de comunicação visual em Açailândia/MA",
+    "provider": {
+      "@type": "Organization",
+      "name": "Sandro Adesivos",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "RUA SEBASTIAO BATISTA DOS SANTOS",
+        "addressLocality": "Açailândia",
+        "addressRegion": "MA",
+        "postalCode": "65930-000",
+        "addressCountry": "BR"
+      },
+      "telephone": "+55 99 98506-8943"
+    }
+  };
+
   return (
     <main className="min-h-screen bg-background py-12">
+      {/* Schema.org JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+      />
       <div className="container mx-auto px-4 max-w-2xl">
         <motion.button
           onClick={() => window.location.href = '/servicos'}

@@ -8,6 +8,8 @@ import { useProductCustomization } from "@/hooks/useProductCustomization";
 import ProductImages from "@/components/products/product-images";
 import type { ProductMedia } from "@/types/product";
 
+// Nota: Metadados são definidos em um arquivo separado para componentes Server
+
 const product = {
   id: "caneca-personalizada",
   name: "Caneca Personalizada",
@@ -71,11 +73,55 @@ export default function CanecasPage() {
       name: `${product.name} - ${selectedType}`,
       price: product.price,
       image: selectedMedia?.url || product.media[0].url,
+      customization: {
+        size: '',
+        color: selectedType,
+        notes: ''
+      }
     });
+  };
+
+  // Schema.org para SEO
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": product.name,
+    "image": product.media.map(m => m.url),
+    "description": product.description,
+    "brand": {
+      "@type": "Brand",
+      "name": "Sandro Adesivos"
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": "https://www.sandroadesivos.com.br/produtos/canecas",
+      "priceCurrency": "BRL",
+      "price": product.price,
+      "priceValidUntil": new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+      "availability": "https://schema.org/InStock",
+      "seller": {
+        "@type": "Organization",
+        "name": "Sandro Adesivos",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "RUA SEBASTIAO BATISTA DOS SANTOS",
+          "addressLocality": "Açailândia",
+          "addressRegion": "MA",
+          "postalCode": "65930-000",
+          "addressCountry": "BR"
+        },
+        "telephone": "+55 99 98506-8943"
+      }
+    }
   };
 
   return (
     <main className="min-h-screen bg-background py-12">
+      {/* Schema.org JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+      />
       <div className="container mx-auto px-4">
         <motion.button
           onClick={() => (window.location.href = "/servicos")}

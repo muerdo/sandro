@@ -3,10 +3,10 @@ import HeroSection from "@/components/landing/hero-section";
 
 export const metadata = {
   title: "Sandro Adesivos - Comunicação Visual Profissional em Açailândia",
-  description: "Fabricação de adesivos personalizados, letras caixa e sinalização em Açailândia. Qualidade profissional com orçamento rápido e instalação especializada.",
-  keywords: ["adesivos", "comunicação visual", "sinalização", "Sandro Adesivos", "Maranhão", "acailandia", "açailandia", "letra caixa", "fachadas", "Açailândia"],
+  description: "Sandro Adesivos em Açailândia-MA: adesivos personalizados, banners, letras caixa, fachadas, sinalização, camisetas e canecas personalizadas. Orçamento rápido e instalação profissional.",
+  keywords: ["adesivos Açailândia, comunicação visual Maranhão, banners personalizados, letra caixa, fachadas comerciais, sinalização, impressão digital, camisetas personalizadas, canecas personalizadas, gráfica rápida Açailândia"],
   openGraph: {
-    title: "Sandro Adesivos - Comunicação Visual Profissional",
+    title: "Sandro Adesivos - Açailândia - Comunicação Visual Profissional",
     description: "Transforme suas ideias em realidade com nossos serviços de comunicação visual",
     images: [
       {

@@ -9,13 +9,13 @@ import SiteHeader from "@/components/site-header";
 import { CartProvider } from "@/contexts/cart-context";
 import { AuthProvider } from "@/contexts/auth-context";
 import CartSummary from "@/components/cart/cart-summary";
-import { StripeProvider } from "@/components/providers/stripe-provider";
+import { AbacatePayProvider } from "@/components/providers/abacatepay-provider";
 import Link from "next/link";
 import { VisibilityProvider } from "@/contexts/visibility-context";
 
 export const metadata: Metadata = {
   title: "Sandro Adesivos - Comunicação Visual Profissional",
-  description: "Serviços profissionais de comunicação visual, impressão digital, plotagem, adesivos e personalização.",
+  description: "Sandro Adesivos em Açailândia-MA: adesivos personalizados, banners, letras caixa, fachadas, sinalização, camisetas e canecas personalizadas. Orçamento rápido e instalação profissional.",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
@@ -30,7 +30,7 @@ export default function RootLayout({
           <CartProvider>
             <VisibilityProvider>
               <TransitionProvider>
-                <StripeProvider>
+                <AbacatePayProvider>
                   <div className="flex-1 flex flex-col">
                     <SiteHeader />
                     {children}
@@ -44,7 +44,7 @@ export default function RootLayout({
                   </nav>
                   <Footer />
                   <CartSummary />
-                </StripeProvider>
+                </AbacatePayProvider>
               </TransitionProvider>
             </VisibilityProvider>
           </CartProvider>

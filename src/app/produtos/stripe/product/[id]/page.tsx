@@ -12,6 +12,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Product } from "@/types/product";
 
+// Nota: Metadados são definidos em um arquivo separado para componentes Server
+
 export default function StaticProductPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -38,16 +40,16 @@ export default function StaticProductPage() {
     const fetchProduct = async () => {
       try {
         if (typeof window === 'undefined') return;
-        
+
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
           throw new Error('No authentication session');
         }
 
         const { data, error } = await supabase.functions.invoke('get-stripe-product', {
-          body: { 
+          body: {
             productId: window.location.pathname.split('/').pop(),
-            sessionToken: session.access_token 
+            sessionToken: session.access_token
           },
           headers: {
             Authorization: `Bearer ${session.access_token}`
@@ -72,7 +74,7 @@ export default function StaticProductPage() {
             alt: data.name || 'Product Image'
           })) || [],
           features: data.metadata?.features?.split(',') || [],
-          customization: data.metadata?.customization ? 
+          customization: data.metadata?.customization ?
             JSON.parse(data.metadata.customization) : undefined,
           stock: data.metadata?.stock ? parseInt(data.metadata.stock) : 999,
           status: 'active',
@@ -105,19 +107,59 @@ export default function StaticProductPage() {
     if (!product) return;
 
     const customizations = [
-      selectedSize && `Size: ${selectedSize}`,
-      selectedColor && `Color: ${selectedColor}`
+      selectedSize && `Tamanho: ${selectedSize}`,
+      selectedColor && `Cor: ${selectedColor}`
     ].filter(Boolean).join(', ');
 
     addItem({
       id: `${product.id}-${selectedSize}-${selectedColor}`,
       name: `${product.name}${customizations ? ` (${customizations})` : ''}`,
       price: product.price,
-      image: selectedMedia?.url || product.media[0].url
+      image: selectedMedia?.url || product.media[0].url,
+      customization: {
+        size: selectedSize || '',
+        color: selectedColor || '',
+        notes: ''
+      }
     });
 
-    toast.success('Added to cart');
+    toast.success('Produto adicionado ao carrinho!');
   };
+
+  // Schema.org para SEO
+  const schemaData = product ? {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": product.name,
+    "image": product.media?.map(m => m.url) || [product.image],
+    "description": product.description,
+    "sku": product.id,
+    "brand": {
+      "@type": "Brand",
+      "name": "Sandro Adesivos"
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": `https://www.sandroadesivos.com.br/produtos/stripe/product/${product.id}`,
+      "priceCurrency": "BRL",
+      "price": product.price,
+      "priceValidUntil": new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+      "availability": "https://schema.org/InStock",
+      "seller": {
+        "@type": "Organization",
+        "name": "Sandro Adesivos",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "RUA SEBASTIAO BATISTA DOS SANTOS",
+          "addressLocality": "Açailândia",
+          "addressRegion": "MA",
+          "postalCode": "65930-000",
+          "addressCountry": "BR"
+        },
+        "telephone": "+55 99 98506-8943"
+      }
+    }
+  } : null;
 
   if (loading) {
     return (
@@ -154,6 +196,12 @@ export default function StaticProductPage() {
 
   return (
     <main className="min-h-screen bg-background py-12">
+      {product && schemaData && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+        />
+      )}
       <div className="container mx-auto px-4">
         <motion.button
           onClick={() => router.push('/produtos')}

@@ -14,6 +14,8 @@ import { useAuth } from "@/contexts/auth-context";
 import { useProductCustomization } from "@/hooks/useProductCustomization";
 import ProductImages from "@/components/products/product-images";
 
+// Nota: Metadados são definidos em um arquivo separado para componentes Server
+
 // Forçar revalidação da página para garantir que as alterações sejam refletidas
 export const dynamic = 'force-dynamic';
 
@@ -214,8 +216,11 @@ export default function DynamicProductPage({ params }: { params: { id: string } 
       price: product.price,
       image: selectedMedia?.url || product.media?.[0]?.url || product.image || '',
       quantity,
-      customization: null as null,
-      notes: orderNotes.trim() || null
+      customization: {
+        size: selectedSize || '',
+        color: selectedColor || '',
+        notes: orderNotes.trim() || ''
+      }
     };
 
     addItem(cartItem);
@@ -255,8 +260,49 @@ export default function DynamicProductPage({ params }: { params: { id: string } 
     );
   }
 
+  // Schema.org para SEO
+  const schemaData = product ? {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": product.name,
+    "image": product.media?.map(m => m.url) || [product.image],
+    "description": product.description,
+    "sku": product.id,
+    "brand": {
+      "@type": "Brand",
+      "name": "Sandro Adesivos"
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": `https://www.sandroadesivos.com.br/produtos/${params.id}`,
+      "priceCurrency": "BRL",
+      "price": product.price,
+      "priceValidUntil": new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+      "availability": "https://schema.org/InStock",
+      "seller": {
+        "@type": "Organization",
+        "name": "Sandro Adesivos",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "RUA SEBASTIAO BATISTA DOS SANTOS",
+          "addressLocality": "Açailândia",
+          "addressRegion": "MA",
+          "postalCode": "65930-000",
+          "addressCountry": "BR"
+        },
+        "telephone": "+55 99 98506-8943"
+      }
+    }
+  } : null;
+
   return (
     <main className="min-h-screen bg-background py-12">
+      {product && schemaData && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+        />
+      )}
       <div className="container mx-auto px-4">
         <motion.button
           onClick={() => router.push('/produtos')}

@@ -14,6 +14,8 @@ import { Loader2, Save, User, MapPin } from "lucide-react";
 import { IMaskInput } from "react-imask";
 import { useShippingAddress } from "@/hooks/useShippingAddress";
 
+// Nota: Metadados são definidos em um arquivo separado para componentes Server
+
 // Tipo para o perfil do usuário
 type UserProfile = {
   id: string;
@@ -44,7 +46,7 @@ type ShippingAddress = {
 export default function ProfilePage() {
   const router = useRouter();
   const { shippingAddress, setShippingAddress } = useShippingAddress();
-  
+
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [addresses, setAddresses] = useState<ShippingAddress[]>([]);
@@ -53,14 +55,14 @@ export default function ProfilePage() {
     profile: false,
     address: false,
   });
-  
+
   // Estados para formulários
   const [profileForm, setProfileForm] = useState({
     username: "",
     full_name: "",
     email: "",
   });
-  
+
   const [addressForm, setAddressForm] = useState<ShippingAddress>({
     id: "",
     user_id: "",
@@ -75,7 +77,7 @@ export default function ProfilePage() {
     created_at: null,
     updated_at: null,
   });
-  
+
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [isCreatingAddress, setIsCreatingAddress] = useState(false);
 
@@ -84,13 +86,13 @@ export default function ProfilePage() {
     const checkUser = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (!user) {
           toast.error("Você precisa estar logado para acessar esta página");
           router.push("/login");
           return;
         }
-        
+
         setUser(user);
         await fetchUserProfile(user.id);
         await fetchUserAddresses(user.id);
@@ -101,7 +103,7 @@ export default function ProfilePage() {
         setLoading(prev => ({ ...prev, page: false }));
       }
     };
-    
+
     checkUser();
   }, [router]);
 
@@ -113,9 +115,9 @@ export default function ProfilePage() {
         .select("*")
         .eq("id", userId)
         .single();
-        
+
       if (error) throw error;
-      
+
       setProfile(data);
       setProfileForm({
         username: data.username || "",
@@ -136,24 +138,24 @@ export default function ProfilePage() {
         .select("*")
         .eq("user_id", userId)
         .order("is_default", { ascending: false });
-        
+
       if (error) throw error;
-      
+
       setAddresses(data || []);
-      
+
       // Se houver um endereço padrão, selecione-o
       const defaultAddress = data?.find(addr => addr.is_default);
       if (defaultAddress) {
         setSelectedAddressId(defaultAddress.id);
         setAddressForm(defaultAddress);
-        
+
         // Atualizar o contexto de endereço de entrega
         setShippingAddress(defaultAddress);
       } else if (data && data.length > 0) {
         // Se não houver endereço padrão, selecione o primeiro
         setSelectedAddressId(data[0].id);
         setAddressForm(data[0]);
-        
+
         // Atualizar o contexto de endereço de entrega
         setShippingAddress(data[0]);
       } else {
@@ -175,16 +177,16 @@ export default function ProfilePage() {
   // Atualizar perfil do usuário
   const handleUpdateProfile = async () => {
     if (!user || !profile) return;
-    
+
     setLoading(prev => ({ ...prev, profile: true }));
-    
+
     try {
       // Validar dados
       if (!profileForm.email) {
         toast.error("Email é obrigatório");
         return;
       }
-      
+
       // Atualizar perfil no Supabase
       const { error } = await supabase
         .from("profiles")
@@ -195,9 +197,9 @@ export default function ProfilePage() {
           updated_at: new Date().toISOString(),
         })
         .eq("id", profile.id);
-        
+
       if (error) throw error;
-      
+
       // Atualizar metadados do usuário no Auth
       const { error: authError } = await supabase.auth.updateUser({
         data: {
@@ -205,12 +207,12 @@ export default function ProfilePage() {
           username: profileForm.username,
         }
       });
-      
+
       if (authError) {
         console.error("Erro ao atualizar metadados do usuário:", authError);
         // Continuar mesmo com erro nos metadados
       }
-      
+
       toast.success("Perfil atualizado com sucesso");
       await fetchUserProfile(user.id);
     } catch (error) {
@@ -224,16 +226,16 @@ export default function ProfilePage() {
   // Atualizar ou criar endereço
   const handleSaveAddress = async () => {
     if (!user) return;
-    
+
     setLoading(prev => ({ ...prev, address: true }));
-    
+
     try {
       // Validar dados
       if (!addressForm.address || !addressForm.phone) {
         toast.error("Endereço e telefone são obrigatórios");
         return;
       }
-      
+
       // Se for endereço padrão, atualizar outros endereços
       if (addressForm.is_default && addresses.length > 0) {
         await supabase
@@ -242,7 +244,7 @@ export default function ProfilePage() {
           .eq("user_id", user.id)
           .neq("id", addressForm.id || "new");
       }
-      
+
       if (isCreatingAddress || !selectedAddressId) {
         // Criar novo endereço
         const { data, error } = await supabase
@@ -255,12 +257,12 @@ export default function ProfilePage() {
             updated_at: new Date().toISOString(),
           })
           .select();
-          
+
         if (error) throw error;
-        
+
         toast.success("Endereço criado com sucesso");
         setIsCreatingAddress(false);
-        
+
         // Atualizar o contexto de endereço de entrega
         if (data && data.length > 0) {
           setShippingAddress(data[0]);
@@ -275,17 +277,17 @@ export default function ProfilePage() {
           })
           .eq("id", selectedAddressId)
           .select();
-          
+
         if (error) throw error;
-        
+
         toast.success("Endereço atualizado com sucesso");
-        
+
         // Atualizar o contexto de endereço de entrega
         if (data && data.length > 0) {
           setShippingAddress(data[0]);
         }
       }
-      
+
       await fetchUserAddresses(user.id);
     } catch (error) {
       console.error("Erro ao salvar endereço:", error);
@@ -337,7 +339,7 @@ export default function ProfilePage() {
   return (
     <main className="container mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-6">Meu Perfil</h1>
-      
+
       <Tabs defaultValue="profile" className="w-full">
         <TabsList className="mb-6">
           <TabsTrigger value="profile" className="flex items-center gap-2">
@@ -349,7 +351,7 @@ export default function ProfilePage() {
             Endereços de Entrega
           </TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="profile">
           <Card>
             <CardHeader>
@@ -391,8 +393,8 @@ export default function ProfilePage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button 
-                onClick={handleUpdateProfile} 
+              <Button
+                onClick={handleUpdateProfile}
                 disabled={loading.profile}
                 className="w-full md:w-auto"
               >
@@ -411,7 +413,7 @@ export default function ProfilePage() {
             </CardFooter>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="addresses">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-1">
@@ -426,11 +428,11 @@ export default function ProfilePage() {
                   <div className="space-y-2">
                     {addresses.length > 0 ? (
                       addresses.map((address) => (
-                        <div 
+                        <div
                           key={address.id}
                           className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                            selectedAddressId === address.id 
-                              ? "border-primary bg-primary/5" 
+                            selectedAddressId === address.id
+                              ? "border-primary bg-primary/5"
                               : "border-gray-200 hover:border-gray-300"
                           }`}
                           onClick={() => handleSelectAddress(address.id)}
@@ -460,9 +462,9 @@ export default function ProfilePage() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button 
+                  <Button
                     onClick={handleNewAddress}
-                    variant="outline" 
+                    variant="outline"
                     className="w-full"
                   >
                     Adicionar Novo Endereço
@@ -470,7 +472,7 @@ export default function ProfilePage() {
                 </CardFooter>
               </Card>
             </div>
-            
+
             <div className="md:col-span-2">
               <Card>
                 <CardHeader>
@@ -478,8 +480,8 @@ export default function ProfilePage() {
                     {isCreatingAddress ? "Novo Endereço" : "Editar Endereço"}
                   </CardTitle>
                   <CardDescription>
-                    {isCreatingAddress 
-                      ? "Adicione um novo endereço de entrega" 
+                    {isCreatingAddress
+                      ? "Adicione um novo endereço de entrega"
                       : "Edite as informações do endereço selecionado"}
                   </CardDescription>
                 </CardHeader>
@@ -505,7 +507,7 @@ export default function ProfilePage() {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="addr_phone">Telefone</Label>
                     <IMaskInput
@@ -518,7 +520,7 @@ export default function ProfilePage() {
                       placeholder="+55 (00) 00000-0000"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="addr_address">Endereço</Label>
                     <Input
@@ -528,7 +530,7 @@ export default function ProfilePage() {
                       placeholder="Rua, número, complemento"
                     />
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="addr_city">Cidade</Label>
@@ -549,7 +551,7 @@ export default function ProfilePage() {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="addr_postal_code">CEP</Label>
                     <IMaskInput
@@ -562,7 +564,7 @@ export default function ProfilePage() {
                       placeholder="00000-000"
                     />
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"
@@ -577,8 +579,8 @@ export default function ProfilePage() {
                   </div>
                 </CardContent>
                 <CardFooter className="flex flex-col sm:flex-row gap-3">
-                  <Button 
-                    onClick={handleSaveAddress} 
+                  <Button
+                    onClick={handleSaveAddress}
                     disabled={loading.address}
                     className="w-full sm:w-auto"
                   >
@@ -594,24 +596,24 @@ export default function ProfilePage() {
                       </>
                     )}
                   </Button>
-                  
+
                   {!isCreatingAddress && addresses.length > 1 && (
-                    <Button 
-                      variant="destructive" 
+                    <Button
+                      variant="destructive"
                       className="w-full sm:w-auto"
                       onClick={async () => {
                         if (!selectedAddressId) return;
-                        
+
                         try {
                           setLoading(prev => ({ ...prev, address: true }));
-                          
+
                           const { error } = await supabase
                             .from("shipping_addresses")
                             .delete()
                             .eq("id", selectedAddressId);
-                            
+
                           if (error) throw error;
-                          
+
                           toast.success("Endereço removido com sucesso");
                           await fetchUserAddresses(user.id);
                         } catch (error) {

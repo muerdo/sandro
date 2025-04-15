@@ -2,8 +2,8 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
-import { apiRequest } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import abacatepay from "@/hooks/abacatepay";
 
 interface PixQRCodeProps {
   pixCode: string;
@@ -76,36 +76,24 @@ export default function PixQRCode({
 
     const checkStatus = async () => {
       try {
-        // Usar a Edge Function do Supabase para verificar o status
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const response = await apiRequest(
-          "GET",
-          `${supabaseUrl}/functions/v1/pix-payment-status?transactionId=${transactionId}&action=check`
-        );
+        console.log('Verificando status do PIX para transactionId:', transactionId);
+
+        // Usar o hook do AbacatePay para verificar o status
+        const statusData = await abacatepay.checkPixStatus(transactionId);
+        console.log('Status do PIX recebido:', statusData);
 
         // Verificar se o componente ainda está montado antes de atualizar o estado
         if (!isMounted) return false;
 
-        // Verificar se a resposta foi bem-sucedida
-        if (!response.ok) {
-          console.error(`Erro ao buscar status: ${response.status} ${response.statusText}`);
+        // Verificar se a resposta contém um status válido
+        if (!statusData || !statusData.status) {
+          console.error('Resposta inválida ao verificar status do PIX:', statusData);
           return false;
         }
 
-        const data = await response.json();
+        setStatus(statusData.status);
 
-        // Verificar novamente se o componente ainda está montado
-        if (!isMounted) return false;
-
-        // Verificar se a resposta foi bem-sucedida
-        if (!data.success) {
-          console.error(`Erro na resposta da Edge Function: ${data.message}`);
-          return false;
-        }
-
-        setStatus(data.status);
-
-        if (data.status === "PAID") {
+        if (statusData.status === "PAID" || statusData.status === "COMPLETED") {
           // Stop checking if payment is completed
           toast.success("Pagamento PIX recebido com sucesso!");
           return true;
@@ -171,28 +159,20 @@ export default function PixQRCode({
     setRefreshing(true);
 
     try {
-      // Usar a Edge Function do Supabase para verificar o status
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const response = await apiRequest(
-        "GET",
-        `${supabaseUrl}/functions/v1/pix-payment-status?transactionId=${transactionId}&action=check`
-      );
+      console.log('Atualizando status do PIX manualmente para transactionId:', transactionId);
 
-      // Verificar se a resposta foi bem-sucedida
-      if (!response.ok) {
-        throw new Error(`Erro ao buscar status: ${response.status} ${response.statusText}`);
+      // Usar o hook do AbacatePay para verificar o status
+      const statusData = await abacatepay.checkPixStatus(transactionId);
+      console.log('Status do PIX recebido (atualização manual):', statusData);
+
+      // Verificar se a resposta contém um status válido
+      if (!statusData || !statusData.status) {
+        throw new Error('Resposta inválida ao verificar status do PIX');
       }
 
-      const data = await response.json();
+      setStatus(statusData.status);
 
-      // Verificar se a resposta foi bem-sucedida
-      if (!data.success) {
-        throw new Error(`Erro na resposta da Edge Function: ${data.message}`);
-      }
-
-      setStatus(data.status);
-
-      if (data.status === "PAID") {
+      if (statusData.status === "PAID" || statusData.status === "COMPLETED") {
         toast.success("Pagamento PIX recebido com sucesso!");
       } else {
         toast.info("Status atualizado!");
@@ -230,6 +210,12 @@ export default function PixQRCode({
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
                   Carregando...
+                </div>
+              )}
+              {/* Debug info */}
+              {process.env.NODE_ENV !== 'production' && (
+                <div className="absolute top-0 right-0 bg-yellow-100 text-xs p-1 rounded">
+                  {pixCode ? 'PIX Code OK' : 'No PIX Code'}
                 </div>
               )}
             </div>

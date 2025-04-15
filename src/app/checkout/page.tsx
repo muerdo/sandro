@@ -4,17 +4,13 @@
 import { useState, useEffect } from "react";
 import { useCart } from "@/contexts/cart-context";
 import { useRouter } from "next/navigation";
-import { apiRequest } from "@/lib/api";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
-import { Elements } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
 import OrderSummary from "@/components/checkout/order-summary";
 import PixQRCode from "@/components/checkout/pix-qr-code";
 import BoletoForm from "@/components/checkout/boleto-form";
-import { PaymentElement } from "@stripe/react-stripe-js";
-import { useCheckout } from "@/hooks/useCheckout";
+import { useAbacatePayCheckout } from "@/hooks/useAbacatePayCheckout";
 import { supabase } from "@/lib/supabase";
 import { PaymentMethod } from "@/types";
 import type { Database } from "@/types/supabase";
@@ -22,9 +18,10 @@ import type { Database } from "@/types/supabase";
 import type { ShippingAddress } from "@/components/checkout/address-form";
 // Importar o componente AddressForm separadamente
 import AddressForm from "@/components/checkout/address-form";
+import abacatepay from "@/hooks/abacatepay";
+import CreditCardForm from "@/components/checkout/credit-card-form";
 
 // import { sendOrderNotification } from "@/lib/whatsapp-notification";
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 
 const PaymentMethods = ({
@@ -60,16 +57,14 @@ export default function Checkout() {
   const router = useRouter();
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [cardClientSecret, setCardClientSecret] = useState<string | null>(null);
-  const [boletoClientSecret, setBoletoClientSecret] = useState<string | null>(null);
   const [pixData, setPixData] = useState<{
     pixCode: string;
     expiresAt: string;
     transactionId: string;
-    qrCodeImage: string;
+    qrCodeImage: string | null;
   } | null>(null);
   const [loading, setLoading] = useState(true);
-  const { completeCheckout, loading: checkoutLoading, clearCart } = useCheckout();
+  const { completeCheckout, loading: checkoutLoading, clearCart } = useAbacatePayCheckout();
 
   // Limpeza de cache ao sair
   useEffect(() => {
@@ -78,8 +73,6 @@ export default function Checkout() {
         setShippingAddress(null);
         setErrors({});
         setPixData(null);
-        setCardClientSecret(null);
-        setBoletoClientSecret(null);
         setLoading(true);
       }
     });
@@ -263,13 +256,19 @@ export default function Checkout() {
           break;
 
         case "credit_card": {
-          const { order: completedOrder } = await completeCheckout(shippingAddress, paymentMethod);
+          // Usar AbacatePay para processar pagamento com cartão
+          const { order: completedOrder, billing } = await completeCheckout(shippingAddress, paymentMethod);
+
+          // Atualizar status do pedido
           await supabase
             .from("orders")
             .update({
               payment_status: "pending",
+              abacatepay_billing_id: billing.id
             })
             .eq("id", completedOrder.id);
+
+          // Redirecionar para página de pendente
           router.push(`/checkout/pending?order_id=${completedOrder.id}`);
           break;
         }
@@ -283,22 +282,11 @@ export default function Checkout() {
   const startPixStatusCheck = (orderId: string, transactionId: string) => {
     const interval = setInterval(async () => {
       try {
-        // Usar a Edge Function do Supabase para verificar o status
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const response = await apiRequest(
-          "GET",
-          `${supabaseUrl}/functions/v1/pix-payment-status?transactionId=${transactionId}&action=check`
-        );
+        // Usar AbacatePay para verificar status do PIX
+        const pixStatus = await abacatepay.checkPixStatus(transactionId);
+        console.log("Status do PIX:", pixStatus);
 
-        if (!response.ok) throw new Error("Erro ao verificar status do PIX");
-
-        const data = await response.json();
-
-        if (!data.success) {
-          throw new Error(`Erro na resposta da Edge Function: ${data.message}`);
-        }
-
-        if (data.status === "PAID") {
+        if (pixStatus.status === "PAID") {
           clearInterval(interval);
 
           // Atualizar o pedido para pago
@@ -357,35 +345,31 @@ export default function Checkout() {
           throw new Error("Valor total do carrinho inválido");
         }
 
-        const amountInCents = Math.round(amount);
-        const [secretsResponse, pixResponse] = await Promise.all([
-          apiRequest("POST", "/api/payment", {
-            amount: amountInCents,
-            type: "secret",
-          }),
-          apiRequest("POST", "/api/payment", {
-            amount: amountInCents,
-            type: "pix",
-          }),
-        ]);
+        // Gerar QR Code PIX usando AbacatePay
+        console.log('Iniciando criação de QR Code PIX para valor:', amount);
 
-        if (!secretsResponse.ok || !pixResponse.ok) {
-          throw new Error("Erro ao buscar dados de pagamento");
+        const pixResponse = await abacatepay.createPixQRCode({
+          amount: amount,
+          description: "Compra na Sandro Adesivos",
+          expiresIn: 30 // minutos
+        });
+
+        console.log('Resposta do QR Code PIX recebida:', pixResponse);
+
+        if (!pixResponse || !pixResponse.pixCode) {
+          console.error('Resposta inválida do QR Code PIX:', pixResponse);
+          toast.error('Erro ao gerar QR Code PIX. Tente novamente.');
+          return;
         }
 
-        const [secretsData, pixData] = await Promise.all([
-          secretsResponse.json(),
-          pixResponse.json(),
-        ]);
-
-        setCardClientSecret(secretsData.card_client_secret || null);
-        setBoletoClientSecret(secretsData.boleto_client_secret || null);
         setPixData({
-          pixCode: pixData.pixCode,
-          expiresAt: pixData.expiresAt,
-          transactionId: pixData.transactionId,
-          qrCodeImage: pixData.qrCodeImage,
+          pixCode: pixResponse.pixCode,
+          expiresAt: pixResponse.expiresAt || new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+          transactionId: pixResponse.transactionId,
+          qrCodeImage: pixResponse.qrCodeImage
         });
+
+        console.log('Dados do PIX definidos com sucesso:', pixResponse.pixCode);
       } catch (error) {
         console.error("Erro ao buscar dados de pagamento:", error);
         toast.error(error instanceof Error ? error.message : "Erro ao carregar opções de pagamento");
@@ -458,23 +442,53 @@ export default function Checkout() {
               </div>
             )}
 
-            {paymentMethod === "boleto" && boletoClientSecret && (
+            {paymentMethod === "boleto" && (
               <div className="mt-6">
                 <BoletoForm
-                  clientSecret={boletoClientSecret}
-                  onSuccess={() => {
-                    clearCart(); // Limpa o carrinho apenas após confirmação de pagamento
-                    router.push("/success");
+                  amount={total}
+                  orderId={"order-" + Date.now()}
+                  onSuccess={(billingId) => {
+                    // Criar pedido e redirecionar
+                    completeCheckout(shippingAddress, "boleto").then(({ order }) => {
+                      // Atualizar pedido com ID da cobrança
+                      supabase
+                        .from("orders")
+                        .update({
+                          payment_status: "pending",
+                          abacatepay_billing_id: billingId
+                        })
+                        .eq("id", order.id);
+
+                      clearCart(); // Limpa o carrinho
+                      router.push(`/checkout/pending?order_id=${order.id}`);
+                    });
                   }}
                 />
               </div>
             )}
 
-            {paymentMethod === "credit_card" && cardClientSecret && (
+            {paymentMethod === "credit_card" && (
               <div className="mt-6">
-                <Elements stripe={stripePromise} options={{ clientSecret: cardClientSecret }}>
-                  <PaymentElement />
-                </Elements>
+                <CreditCardForm
+                  amount={total}
+                  orderId={"order-" + Date.now()}
+                  onSuccess={(paymentId) => {
+                    // Criar pedido e redirecionar
+                    completeCheckout(shippingAddress, "credit_card").then(({ order }) => {
+                      // Atualizar pedido com ID da cobrança
+                      supabase
+                        .from("orders")
+                        .update({
+                          payment_status: "pending",
+                          abacatepay_billing_id: paymentId
+                        })
+                        .eq("id", order.id);
+
+                      clearCart(); // Limpa o carrinho
+                      router.push(`/checkout/pending?order_id=${order.id}`);
+                    });
+                  }}
+                />
               </div>
             )}
 

@@ -14,6 +14,8 @@ import type { Product } from "@/types/product";
 // Forçar revalidação da página para garantir que as alterações sejam refletidas
 export const dynamic = 'force-dynamic';
 
+// Nota: Metadados são definidos em um arquivo separado para componentes Server
+
 export default function CatalogoPage() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
@@ -315,8 +317,49 @@ export default function CatalogoPage() {
     fetchAllProducts();
   }, []);
 
+  // Schema.org para SEO
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "itemListElement": products.map((product, index) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "item": {
+        "@type": "Product",
+        "name": product.name,
+        "image": product.image,
+        "description": product.description,
+        "offers": {
+          "@type": "Offer",
+          "price": product.price,
+          "priceCurrency": "BRL",
+          "availability": "https://schema.org/InStock",
+          "seller": {
+            "@type": "Organization",
+            "name": "Sandro Adesivos",
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "RUA SEBASTIAO BATISTA DOS SANTOS",
+              "addressLocality": "Açailândia",
+              "addressRegion": "MA",
+              "postalCode": "65930-000",
+              "addressCountry": "BR"
+            },
+            "telephone": "+55 99 98506-8943"
+          }
+        }
+      }
+    })),
+    "numberOfItems": products.length
+  };
+
   return (
     <main className="relative min-h-screen bg-[url('/img/f2641af2-a4f1-4d08-9ac6-ac9f5de307c2.png')] bg-cover bg-center py-12">
+      {/* Schema.org JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+      />
       {/* Overlay escuro */}
       <div className="absolute inset-0 bg-black/50"></div>
 
